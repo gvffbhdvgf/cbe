@@ -1,6 +1,6 @@
 # Sentinel
 
-Sentinel is being developed as a curriculum-informed assessment and learning-improvement platform.
+Sentinel is a curriculum-informed assessment and learning-improvement platform.
 
 This directory is the isolated Sentinel project workspace within the `cbe` repository. Keep Sentinel application code, engineering documentation, infrastructure definitions and tests under this directory unless a repository-wide concern genuinely belongs at the root.
 
@@ -18,14 +18,18 @@ This directory is the isolated Sentinel project workspace within the `cbe` repos
 
 1. Review the product brief, source assessment records and KICD curriculum references.
 2. Record decisions and requirements before building domain features.
-3. Develop and test locally in an isolated Sentinel workspace.
-4. Commit coherent changes to feature branches and sync them to GitHub.
-5. Keep Notion project documentation aligned with implementation decisions.
-6. Deploy only through an explicitly controlled release process; ordinary commits must not trigger production deployments.
+3. Use cloud-connected services and plugins for repository work, documentation, infrastructure and collaboration.
+4. Commit coherent, reviewed changes to GitHub feature branches and keep Notion aligned.
+5. Inspect deployment settings before enabling automation; ordinary commits must not trigger production deployments.
+6. Validate cloud changes and preserve an auditable project handoff.
 
 ## Current status
 
-The repository was confirmed empty when this workspace was established. This README is the first project file. The detailed working blueprint is maintained in the Sentinel Notion documentation.
+The Sentinel bootstrap documentation is established on the `sentinel/bootstrap` branch. It includes product requirements, architecture, security/environment guidance and a project handoff. Application implementation has not started. Requirements remain subject to validation against the original implementation brief, exact assessment source files, KICD curriculum designs and institutional workflows.
+
+## Cloud-first working mode
+
+Use GitHub, Notion, Vercel, Neon, Cloudflare and other connected plugins directly. Do not use local-machine connectors, terminal/shell execution, desktop automation or ChatGPT Work unless the user explicitly changes this instruction. Prefer cloud-native repository edits and reviewable commits.
 
 ## Configuration
 
