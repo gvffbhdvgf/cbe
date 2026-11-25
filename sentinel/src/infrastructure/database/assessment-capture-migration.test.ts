@@ -56,4 +56,55 @@ describe('controlled assessment capture migration contract', () => {
     expect(sql).toContain('REVOKE ALL ON FUNCTION sentinel_private.open_assessment_event(uuid) FROM PUBLIC');
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.submit_assessment_attempt(uuid) TO sentinel_learner_runtime');
   });
+  it('requires verified identity and active organisation assessment authority inside every privileged operation', async () => {
+    const sql = await readFile(migrationPath, 'utf8');
+    const functions = [
+      'open_assessment_event',
+      'create_assessment_attempt',
+      'capture_assessment_response',
+      'submit_assessment_attempt',
+    ];
+    for (const name of functions) {
+      const start = sql.indexOf(`CREATE FUNCTION sentinel_private.${name}`);
+      expect(start, `${name} function must exist`).toBeGreaterThanOrEqual(0);
+      const next = sql.indexOf('CREATE FUNCTION sentinel_private.', start + 1);
+      const body = sql.slice(start, next < 0 ? sql.length : next);
+      expect(body).toContain('SECURITY DEFINER');
+      expect(body).toContain('sentinel_private.current_user_id()');
+      expect(body).toContain('sentinel_private.can_access_assessment_data(');
+      expect(body).toContain('Authentication required');
+    }
+  });
+
+  it('serializes event and attempt transitions to prevent concurrent duplicate lifecycle changes', async () => {
+    const sql = await readFile(migrationPath, 'utf8');
+    expect(sql.match(/FROM public\\.assessment_events AS event_record[\\s\\S]*?FOR UPDATE/g)).toHaveLength(2);
+    expect(sql).toContain('FROM public.assessment_attempts AS attempt');
+    expect(sql).toContain('FOR UPDATE');
+    expect(sql).toContain('assessment_attempts_event_enrolment_attempt_unique');
+  });
+
+  it('keeps captured responses immutable and makes all four lifecycle operations auditable', async () => {
+    const sql = await readFile(migrationPath, 'utf8');
+    expect(sql).toContain('BEFORE UPDATE OR DELETE ON public.assessment_responses');
+    expect(sql).toContain('Captured assessment responses are append-only');
+    for (const action of ['assessment.event_opened', 'assessment.attempt_created', 'assessment.response_captured', 'assessment.attempt_submitted']) {
+      expect(sql).toContain(`'${action}'`);
+    }
+  });
+
+  it('grants runtime execution only on the four narrow lifecycle functions', async () => {
+    const sql = await readFile(migrationPath, 'utf8');
+    for (const signature of [
+      'open_assessment_event(uuid)',
+      'create_assessment_attempt(uuid, uuid)',
+      'capture_assessment_response(uuid, uuid, jsonb)',
+      'submit_assessment_attempt(uuid)',
+    ]) {
+      expect(sql).toContain(`REVOKE ALL ON FUNCTION sentinel_private.${signature} FROM PUBLIC`);
+      expect(sql).toContain(`GRANT EXECUTE ON FUNCTION sentinel_private.${signature} TO sentinel_learner_runtime`);
+    }
+    expect(sql).not.toMatch(/GRANT\\s+(?:ALL|INSERT|UPDATE|DELETE)[^;]*assessment_(?:events|attempts|responses)/i);
+  });
+
 });
