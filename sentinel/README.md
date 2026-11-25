@@ -35,6 +35,13 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 - [Assessment Evidence Audit](docs/ASSESSMENT_EVIDENCE_AUDIT.md)
 - [KICD Curriculum Alignment Register](docs/CURRICULUM_ALIGNMENT_REGISTER.md)
 
+## Governance, data and implementation design
+
+- [Role & Permission Matrix](docs/ROLE_PERMISSION_MATRIX.md)
+- [Canonical Data Ownership & Dictionary](docs/CANONICAL_DATA_OWNERSHIP_AND_DICTIONARY.md)
+- [UX Navigation & User Journeys](docs/UX_NAVIGATION_AND_USER_JOURNEYS.md)
+- [API & Data Exchange Architecture](docs/API_AND_DATA_EXCHANGE_ARCHITECTURE.md)
+
 ## Engineering workflow
 
 1. Review the original product brief, source records, KICD curriculum editions and institutional workflows.
