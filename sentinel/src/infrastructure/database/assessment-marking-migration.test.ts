@@ -25,7 +25,7 @@ describe('assessment marking and result migration contract', () => {
 
   it('requires verified identity, organisation authority and serialized attempt marking', async () => {
     const sql = await readFile(migrationPath, 'utf8');
-    for (const name of ['close_assessment_event', 'record_assessment_mark', 'finalize_assessment_marking']) {
+    for (const name of ['void_assessment_attempt', 'close_assessment_event', 'record_assessment_mark', 'finalize_assessment_marking']) {
       const start = sql.indexOf(`CREATE FUNCTION sentinel_private.${name}`);
       expect(start, `${name} must exist`).toBeGreaterThanOrEqual(0);
       const next = sql.indexOf('CREATE FUNCTION sentinel_private.', start + 1);
@@ -37,6 +37,13 @@ describe('assessment marking and result migration contract', () => {
     }
     expect(sql).toContain('FROM public.assessment_attempts AS attempt');
     expect(sql).toContain('FOR UPDATE');
+  });
+
+  it('voids incomplete attempts only after the event ends and requires a reason', async () => {
+    const sql = await readFile(migrationPath, 'utf8');
+    expect(sql).toContain('A reason is required to void an assessment attempt');
+    expect(sql).toContain("v_attempt.status <> 'in_progress'");
+    expect(sql).toContain('assessment.attempt_voided');
   });
 
   it('closes events only after the end time and after active attempts are submitted or voided', async () => {
@@ -71,6 +78,7 @@ describe('assessment marking and result migration contract', () => {
   it('grants runtime access only through the three controlled operations', async () => {
     const sql = await readFile(migrationPath, 'utf8');
     for (const signature of [
+      'void_assessment_attempt(uuid, text)',
       'close_assessment_event(uuid)',
       'record_assessment_mark(uuid, uuid, numeric, text, uuid)',
       'finalize_assessment_marking(uuid)',
