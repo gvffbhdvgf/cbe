@@ -61,7 +61,7 @@ export async function withAuthenticatedLearnerDb<T>(
   work: (tx: LearnerTransaction) => Promise<T>,
 ): Promise<T> {
   if (!process.env.DATABASE_AUTHENTICATED_URL) {
-    throw new Error('DATABASE_AUTHENTICATED_URL is not configured');
+    throw new LearnerRlsUnavailableError();
   }
 
   const claims = await getVerifiedClaims(actorUserId);
