@@ -43,7 +43,7 @@ The target platform includes institution/school management; learner identity, ad
 ## Current security boundary
 
 - `sentinel_learner_runtime` is a NOLOGIN, NOBYPASSRLS, non-privileged database group role.
-- `sentinel_learner_login` is the development login role and inherits the group role. It has only SELECT/INSERT on explicitly approved learner/audit tables; no UPDATE or DELETE.
+- `sentinel_learner_login` is the development login role and inherits the group role. It has only SELECT/INSERT on explicitly approved learner, class and audit tables; no general UPDATE or DELETE.
 - Learner operations must use `DATABASE_AUTHENTICATED_URL`, never the privileged `DATABASE_URL`.
 - The runtime login has no general UPDATE/DELETE privileges; initial class placement is exposed only through the narrowly validated SECURITY DEFINER function.
 - Server-side membership/organisation preflight still uses the existing privileged application connection. Keep its use narrow.

@@ -4,7 +4,7 @@
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
 **Latest implementation commit:** `df62faac06247b76352b4a8d4169323911448616`  
-**Latest documentation checkpoint:** `bd24bea4fc26acfb558025b8b38e7c6dbc75e6ec`
+**Latest documentation checkpoint:** `b61ec0b1a24bce27388184900acfd332dc1ee2ef`
 
 ## 1. Application and dependencies
 
