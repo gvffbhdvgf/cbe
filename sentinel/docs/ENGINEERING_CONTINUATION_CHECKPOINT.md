@@ -3,119 +3,114 @@
 **Date:** 25 November 2026  
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
-**Checkpoint commit:** `527648eda671532e4870833255323b4a8fc29834`  
-**Scope:** Current implementation and verified engineering state; this document supersedes older statements that the project contains no application code.
+**Base commit inspected:** `e2507ec687e11e8e43f6ebdd99340fe33ff83782`
 
-## 1. Current repository state
+## 1. Application and dependencies
 
-The branch contains an application foundation and engineering documentation under `sentinel/`. The latest inspected pre-checkpoint tree contained 91 files. The project is a Next.js App Router modular monolith with TypeScript, React, Neon Auth, Neon PostgreSQL, Drizzle ORM and Vitest.
-
-### Dependency baseline
+Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Neon Managed Auth, Neon PostgreSQL 17, Drizzle ORM, the Neon serverless Pool driver and Vitest.
 
 | Package | Declared version |
 |---|---:|
 | Next.js | 16.4.6 |
 | React / React DOM | 19.3.0 |
-| TypeScript | ^5 |
 | `@neon/auth` | ^0.8.2 |
 | `@neondatabase/serverless` | ^1.2.1 |
 | Drizzle ORM | ^0.45.4 |
+| `jose` | 6.2.5 |
 | Vitest | ^4.1.12 |
+| TypeScript | ^5 |
 | ESLint | ^9 |
-| Tailwind CSS | 4.3.3 |
 
-The lockfile is `package-lock.json`. CI uses Node.js 22 and `npm ci`.
+CI uses Node.js 22 and `npm ci`.
 
 ## 2. Implemented capabilities
 
-- Managed Neon Auth sign-in entry point; public self-service registration remains disabled.
-- Organisation onboarding and organisation-scoped membership administration, including role boundaries and audit events.
-- Tenant-scoped learner identity, learner profiles, classes, enrolments, guardian relationship and progression-event schema.
-- Learner registration/list API and an administrator-facing learner register.
-- Source-linked KICD Grades 1–9 curriculum catalogue and authenticated curriculum browser.
-- Curriculum source, edition, pathway and grade-offering provenance.
-- Curriculum document staging for hierarchical source headings, with review and rights status kept explicit.
-- Migration journal checker and a development-only migration runner that restricts the target to the approved `sentinel-development` Neon endpoint.
-- CI workflow for lint, typecheck, tests and production build.
+- Managed Neon Auth sign-in; public self-service registration remains disabled.
+- Organisation onboarding and organisation-scoped membership administration.
+- Tenant-scoped learner identity, profiles, classes, enrolments, guardian relationship and progression-event schema.
+- Learner admission/list service and administrator-facing register.
+- Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance and curriculum document staging.
+- Audit events and development-only migration runner restricted to the approved `sentinel-development` Neon endpoint.
+- PostgreSQL RLS foundation for learner/person/enrolment/class/progression/guardian/audit records (migration 0008).
+- Server-side Neon Auth JWT verification with JWKS and issuer checks, transaction-local claims and a database-side identity assertion for learner operations.
 
-## 3. Curriculum catalogue state
+## 3. Learner RLS and identity boundary
 
-The development catalogue seed records 12 KICD source records, two catalogue editions, nine pathway records, 20 canonical learning-area labels and 120 grade offerings.
+The development database already contained a partially configured RLS state that was not represented in the repository migration journal. This drift has been reconciled by adding and applying migration 0008.
 
-- Regular curriculum offerings are source-linked for Grades 1–9.
-- The Indigenous Language lower-primary discrepancy is explicitly flagged; it is not treated as a confirmed curriculum-design offering.
-- Adapted SNE pathways are catalogued, but grade-level learning-area offerings are not inferred without source validation.
-- One Grade 6 CRE design PDF is staged. Its file label indicates April 2024 while the cover says first published in 2021. Edition/currentness and rights review remain pending.
-- Five strand headings and 22 sub-strand headings are staged as catalogue headings only. Full outcomes and learning experiences have not been approved or ingested.
+- `sentinel_learner_runtime` is NOLOGIN, NOBYPASSRLS and non-privileged.
+- `sentinel_learner_login` is a development login role inheriting the group role.
+- The login has SELECT/INSERT only on explicitly approved learner/audit tables; no UPDATE or DELETE.
+- Learner service reads and admission writes use a dedicated Neon WebSocket Pool/Drizzle transaction through `DATABASE_AUTHENTICATED_URL`.
+- The application obtains a Neon Auth JWT, verifies it against configured JWKS and issuer, and requires the JWT subject to match the authenticated session user ID.
+- Verified claims are installed using transaction-local `set_config('request.jwt.claims', ..., true)`; the database checks `sentinel_private.current_user_id()` before learner queries.
+- The restricted database role cannot bypass RLS. Unauthorised/no-membership contexts return no learner rows and are denied by policy.
+- Important limitation: the extension's fallback `request.jwt.claims` mode does not independently validate JWT signatures. Application-side JWKS verification is mandatory; do not expose the role to untrusted SQL.
 
-The Grade 6 assessment evidence discrepancy remains unresolved: category totals report 1,406, while conflicting cluster tables report 1,408 and 1,405. Do not silently reconcile these values.
+The privileged `DATABASE_URL` remains for organisation/membership preflight and administrative operations. Learner record reads/writes must not use it.
 
-## 4. Learner and organisation state
+## 4. Development database state
 
-Migration journal entries `0000` through `0007` are present (eight migrations). The learner migration adds people, learner profiles, classes, enrolments, guardian relationships and progression events with tenant-scoped composite constraints.
+Neon project: `sentinel-platform`; development branch: `sentinel-development`; database: `sentinel`.
 
-The learner register currently supports admission and listing. The development migration was previously applied and the six learner tables were verified empty at that checkpoint. No live learner import is approved.
+Migration journal entries 0000–0008 are present (nine migrations). Migration 0008 is recorded in `public.__drizzle_migrations` with SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`.
 
-Still outstanding:
-- Authenticated end-to-end tests with a governed institutional test account.
-- Cross-tenant integration tests and PostgreSQL row-level security design/implementation.
-- Class creation, learner placement and assignment.
-- Transfer, progression, withdrawal and academic-year rollover workflows.
-- Guardian verification and controlled guardian access.
-- Learner updates/exits and correction history.
-- Workforce/teacher records and assignments.
+The restricted login was tested through Neon SQL transactions:
+- Synthetic claims resolve to the expected database identity.
+- A user with no active membership is denied by the authority helper.
+- The restricted role has SELECT/INSERT on approved tables and no UPDATE/DELETE.
+- No people or learner rows were visible to the unauthorised synthetic identity.
 
-## 5. Verification
+Positive authenticated workflow with a governed institutional test account and a cross-tenant two-organisation integration test remain outstanding. No live learner or guardian data has been imported.
 
-A fresh cloud validation checkout was created from the current GitHub branch at commit `3fa6a1f204cf69dc3a0157b22a3a7e85269c250c`. The older sandboxes were not reset or overwritten.
+## 5. Validation baseline
+
+A clean cloud checkout was created from the current GitHub branch; older ephemeral sandboxes were preserved.
 
 | Check | Result |
 |---|---|
-| Clean `npm ci` | Passed; 0 vulnerabilities reported |
-| `npm run db:check` | Passed; eight migrations valid |
-| `npm run lint` | Passed |
+| Clean `npm ci` | Passed; zero vulnerabilities reported |
+| `npm run db:check` | Passed; nine migrations valid |
 | `npm run typecheck` | Passed |
-| `npm test` | Passed; 19 tests across four files |
-| `npm run build` | Passed with isolated build-only placeholders |
-| `npm audit --audit-level=low` | Passed; 0 vulnerabilities |
+| `npm run lint` | Passed on baseline; rerun after final GitHub sync |
+| `npm test` | Passed; 31 tests across six files |
+| `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
-The first isolated build attempt correctly failed because the sandbox had no `NEON_AUTH_COOKIE_SECRET` and `DATABASE_URL`. Supplying non-production placeholders for `NEON_AUTH_BASE_URL`, `NEON_AUTH_COOKIE_SECRET` and `DATABASE_URL` allowed the production build to complete without a database connection.
+JWT tests cover missing/malformed token, signature, issuer, expiry, UUID subject and session-subject mismatch. Migration contract tests cover the journal, role constraints, RLS enable/force and absence of DELETE grants.
 
-The CI workflow was updated in commit `527648eda671532e4870833255323b4a8fc29834` to supply those placeholders to the build step only. They must never be used to run the application or connect to any real service. No production credentials were added. Hosted GitHub Actions status for this latest commit has not yet been independently confirmed.
+Clean install still reports a non-blocking peer-version warning in the Neon Auth dependency tree and an ESLint deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
 
-Non-blocking dependency observations from clean install:
-- npm reports a peer-version warning: `@neon/auth` resolves `@better-fetch/fetch@1.3.2`, while a nested OAuth provider requests peer `1.3.3`.
-- npm marks ESLint 9.39.5 as deprecated/unsupported.
-- The security audit reports zero known vulnerabilities. Investigate compatibility before applying overrides or upgrading major tooling.
+## 6. Vercel environment blocker
 
-## 6. Cloud sandbox preservation
+The Vercel project `sentinel-platform` exists but is not connected to a Git repository. The team deployment context lists no linked Sentinel project, and the project has no custom environments. Vercel rejected creation of a branch-scoped Preview variable `DATABASE_AUTHENTICATED_URL` because no Git repository is connected.
 
-Two older ephemeral sandboxes were found to contain stale repository snapshots:
-- `sentinel-build-validation` contains a unique unpushed commit and, after fetching, is 13 commits behind the current remote branch. Do not push or reset it.
-- `sentinel-cloud-dev` contains uncommitted work and an older migration set. Do not reset or overwrite it.
+Do not broaden the restricted connection to every Preview or Production. Resolve the intended Git integration/project linkage first, then add the restricted connection as a sensitive Preview-only variable scoped to `sentinel/bootstrap`. No Production environment variable or deployment was changed.
 
-A separate fresh checkout named `sentinel-current` was used for the validation above. The original sandboxes were preserved.
+## 7. Curriculum evidence and outstanding work
 
-## 7. Environment and release guardrails
+- Regular curriculum offerings are source-linked for Grades 1–9.
+- Indigenous Language lower-primary discrepancy remains flagged.
+- SNE grade-level offerings are not inferred without source validation.
+- Grade 6 CRE source edition/currentness and rights review remain pending.
+- Five strand and 22 sub-strand headings are staged; detailed outcomes/learning experiences are not yet approved or ingested.
+- Grade 6 assessment discrepancy remains unresolved: category total 1,406 versus cluster tables 1,408 and 1,405.
 
-- Keep all application work inside `sentinel/`.
-- Use separate local/development/preview/production credentials and databases.
-- Never commit secrets or copy provider credentials into GitHub, Notion, logs or chat.
+Next sequence:
+1. Resolve Vercel Git integration and branch-scoped Preview secret configuration.
+2. Run positive/negative cross-tenant tests through the actual Neon Auth → Next.js → Pool transaction path.
+3. Implement class creation and learner placement with tenant/authority validation.
+4. Add learner corrections, transfers, exits, progression approval and year rollover.
+5. Implement verified guardian access and safeguarding controls.
+6. Continue detailed KICD outcomes only from verified source editions with provenance, rights and specialist review.
+7. Complete authenticated end-to-end, privacy, security, accessibility and performance validation before any live learner pilot.
+
+## 8. Non-negotiable guardrails
+
+- Keep all work under `sentinel/`.
+- Preserve old sandboxes; use fresh cloud checkouts.
+- Keep local, development, Preview and Production credentials/data separate.
 - Never run development migrations against Production.
-- Vercel automatic deployments remain controlled; do not enable deployment on every commit or trigger production releases.
+- No automatic deployment on every commit or uncontrolled Production release.
+- Do not import identifiable learner data before legal, privacy, safeguarding and DPIA approvals.
 - Do not provision paid/persistent infrastructure or incur new service costs without approval.
-- Do not import identifiable learner data until governance, privacy, safeguarding and DPIA gates are satisfied.
-
-## 8. Next engineering sequence
-
-1. Reconcile this checkpoint with the Notion handoff and keep the README index accurate.
-2. Inspect the tenancy/authority model and the Neon Auth request-to-database identity path before designing PostgreSQL RLS. The current serverless database connection must not be assumed to enforce RLS automatically.
-3. Add cross-tenant negative integration tests and verify the role/scope checks for learner and membership APIs.
-4. Implement class creation and learner placement only after tenant and school authority boundaries are confirmed.
-5. Implement transfer/progression and guardian workflows with auditable state transitions.
-6. Continue detailed KICD outcome ingestion only from source documents with verified edition, provenance, rights and curriculum-specialist review.
-7. Complete authenticated end-to-end verification, then maintain controlled Preview/release checks.
-
-## 9. External source brief
-
-The original external Notion implementation brief has not been recovered. Searching the connected Notion workspace surfaced the Sentinel blueprint, requirements, handoff, security and architecture pages, but not the external brief. Requirements that depend on it remain provisional until an authorised share/export route is available.
+- Keep GitHub and Notion checkpoints synchronized.

@@ -28,6 +28,7 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 - [Domain Model & Core Workflows](docs/DOMAIN_MODEL_AND_WORKFLOWS.md)
 - [Release Roadmap](docs/RELEASE_ROADMAP.md)
 - [ADR-001 — Tenant Boundary & Data Isolation](docs/ADR-001-TENANCY-AND-DATA-ISOLATION.md)
+- [ADR-002 — Learner Record RLS & Identity Context](docs/ADR-002-LEARNER-RECORD-RLS.md)
 - [Security & Privacy Threat Model](docs/SECURITY_PRIVACY_THREAT_MODEL.md)
 - [Product Requirements](docs/PRODUCT_REQUIREMENTS.md)
 - [Architecture](docs/ARCHITECTURE.md)
@@ -60,9 +61,15 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 
 ## Current status
 
-Discovery, conceptual domain model, workflow, privacy/security threat model and dependency-aware release sequencing are documented on the sentinel/bootstrap branch. The application now includes a managed-auth sign-in entry point, administrator-gated organisation onboarding, organisation-scoped membership management, a tenant-scoped learner register and enrolment foundation, audit events, a source-linked KICD Grades 1–9 regular curriculum catalogue (120 grade offerings including one flagged source discrepancy), and a registered SNE pathway catalogue. The stable Preview alias has passed anonymous route checks for health, sign-in, organisation APIs and protected workspace redirects. Successful authenticated sign-in, first administrator provisioning, authenticated member/learner workflow tests, cross-tenant integration tests, class management, transfer and guardian workflows, detailed curriculum outcome ingestion, PostgreSQL RLS, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a finished production system.
+Discovery, domain modelling, security/privacy design and the first application vertical slices are implemented. The application includes managed authentication, organisation onboarding and membership administration, audit events, learner admission/listing, and source-linked KICD Grades 1–9 regular curriculum and SNE pathway catalogues.
 
-See the project handoff in Notion for continuity and cloud infrastructure status.
+**Learner-record database isolation is implemented on the isolated Neon development branch.** Migration 0008 enables and forces PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit tables. Learner reads and writes use a restricted database login inheriting the non-login `sentinel_learner_runtime` role. The server obtains a Neon Auth JWT, verifies it against the configured JWKS and issuer, checks that its subject matches the authenticated session, then establishes transaction-local claims and confirms the database identity before learner queries. The restricted role has no UPDATE or DELETE privileges.
+
+The restricted connection variable `DATABASE_AUTHENTICATED_URL` is not yet configured in Vercel: the `sentinel-platform` project has no connected Git repository, so Vercel rejected creation of a branch-scoped Preview variable. Do not widen this secret to all Preview deployments or Production as a workaround. Until the correct Preview configuration is available, RLS-backed learner operations fail closed.
+
+The current test suite has 31 passing tests. Authenticated end-to-end tests with a governed institutional test account, positive/negative cross-tenant integration tests, class creation and placement, transfer/progression, guardian verification, full KICD outcome ingestion, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a production-ready system.
+
+See [PROJECT_STATUS.md](PROJECT_STATUS.md) and [Engineering Continuation Checkpoint](docs/ENGINEERING_CONTINUATION_CHECKPOINT.md) for the current handoff.
 
 ## Cloud-first working mode
 
@@ -70,7 +77,7 @@ Use GitHub, Notion, Vercel, Neon, Cloudflare and other connected plugins directl
 
 ## Configuration and secrets
 
-Never commit .env files, API tokens, private keys, database passwords, email credentials or other secrets. Commit only a sanitised .env.example containing variable names and safe placeholders.
+Never commit .env files, API tokens, private keys, database passwords, email credentials or other secrets. Commit only a sanitised .env.example containing variable names and safe placeholders. `DATABASE_URL` is the privileged application/administrative connection; learner-record queries must use the restricted `DATABASE_AUTHENTICATED_URL` connection so PostgreSQL RLS applies.
 
 - [Implementation Foundation & Cloud Resource Status](docs/IMPLEMENTATION_FOUNDATION.md)
 - [Database Migration Operations](docs/DATABASE_MIGRATIONS.md)
@@ -84,7 +91,7 @@ The current application foundation includes a public introduction, managed authe
 
 ## Cloud resources
 
-- Vercel project: `sentinel-platform` (controlled releases; automatic preview deployments disabled).
+- Vercel project: `sentinel-platform` (controlled releases; automatic deployments disabled for `sentinel/bootstrap`). The project is not currently connected to a Git repository; branch-scoped Preview secret configuration is blocked.
 - Neon PostgreSQL 17 project: `sentinel-platform`, Frankfurt region. Main branch is reserved for the stable environment; `sentinel-development` is an isolated development branch.
 - Neon Auth: Managed Better Auth enabled; public sign-up disabled; institutional accounts must be provisioned.
 - Private Neon Object Storage buckets: `sentinel-quarantine`, `sentinel-private`, `sentinel-exports`.

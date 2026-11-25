@@ -125,3 +125,16 @@ The current API can grant access only to an existing verified, active Neon Auth 
 - Jobs and exports enforce the same scope as interactive requests.
 - Privileged and break-glass access is audited.
 - No role accidentally grants global learner access.
+
+
+## 4. Implemented learner-record database boundary (development)
+
+The first learner vertical slice now has a database-enforced boundary in the isolated Neon development branch:
+
+| Database role | Login | RLS bypass | Current purpose |
+|---|---:|---:|---|
+| `sentinel_owner` | Yes | Yes | Existing privileged application/admin and migration operations; must not be used for learner-record reads/writes |
+| `sentinel_learner_runtime` | No | No | Group role targeted by learner RLS policies |
+| `sentinel_learner_login` | Yes | No | Development login inheriting `sentinel_learner_runtime` |
+
+The restricted login currently receives SELECT/INSERT only on people, learner profiles, classes (SELECT), learner enrolments, progression events (INSERT) and audit events (INSERT). Guardian relationships remain denied until verified guardian workflows are implemented. UPDATE and DELETE are not granted. Platform administrators and active organisation/school administrators are checked by the security-definer authority helper; the UI role matrix above remains a proposed broader platform model and does not grant capabilities that are not implemented.
