@@ -149,7 +149,12 @@ export async function recordAssessmentMarkCorrection(
       ${attemptId}::uuid, ${taskId}::uuid, ${awardedScore}::numeric,
       ${markerNote}::text, ${supersedesMarkId}::uuid
     ) AS mark_id`);
-    return result.rows[0]?.mark_id;
+    const markId = result.rows[0]?.mark_id as string | undefined;
+    if (!markId) return null;
+    const mark = await tx.execute(sql`SELECT id AS mark_id, mark_version, awarded_score, marked_at
+      FROM public.assessment_response_marks
+      WHERE id = ${markId}::uuid AND organisation_id = ${organisationId}::uuid`);
+    return mark.rows[0] ?? null;
   });
 }
 
