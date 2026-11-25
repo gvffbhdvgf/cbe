@@ -61,7 +61,7 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 
 ## Current status
 
-Discovery, domain modelling, security/privacy design and the first application vertical slices are implemented. The application includes managed authentication, organisation onboarding and membership administration, audit events, learner admission/listing, organisation-specific class creation/listing, and source-linked KICD Grades 1–9 regular curriculum and SNE pathway catalogues.
+Discovery, domain modelling, security/privacy design and the first application vertical slices are implemented. The application includes managed authentication, organisation onboarding and membership administration, audit events, learner admission/listing, organisation-specific class creation/listing, controlled learner placement, and source-linked KICD Grades 1–9 regular curriculum and SNE pathway catalogues.
 
 **Learner-record database isolation is implemented on the isolated Neon development branch.** Migration 0008 enables and forces PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit tables. Learner reads and writes use a restricted database login inheriting the non-login `sentinel_learner_runtime` role. The server obtains a Neon Auth JWT, verifies it against the configured JWKS and issuer, checks that its subject matches the authenticated session, then establishes transaction-local claims and confirms the database identity before learner queries. The restricted role has no UPDATE or DELETE privileges.
 

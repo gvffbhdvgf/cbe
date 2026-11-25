@@ -28,9 +28,9 @@ Do not configure both email providers by default. Choose one after defining noti
 
 ## Learner data isolation
 
-- Migration 0008 enables and forces RLS on `people`, `learner_profiles`, `classes`, `learner_enrolments`, `guardian_relationships`, `learner_progression_events` and `audit_events`.
+- Migrations 0008–0010 enable and force RLS on `people`, `learner_profiles`, `classes`, `learner_enrolments`, `guardian_relationships`, `learner_progression_events` and `audit_events`.
 - `sentinel_learner_runtime` is a NOLOGIN, NOBYPASSRLS group role. Environment-specific login roles inherit it.
-- The development login `sentinel_learner_login` has explicit SELECT/INSERT privileges only on approved learner/audit tables and class groups. It has no UPDATE or DELETE privileges. Class INSERT is restricted by a tenant- and administrator-scoped RLS policy.
+- The development login `sentinel_learner_login` has explicit SELECT/INSERT privileges only on approved learner/audit tables and class groups. It has no general UPDATE or DELETE privileges. Class INSERT is restricted by a tenant- and administrator-scoped RLS policy. Initial learner placement is exposed only through EXECUTE on `sentinel_private.assign_learner_to_class`; the SECURITY DEFINER function validates actor authority, active enrolment, tenant, grade, academic year, class status and effective date before updating `class_id` and writing progression/audit events.
 - Learner operations must use `DATABASE_AUTHENTICATED_URL`; do not route them through the privileged `DATABASE_URL`.
 - The server obtains a Neon Auth access JWT, verifies it against the configured JWKS and issuer, checks the subject against the authenticated session, then sets claims transaction-locally inside the same database transaction.
 - The transaction checks `sentinel_private.current_user_id()` before executing learner work. Any mismatch aborts the transaction.
