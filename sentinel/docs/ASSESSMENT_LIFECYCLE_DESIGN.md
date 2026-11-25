@@ -1,6 +1,6 @@
 # Sentinel — Assessment Lifecycle Design
 
-**Status:** Architecture proposal for the next implementation milestone; not yet implemented.
+**Status:** Partially implemented foundation. Domain contracts, migration 0012, assessment RLS and a read-only events API are implemented; controlled write workflows remain pending.
 **Scope:** First vertical slice for internal school-based assessment. Inter-school, zonal and external assessment exchange follow after the core lifecycle and governance contracts are proven.
 
 ## 1. Current repository and database facts
@@ -73,12 +73,13 @@ Defer:
 
 ## 6. Implementation sequence and exit criteria
 
-1. **Domain contracts:** Define event, instrument, attempt, result and state-transition invariants in pure TypeScript with unit tests.
-2. **Database schema and migration:** Add relational tables, composite tenant/grade/year foreign keys, uniqueness constraints, indexes and RLS. Apply only to the isolated development branch first.
-3. **Application use cases:** Event creation, instrument versioning, attempt capture, marking, moderation, approval and publication. No direct client writes.
-4. **API and UI:** Build authorised workflows with server-side scope checks, clear validation feedback and accessible forms.
-5. **Synthetic integration tests:** Exercise two tenants, two schools, mismatched grade/year, duplicate attempts, stale instrument versions, unapproved outcomes, correction history and RLS denial.
-6. **Reporting:** Reconcile eligible, participating, submitted, valid and approved denominators against source attempts.
+1. **Domain contracts — implemented:** Event/attempt lifecycle, enrolment scope, scoring and immutability contracts have 13 focused unit tests.
+2. **Database schema and migration — implemented on development:** Migration 0012 adds nine relational tables, composite tenant/grade/year/instrument/enrolment constraints, forced RLS, approved-outcome mapping validation, append-only result/decision history and instrument locking. The runtime role is read-only.
+3. **Read API — implemented:** GET /api/organisations/{organisationId}/assessments/events has both application role preflight and database RLS. Only platform administrators, organisation administrators, school administrators and assessors may read assessment data; teachers/viewers remain denied pending class assignment modelling.
+4. **Controlled application use cases — pending:** Event creation, instrument versioning, attempt capture, marking, moderation, approval and publication. No direct client writes.
+5. **API and UI — pending:** Build authorised workflows with server-side scope checks, clear validation feedback and accessible forms.
+6. **Synthetic integration tests — pending:** Exercise two tenants, two schools, mismatched grade/year, duplicate attempts, stale instrument versions, unapproved outcomes, correction history and RLS denial.
+7. **Reporting — pending:** Reconcile eligible, participating, submitted, valid and approved denominators against source attempts.
 
 Exit only when every published result can be traced to learner enrolment, assessment event, immutable instrument/scoring version, curriculum mapping status, marking evidence and approval history, and cross-tenant negative tests pass.
 
