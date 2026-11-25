@@ -3,9 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-type Props = { organisationId: string; attemptId: string; attemptStatus: string; eventEndsAt: string };
+type Props = { organisationId: string; attemptId: string; attemptStatus: string };
 
-export function AssessmentAttemptVoidControl({ organisationId, attemptId, attemptStatus, eventEndsAt }: Props) {
+export function AssessmentAttemptVoidControl({ organisationId, attemptId, attemptStatus }: Props) {
   const router = useRouter();
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
