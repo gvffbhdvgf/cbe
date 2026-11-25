@@ -141,3 +141,16 @@ New verified design documents:
 - RELEASE_ROADMAP.md — dependency-aware vertical release sequence and pilot scorecard.
 
 All four files are present on sentinel/bootstrap. Notion handoff has corresponding discovery, domain, security and roadmap updates. No application code, production schema, live-data import, cloud resource or production deployment has been created.
+
+
+## 25 November 2026 — Next engineering priorities completed as design artifacts
+
+Created on sentinel/bootstrap:
+- [ROLE_PERMISSION_MATRIX.md](docs/ROLE_PERMISSION_MATRIX.md) — candidate roles, resource/action/scope model, separation of duties and pilot security tests.
+- [CANONICAL_DATA_OWNERSHIP_AND_DICTIONARY.md](docs/CANONICAL_DATA_OWNERSHIP_AND_DICTIONARY.md) — domain ownership, conceptual entity dictionary, identifier strategy, effective dating and provenance.
+- [UX_NAVIGATION_AND_USER_JOURNEYS.md](docs/UX_NAVIGATION_AND_USER_JOURNEYS.md) — role-aware navigation, critical journeys, accessibility and prototype test plan.
+- [API_AND_DATA_EXCHANGE_ARCHITECTURE.md](docs/API_AND_DATA_EXCHANGE_ARCHITECTURE.md) — API boundaries, import/export lifecycle, idempotency, integrations, file controls and resilience tests.
+
+These are proposed baselines for institutional validation, not approved permissions, a production schema, final UX, or deployed endpoints. No application code, database, cloud resource, live learner data import or deployment was created.
+
+Next gates: reconcile the original external implementation brief; validate authority hierarchy and role powers with stakeholders; confirm data owners and identifiers; test priority journeys with representative users; approve privacy/DPIA and tenant boundary; then derive a physical schema and implementation slices.
