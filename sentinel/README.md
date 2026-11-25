@@ -91,3 +91,8 @@ The current application foundation includes a public introduction, managed authe
 - Upstash Box: ephemeral development sandbox; do not store production secrets or live learner records in it.
 
 No production schema migration, live learner import, public object access or production deployment has been performed. The organisation schema has been applied only to the isolated development branch and remains subject to tenancy/data-controller review before production use.
+
+
+## Deployment control
+
+Automatic Git-triggered Vercel deployments are disabled for `sentinel/bootstrap` in [vercel.json](vercel.json). GitHub CI continues to validate commits; Preview and Production deployments must be initiated deliberately after the required checks and environment approvals. This setting does not disable manual, controlled deployments.
