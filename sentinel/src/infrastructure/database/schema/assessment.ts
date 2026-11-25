@@ -1,9 +1,9 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid, varchar, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { boolean, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid, varchar, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
 import { curriculumLearningAreas, curriculumSourceNodes } from './curriculum';
-import { learnerEnrolments } from './learner';
+import { classes, learnerEnrolments, learnerProfiles } from './learner';
 
 export const assessmentProgrammes = pgTable('assessment_programmes', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -117,6 +117,32 @@ export const assessmentEvents = pgTable('assessment_events', {
   unique('assessment_events_scope_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear),
 ]);
 
+export const assessmentEventEligibleEnrolments = pgTable('assessment_event_eligible_enrolments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  eventId: uuid('event_id').notNull(),
+  enrolmentId: uuid('enrolment_id').notNull(),
+  learnerId: uuid('learner_id').notNull(),
+  classId: uuid('class_id'),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  grade: integer('grade').notNull(),
+  learningAreaId: uuid('learning_area_id').notNull(),
+  academicYear: integer('academic_year').notNull(),
+  eligibilityDate: date('eligibility_date').notNull(),
+  snapshotAt: timestamp('snapshot_at', { withTimezone: true }).notNull().defaultNow(),
+  snapshotBy: uuid('snapshot_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+}, (table) => [
+  check('assessment_event_roster_grade_check', sql`${table.grade} BETWEEN 1 AND 9`),
+  check('assessment_event_roster_year_check', sql`${table.academicYear} BETWEEN 2000 AND 2100`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.eventId, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear], foreignColumns: [assessmentEvents.tenantOrganisationId, assessmentEvents.organisationId, assessmentEvents.id, assessmentEvents.instrumentVersionId, assessmentEvents.grade, assessmentEvents.learningAreaId, assessmentEvents.academicYear], name: 'assessment_event_roster_event_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.enrolmentId, table.grade, table.academicYear], foreignColumns: [learnerEnrolments.tenantOrganisationId, learnerEnrolments.organisationId, learnerEnrolments.id, learnerEnrolments.grade, learnerEnrolments.academicYear], name: 'assessment_event_roster_enrolment_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.learnerId], foreignColumns: [learnerProfiles.tenantOrganisationId, learnerProfiles.id], name: 'assessment_event_roster_learner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.classId, table.grade, table.academicYear], foreignColumns: [classes.tenantOrganisationId, classes.organisationId, classes.id, classes.grade, classes.academicYear], name: 'assessment_event_roster_class_fk' }).onDelete('restrict'),
+  unique('assessment_event_roster_scope_unique').on(table.tenantOrganisationId, table.organisationId, table.eventId, table.enrolmentId),
+  unique('assessment_event_roster_attempt_fk_key').on(table.tenantOrganisationId, table.organisationId, table.eventId, table.enrolmentId, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear),
+]);
+
 export const assessmentAttempts = pgTable('assessment_attempts', {
   id: uuid('id').defaultRandom().primaryKey(),
   tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
@@ -142,6 +168,7 @@ export const assessmentAttempts = pgTable('assessment_attempts', {
   unique('assessment_attempts_tenant_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
   unique('assessment_attempts_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.instrumentVersionId),
   unique('assessment_attempts_event_enrolment_attempt_unique').on(table.tenantOrganisationId, table.organisationId, table.eventId, table.enrolmentId, table.attemptNumber),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.eventId, table.enrolmentId, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear], foreignColumns: [assessmentEventEligibleEnrolments.tenantOrganisationId, assessmentEventEligibleEnrolments.organisationId, assessmentEventEligibleEnrolments.eventId, assessmentEventEligibleEnrolments.enrolmentId, assessmentEventEligibleEnrolments.instrumentVersionId, assessmentEventEligibleEnrolments.grade, assessmentEventEligibleEnrolments.learningAreaId, assessmentEventEligibleEnrolments.academicYear], name: 'assessment_attempts_eligible_roster_fk' }).onDelete('restrict'),
   index('assessment_attempts_event_status_idx').on(table.tenantOrganisationId, table.organisationId, table.eventId, table.status),
 ]);
 
