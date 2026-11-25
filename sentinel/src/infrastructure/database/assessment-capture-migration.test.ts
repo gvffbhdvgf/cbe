@@ -7,7 +7,7 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('controlled assessment capture migration contract', () => {
   it('registers the next additive migration', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(16);
+    expect(journal.entries).toHaveLength(17);
     expect(journal.entries[14]).toMatchObject({ idx: 14, tag: '0014_controlled_assessment_capture' });
   });
 
