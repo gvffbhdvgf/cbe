@@ -92,7 +92,7 @@ RETURNS timestamptz
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp
-AS $
+AS $$
 DECLARE
   v_actor_id uuid;
   v_attempt public.assessment_attempts%ROWTYPE;
