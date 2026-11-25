@@ -10,7 +10,7 @@ export function AssessmentAttemptVoidControl({ organisationId, attemptId, attemp
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  if (attemptStatus !== 'in_progress' || new Date(eventEndsAt).getTime() > Date.now()) return null;
+  if (attemptStatus !== 'in_progress') return null;
 
   async function voidAttempt() {
     setError('');
