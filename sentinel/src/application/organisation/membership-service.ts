@@ -8,7 +8,7 @@ function isOrganisationRole(value: string): value is OrganisationRole {
   return ['organisation_admin', 'school_admin', 'teacher', 'assessor', 'viewer'].includes(value);
 }
 
-async function getActorRole(userId: string, organisationId: string): Promise<ActorRole | null> {
+export async function getOrganisationActorRole(userId: string, organisationId: string): Promise<ActorRole | null> {
   const [platformAdmin] = await db.select({ userId: platformAdministrators.userId })
     .from(platformAdministrators)
     .where(and(eq(platformAdministrators.userId, userId), eq(platformAdministrators.status, 'active')))
@@ -32,7 +32,7 @@ async function getActorRole(userId: string, organisationId: string): Promise<Act
 }
 
 async function requireMemberManager(userId: string, organisationId: string): Promise<ActorRole> {
-  const role = await getActorRole(userId, organisationId);
+  const role = await getOrganisationActorRole(userId, organisationId);
   if (!role || !canManageMembers(role)) throw new Error('You do not have permission to manage this organisation\'s members');
   return role;
 }

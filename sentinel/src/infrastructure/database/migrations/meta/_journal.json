@@ -50,6 +50,13 @@
       "when": 1795638500000,
       "tag": "0006_curriculum_document_staging",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795639000000,
+      "tag": "0007_learner_records_tenant_scope",
+      "breakpoints": true
     }
   ]
 }
