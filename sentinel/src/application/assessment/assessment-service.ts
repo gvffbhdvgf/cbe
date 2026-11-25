@@ -201,3 +201,111 @@ export async function listAssessmentEvents(actorUserId: string, organisationId: 
     .where(eq(assessmentEvents.organisationId, organisationId))
     .orderBy(desc(assessmentEvents.startsAt), desc(assessmentEvents.createdAt)));
 }
+
+export async function getAssessmentEventResults(actorUserId: string, organisationId: string, eventId: string) {
+  const [organisation] = await db.select({ id: organisations.id })
+    .from(organisations)
+    .where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active')))
+    .limit(1);
+  if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
+  const role = await getOrganisationActorRole(actorUserId, organisationId);
+  if (!canReadAssessmentData(role)) throw new AssessmentAccessError('You do not have permission to view assessment results for this organisation');
+
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const result = await tx.execute(sql`
+      SELECT
+        attempt.id AS attempt_id,
+        attempt.enrolment_id,
+        attempt.status AS attempt_status,
+        attempt.submitted_at,
+        attempt.created_at,
+        lifecycle.id AS result_id,
+        lifecycle.result_version,
+        lifecycle.total_awarded_score,
+        lifecycle.maximum_score,
+        lifecycle.percentage,
+        lifecycle.lifecycle_status,
+        lifecycle.latest_decision_type,
+        lifecycle.latest_decision_at
+      FROM public.assessment_attempts AS attempt
+      LEFT JOIN LATERAL (
+        SELECT result_record.*
+        FROM public.assessment_result_lifecycle AS result_record
+        WHERE result_record.attempt_id = attempt.id
+          AND result_record.tenant_organisation_id = attempt.tenant_organisation_id
+          AND result_record.organisation_id = attempt.organisation_id
+        ORDER BY result_record.result_version DESC
+        LIMIT 1
+      ) AS lifecycle ON true
+      WHERE attempt.organisation_id = ${organisationId}::uuid
+        AND attempt.event_id = ${eventId}::uuid
+      ORDER BY attempt.created_at, attempt.id
+    `);
+    return result.rows;
+  });
+}
+
+export async function getAssessmentAttemptMarkingSheet(actorUserId: string, organisationId: string, attemptId: string) {
+  const [organisation] = await db.select({ id: organisations.id })
+    .from(organisations)
+    .where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active')))
+    .limit(1);
+  if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
+  const role = await getOrganisationActorRole(actorUserId, organisationId);
+  if (!canReadAssessmentData(role)) throw new AssessmentAccessError('You do not have permission to view assessment evidence for this organisation');
+
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const result = await tx.execute(sql`
+      SELECT
+        event_record.id AS event_id,
+        event_record.title AS event_title,
+        event_record.status AS event_status,
+        attempt.id AS attempt_id,
+        attempt.enrolment_id,
+        attempt.status AS attempt_status,
+        task.id AS task_id,
+        task.task_code,
+        task.title AS task_title,
+        task.response_type,
+        task.maximum_score,
+        task.required,
+        task.display_order,
+        response.id AS response_id,
+        response.response_payload,
+        response.captured_at,
+        mark.id AS mark_id,
+        mark.mark_version,
+        mark.awarded_score,
+        mark.marker_note,
+        mark.marked_at
+      FROM public.assessment_attempts AS attempt
+      INNER JOIN public.assessment_events AS event_record
+        ON event_record.id = attempt.event_id
+       AND event_record.tenant_organisation_id = attempt.tenant_organisation_id
+       AND event_record.organisation_id = attempt.organisation_id
+      INNER JOIN public.assessment_tasks AS task
+        ON task.instrument_version_id = attempt.instrument_version_id
+       AND task.tenant_organisation_id = attempt.tenant_organisation_id
+       AND task.organisation_id = attempt.organisation_id
+      LEFT JOIN public.assessment_responses AS response
+        ON response.attempt_id = attempt.id
+       AND response.task_id = task.id
+       AND response.tenant_organisation_id = attempt.tenant_organisation_id
+       AND response.organisation_id = attempt.organisation_id
+      LEFT JOIN LATERAL (
+        SELECT mark_record.*
+        FROM public.assessment_response_marks AS mark_record
+        WHERE mark_record.attempt_id = attempt.id
+          AND mark_record.task_id = task.id
+          AND mark_record.tenant_organisation_id = attempt.tenant_organisation_id
+          AND mark_record.organisation_id = attempt.organisation_id
+        ORDER BY mark_record.mark_version DESC
+        LIMIT 1
+      ) AS mark ON true
+      WHERE attempt.organisation_id = ${organisationId}::uuid
+        AND attempt.id = ${attemptId}::uuid
+      ORDER BY task.display_order, task.task_code
+    `);
+    return result.rows;
+  });
+}
