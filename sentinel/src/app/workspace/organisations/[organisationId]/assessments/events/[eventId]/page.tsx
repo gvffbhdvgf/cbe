@@ -6,6 +6,8 @@ import { auth } from '@/lib/auth/server';
 import { BrandMark, SoftflixSignature } from '@/components/brand-mark';
 import { SignOutButton } from '@/components/sign-out-button';
 import { getAssessmentEventResults, listAssessmentEvents } from '@/application/assessment/assessment-service';
+import { getOrganisationActorRole } from '@/application/organisation/membership-service';
+import { AssessmentResultDecisionControls } from './result-decision-controls';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -21,15 +23,19 @@ async function AssessmentEventResultsContent({ params }: { params: Promise<{ org
   if (!data?.user) redirect('/auth/sign-in');
   let event;
   let attempts;
+  let actorRole;
   try {
-    const [events, resultRows] = await Promise.all([
+    const [events, resultRows, role] = await Promise.all([
       listAssessmentEvents(data.user.id, organisationId),
       getAssessmentEventResults(data.user.id, organisationId, eventId),
+      getOrganisationActorRole(data.user.id, organisationId),
     ]);
     event = events.find(item => item.id === eventId);
     attempts = resultRows;
+    actorRole = role;
   } catch { redirect('/workspace/organisations'); }
   if (!event) notFound();
+  const canApprove = ['organisation_admin', 'school_admin', 'platform_admin'].includes(actorRole ?? '');
 
   return <main className="min-h-screen bg-[#F4F8FA]">
     <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><Link href={`/workspace/organisations/${organisationId}/assessments`} className="text-[11px] font-semibold text-[#087F86]">← Assessment events</Link><SignOutButton/></div></div></header>
