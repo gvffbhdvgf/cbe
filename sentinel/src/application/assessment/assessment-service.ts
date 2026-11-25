@@ -81,6 +81,13 @@ export async function submitAssessmentAttempt(actorUserId: string, organisationI
   });
 }
 
+export async function voidAssessmentAttempt(actorUserId: string, organisationId: string, attemptId: string, reason: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.void_assessment_attempt(${attemptId}::uuid, ${reason}::text) AS voided_at`);
+    return result.rows[0]?.voided_at;
+  });
+}
+
 export async function closeAssessmentEvent(actorUserId: string, organisationId: string, eventId: string) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.close_assessment_event(${eventId}::uuid) AS closed_at`);
