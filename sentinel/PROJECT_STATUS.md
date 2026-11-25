@@ -264,3 +264,15 @@ The stable alias was checked directly after deployment `dpl_6tzUHc6ssXokjudm4Ycx
 - `GET /auth/sign-in`: HTTP 200, sign-in page rendered.
 - `GET /workspace`: HTTP 307 redirect to `/auth/sign-in`, then HTTP 200 sign-in page.
 - No credentials were submitted and no write operation was performed.
+
+
+### 25 November 2026 — Organisation membership administration
+
+- Added a dedicated membership policy with role-assignment boundaries: platform administrator can grant all organisation roles; organisation administrator can grant school-admin/teacher/assessor/viewer; school administrator can grant teacher/assessor/viewer; operational roles cannot manage memberships.
+- Added server-side member listing, granting to existing verified/non-banned managed-auth accounts, role changes, and revocation endpoints. No user creation, public sign-up, or invitation email is implied.
+- Added a shared membership management screen linked from the institution directory for authorised administrators. It explains that accounts must already exist and be verified.
+- Added audit events for grants, role changes and revocations; prevents self-role changes, prevents org-admin self-promotion, and protects the last active organisation administrator from revocation.
+- Added a partial unique database index ensuring at most one active role membership per user per organisation; applied and verified on `sentinel-development`. Recorded migration `0002_membership_active_uniqueness` in migration history.
+- Added five membership-policy tests. Clean cloud install checks: migration journal passed, TypeScript passed, 14/14 tests passed, lint passed, production build passed, npm audit 0 vulnerabilities.
+- Latest controlled Preview deployment: `dpl_9SsJRv437GD7Wp66B5W7m56CXucX`, READY, code commit `912a6e241173cfa04865afbbb76e85e0ad630ae2`.
+- Authenticated member-management flows remain unverified because no administrator/test account exists. The latest anonymous API/page checks are in progress.
