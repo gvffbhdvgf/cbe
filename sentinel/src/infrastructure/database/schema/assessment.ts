@@ -1,0 +1,215 @@
+import { sql } from 'drizzle-orm';
+import { boolean, check, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid, varchar, type AnyPgColumn } from 'drizzle-orm/pg-core';
+import { organisations } from './organisation';
+import { authUsers } from './security';
+import { curriculumLearningAreas, curriculumSourceNodes } from './curriculum';
+import { learnerEnrolments } from './learner';
+
+export const assessmentProgrammes = pgTable('assessment_programmes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  programmeCode: varchar('programme_code', { length: 64 }).notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  programmeType: varchar('programme_type', { length: 24 }).notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('active'),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_programmes_tenant_scope_check', sql`${table.tenantOrganisationId} = ${table.organisationId}`),
+  check('assessment_programmes_type_check', sql`${table.programmeType} IN ('formative','summative','diagnostic')`),
+  check('assessment_programmes_status_check', sql`${table.status} IN ('active','archived')`),
+  unique('assessment_programmes_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
+  unique('assessment_programmes_code_unique').on(table.tenantOrganisationId, table.organisationId, table.programmeCode),
+]);
+
+export const assessmentInstrumentVersions = pgTable('assessment_instrument_versions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  learningAreaId: uuid('learning_area_id').notNull().references(() => curriculumLearningAreas.id, { onDelete: 'restrict' }),
+  grade: integer('grade').notNull(),
+  instrumentCode: varchar('instrument_code', { length: 64 }).notNull(),
+  versionNumber: integer('version_number').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('draft'),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  approvedBy: uuid('approved_by').references(() => authUsers.id, { onDelete: 'restrict' }),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_instruments_tenant_scope_check', sql`${table.tenantOrganisationId} = ${table.organisationId}`),
+  check('assessment_instruments_grade_check', sql`${table.grade} BETWEEN 1 AND 9`),
+  check('assessment_instruments_version_check', sql`${table.versionNumber} > 0`),
+  check('assessment_instruments_status_check', sql`${table.status} IN ('draft','in_review','approved','retired')`),
+  check('assessment_instruments_approval_check', sql`${table.status} <> 'approved' OR (${table.approvedBy} IS NOT NULL AND ${table.approvedAt} IS NOT NULL)`),
+  unique('assessment_instruments_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
+  unique('assessment_instruments_scope_grade_area_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.grade, table.learningAreaId),
+  unique('assessment_instruments_code_version_unique').on(table.tenantOrganisationId, table.organisationId, table.instrumentCode, table.versionNumber),
+]);
+
+export const assessmentTasks = pgTable('assessment_tasks', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  taskCode: varchar('task_code', { length: 40 }).notNull(),
+  title: varchar('title', { length: 200 }).notNull(),
+  responseType: varchar('response_type', { length: 24 }).notNull(),
+  maximumScore: numeric('maximum_score', { precision: 10, scale: 2 }).notNull(),
+  required: boolean('required').notNull().default(true),
+  displayOrder: integer('display_order').notNull().default(0),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_tasks_response_type_check', sql`${table.responseType} IN ('text','numeric','boolean','choice','observation','evidence')`),
+  check('assessment_tasks_score_check', sql`${table.maximumScore} > 0 AND ${table.maximumScore} <= 100000`),
+  check('assessment_tasks_order_check', sql`${table.displayOrder} >= 0`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.instrumentVersionId], foreignColumns: [assessmentInstrumentVersions.tenantOrganisationId, assessmentInstrumentVersions.organisationId, assessmentInstrumentVersions.id], name: 'assessment_tasks_instrument_fk' }).onDelete('restrict'),
+  unique('assessment_tasks_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.instrumentVersionId),
+  unique('assessment_tasks_code_unique').on(table.tenantOrganisationId, table.organisationId, table.instrumentVersionId, table.taskCode),
+]);
+
+export const assessmentTaskOutcomeMappings = pgTable('assessment_task_outcome_mappings', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  curriculumSourceNodeId: uuid('curriculum_source_node_id').notNull().references(() => curriculumSourceNodes.id, { onDelete: 'restrict' }),
+  status: varchar('status', { length: 16 }).notNull().default('pending'),
+  reviewedBy: uuid('reviewed_by').references(() => authUsers.id, { onDelete: 'restrict' }),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  reviewNote: text('review_note'),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_task_outcome_status_check', sql`${table.status} IN ('pending','approved','rejected')`),
+  check('assessment_task_outcome_review_check', sql`${table.status} <> 'approved' OR (${table.reviewedBy} IS NOT NULL AND ${table.reviewedAt} IS NOT NULL)`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.taskId, table.instrumentVersionId], foreignColumns: [assessmentTasks.tenantOrganisationId, assessmentTasks.organisationId, assessmentTasks.id, assessmentTasks.instrumentVersionId], name: 'assessment_task_outcome_task_fk' }).onDelete('restrict'),
+  unique('assessment_task_outcome_unique').on(table.tenantOrganisationId, table.organisationId, table.taskId, table.curriculumSourceNodeId),
+]);
+
+export const assessmentEvents = pgTable('assessment_events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  programmeId: uuid('programme_id').notNull(),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  grade: integer('grade').notNull(),
+  learningAreaId: uuid('learning_area_id').notNull().references(() => curriculumLearningAreas.id, { onDelete: 'restrict' }),
+  academicYear: integer('academic_year').notNull(),
+  title: varchar('title', { length: 180 }).notNull(),
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('draft'),
+  moderationRequired: boolean('moderation_required').notNull().default(false),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_events_tenant_scope_check', sql`${table.tenantOrganisationId} = ${table.organisationId}`),
+  check('assessment_events_grade_check', sql`${table.grade} BETWEEN 1 AND 9`),
+  check('assessment_events_year_check', sql`${table.academicYear} BETWEEN 2000 AND 2100`),
+  check('assessment_events_period_check', sql`${table.endsAt} > ${table.startsAt}`),
+  check('assessment_events_status_check', sql`${table.status} IN ('draft','scheduled','open','closed','marking','moderated','approved','published','corrected','archived')`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.programmeId], foreignColumns: [assessmentProgrammes.tenantOrganisationId, assessmentProgrammes.organisationId, assessmentProgrammes.id], name: 'assessment_events_programme_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.instrumentVersionId, table.grade, table.learningAreaId], foreignColumns: [assessmentInstrumentVersions.tenantOrganisationId, assessmentInstrumentVersions.organisationId, assessmentInstrumentVersions.id, assessmentInstrumentVersions.grade, assessmentInstrumentVersions.learningAreaId], name: 'assessment_events_instrument_fk' }).onDelete('restrict'),
+  unique('assessment_events_scope_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear),
+]);
+
+export const assessmentAttempts = pgTable('assessment_attempts', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  eventId: uuid('event_id').notNull(),
+  enrolmentId: uuid('enrolment_id').notNull(),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  grade: integer('grade').notNull(),
+  learningAreaId: uuid('learning_area_id').notNull(),
+  academicYear: integer('academic_year').notNull(),
+  attemptNumber: integer('attempt_number').notNull().default(1),
+  status: varchar('status', { length: 16 }).notNull().default('draft'),
+  capturedBy: uuid('captured_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  submittedAt: timestamp('submitted_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_attempts_attempt_number_check', sql`${table.attemptNumber} > 0`),
+  check('assessment_attempts_status_check', sql`${table.status} IN ('draft','in_progress','submitted','marked','moderated','approved','voided')`),
+  unique('assessment_attempts_tenant_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.eventId, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear], foreignColumns: [assessmentEvents.tenantOrganisationId, assessmentEvents.organisationId, assessmentEvents.id, assessmentEvents.instrumentVersionId, assessmentEvents.grade, assessmentEvents.learningAreaId, assessmentEvents.academicYear], name: 'assessment_attempts_event_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.enrolmentId, table.grade, table.academicYear], foreignColumns: [learnerEnrolments.tenantOrganisationId, learnerEnrolments.organisationId, learnerEnrolments.id, learnerEnrolments.grade, learnerEnrolments.academicYear], name: 'assessment_attempts_enrolment_fk' }).onDelete('restrict'),
+  unique('assessment_attempts_tenant_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
+  unique('assessment_attempts_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.instrumentVersionId),
+  unique('assessment_attempts_event_enrolment_attempt_unique').on(table.tenantOrganisationId, table.organisationId, table.eventId, table.enrolmentId, table.attemptNumber),
+  index('assessment_attempts_event_status_idx').on(table.tenantOrganisationId, table.organisationId, table.eventId, table.status),
+]);
+
+export const assessmentResponses = pgTable('assessment_responses', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  attemptId: uuid('attempt_id').notNull(),
+  taskId: uuid('task_id').notNull(),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  responsePayload: jsonb('response_payload').notNull().default({}),
+  awardedScore: numeric('awarded_score', { precision: 10, scale: 2 }),
+  capturedBy: uuid('captured_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  capturedAt: timestamp('captured_at', { withTimezone: true }).notNull().defaultNow(),
+  markedBy: uuid('marked_by').references(() => authUsers.id, { onDelete: 'restrict' }),
+  markedAt: timestamp('marked_at', { withTimezone: true }),
+  markerNote: text('marker_note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_responses_score_check', sql`${table.awardedScore} IS NULL OR ${table.awardedScore} >= 0`),
+  check('assessment_responses_mark_check', sql`(${table.markedBy} IS NULL AND ${table.markedAt} IS NULL) OR (${table.markedBy} IS NOT NULL AND ${table.markedAt} IS NOT NULL)`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.attemptId, table.instrumentVersionId], foreignColumns: [assessmentAttempts.tenantOrganisationId, assessmentAttempts.organisationId, assessmentAttempts.id, assessmentAttempts.instrumentVersionId], name: 'assessment_responses_attempt_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.taskId, table.instrumentVersionId], foreignColumns: [assessmentTasks.tenantOrganisationId, assessmentTasks.organisationId, assessmentTasks.id, assessmentTasks.instrumentVersionId], name: 'assessment_responses_task_fk' }).onDelete('restrict'),
+  unique('assessment_responses_attempt_task_unique').on(table.tenantOrganisationId, table.organisationId, table.attemptId, table.taskId),
+  index('assessment_responses_attempt_idx').on(table.tenantOrganisationId, table.organisationId, table.attemptId),
+]);
+
+export const assessmentResults = pgTable('assessment_results', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  attemptId: uuid('attempt_id').notNull(),
+  instrumentVersionId: uuid('instrument_version_id').notNull(),
+  resultVersion: integer('result_version').notNull().default(1),
+  totalAwardedScore: numeric('total_awarded_score', { precision: 10, scale: 2 }).notNull(),
+  maximumScore: numeric('maximum_score', { precision: 10, scale: 2 }).notNull(),
+  percentage: numeric('percentage', { precision: 5, scale: 2 }).notNull(),
+  performanceLevelCode: varchar('performance_level_code', { length: 40 }),
+  status: varchar('status', { length: 16 }).notNull(),
+  supersedesResultId: uuid('supersedes_result_id').references((): AnyPgColumn => assessmentResults.id, { onDelete: 'restrict' }),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_results_version_check', sql`${table.resultVersion} > 0`),
+  check('assessment_results_score_check', sql`${table.totalAwardedScore} >= 0 AND ${table.totalAwardedScore} <= ${table.maximumScore} AND ${table.maximumScore} > 0`),
+  check('assessment_results_percentage_check', sql`${table.percentage} BETWEEN 0 AND 100`),
+  check('assessment_results_percentage_consistency_check', sql`${table.percentage} = round((${table.totalAwardedScore} / ${table.maximumScore}) * 100, 2)`),
+  check('assessment_results_status_check', sql`${table.status} IN ('marked','moderated','approved','published','superseded')`),
+  check('assessment_results_supersedes_check', sql`(${table.resultVersion} = 1 AND ${table.supersedesResultId} IS NULL) OR (${table.resultVersion} > 1 AND ${table.supersedesResultId} IS NOT NULL)`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.attemptId, table.instrumentVersionId], foreignColumns: [assessmentAttempts.tenantOrganisationId, assessmentAttempts.organisationId, assessmentAttempts.id, assessmentAttempts.instrumentVersionId], name: 'assessment_results_attempt_fk' }).onDelete('restrict'),
+  unique('assessment_results_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.attemptId),
+  unique('assessment_results_attempt_version_unique').on(table.tenantOrganisationId, table.organisationId, table.attemptId, table.resultVersion),
+  index('assessment_results_attempt_idx').on(table.tenantOrganisationId, table.organisationId, table.attemptId, table.resultVersion),
+]);
+
+export const assessmentResultDecisions = pgTable('assessment_result_decisions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  attemptId: uuid('attempt_id').notNull(),
+  resultId: uuid('result_id'),
+  decisionType: varchar('decision_type', { length: 24 }).notNull(),
+  reason: text('reason').notNull(),
+  actorUserId: uuid('actor_user_id').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  decidedAt: timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('assessment_result_decisions_type_check', sql`${table.decisionType} IN ('moderation_approved','moderation_rejected','result_approved','result_published','correction_requested','result_superseded')`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.attemptId], foreignColumns: [assessmentAttempts.tenantOrganisationId, assessmentAttempts.organisationId, assessmentAttempts.id], name: 'assessment_result_decisions_attempt_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.resultId, table.attemptId], foreignColumns: [assessmentResults.tenantOrganisationId, assessmentResults.organisationId, assessmentResults.id, assessmentResults.attemptId], name: 'assessment_result_decisions_result_fk' }).onDelete('restrict'),
+]);
+
