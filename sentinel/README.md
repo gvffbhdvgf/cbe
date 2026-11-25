@@ -68,3 +68,21 @@ Use GitHub, Notion, Vercel, Neon, Cloudflare and other connected plugins directl
 ## Configuration and secrets
 
 Never commit .env files, API tokens, private keys, database passwords, email credentials or other secrets. Commit only a sanitised .env.example containing variable names and safe placeholders.
+
+- [Implementation Foundation & Cloud Resource Status](docs/IMPLEMENTATION_FOUNDATION.md)
+
+## Application workspace
+
+The Next.js application lives in this directory. Run it with `npm install`, `npm run dev`; validate with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`.
+
+The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, organisation directory empty state, domain-level organisation invariants, scoped authorisation policy, and a health endpoint.
+
+## Cloud resources
+
+- Vercel project: `sentinel-platform` (controlled releases; automatic preview deployments disabled).
+- Neon PostgreSQL 17 project: `sentinel-platform`, Frankfurt region. Main branch is reserved for the stable environment; `sentinel-development` is an isolated development branch.
+- Neon Auth: Managed Better Auth enabled; public sign-up disabled; institutional accounts must be provisioned.
+- Private Neon Object Storage buckets: `sentinel-quarantine`, `sentinel-private`, `sentinel-exports`.
+- Upstash Box: ephemeral development sandbox; do not store production secrets or live learner records in it.
+
+No production schema migration, live learner import, public object access or production deployment has been performed. The organisation schema has been applied only to the isolated development branch and remains subject to tenancy/data-controller review before production use.

@@ -154,3 +154,19 @@ Created on sentinel/bootstrap:
 These are proposed baselines for institutional validation, not approved permissions, a production schema, final UX, or deployed endpoints. No application code, database, cloud resource, live learner data import or deployment was created.
 
 Next gates: reconcile the original external implementation brief; validate authority hierarchy and role powers with stakeholders; confirm data owners and identifiers; test priority journeys with representative users; approve privacy/DPIA and tenant boundary; then derive a physical schema and implementation slices.
+
+## 25 November 2026 — cloud foundation and first application slice
+
+- Created a dedicated Vercel `sentinel-platform` project under the existing team, rooted at `sentinel/`. Preview deployments are disabled and no deployment has been triggered.
+- Created Neon PostgreSQL 17 project `sentinel-platform` in Frankfurt (`aws-eu-central-1`) on the connected Free plan. Main branch and isolated `sentinel-development` branch exist. Free account limits observed: 1 GB branch logical-size limit and six-hour branch history; custom compute suspension intervals are not permitted.
+- Enabled Neon Managed Auth (Better Auth) on the main branch. Email/password is enabled, verification is configured, and self-service registration is disabled. Application auth environment variables are stored in Vercel project settings.
+- Created private Neon Object Storage buckets: `sentinel-quarantine`, `sentinel-private`, `sentinel-exports`.
+- Created ephemeral Upstash Box `sentinel-cloud-dev`, Node runtime, browser enabled, cloned repository, 10 GB workspace, maximum three-day TTL.
+- Resend account has no sending domains. Cloudflare R2 bucket creation is blocked until R2 is activated in the Cloudflare Dashboard (API error 10042). No R2 buckets were created.
+- Scaffolded the Next.js 16 / React 19 / TypeScript application under `sentinel/`, with public landing page, managed sign-in page, protected workspace, protected organisation directory empty state, health endpoint, domain organisation invariants, and scoped authorisation policy.
+- Added Drizzle organisation schema and SQL migration. Applied the organisation table only to the isolated Neon development branch. No migration was applied to main.
+- Added GitHub Actions CI workflow; hosted run not yet verified.
+- Verified `npm run lint`, `npm run typecheck`, `npm test` (9 passing), `npm run build`, `npm audit` (0 vulnerabilities), and `git diff --check` in the cloud sandbox.
+- Browser smoke tests: landing page loads, sign-in page loads, unauthenticated workspace redirects to sign-in, public health endpoint returns service status.
+- Added `docs/IMPLEMENTATION_FOUNDATION.md` with exact resource status, limits, verification and blockers.
+- No production deployment, live learner data import, custom domain, email sending domain, or production schema migration exists.
