@@ -217,3 +217,11 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Browser verification against the stable Preview alias confirmed unauthenticated `GET /api/organisations` returns HTTP 401, `application/json`, body `{"error":"Authentication required"}`; `GET /api/health` returns HTTP 200 and `{"status":"ok","service":"sentinel-platform"}`.
 - Authenticated end-to-end flows, platform-admin onboarding, tenant-crossing integration tests and database query behaviour under real user sessions remain unverified because no user account was provisioned.
 - npm install reports non-blocking peer dependency/deprecation warnings for the Neon Auth dependency tree and ESLint 9; these should be reviewed during dependency maintenance.
+
+
+### Latest schema and deployment checkpoint
+
+- Aligned Drizzle schema constraints and descending audit indexes with the development database; renamed the development membership constraints to match the migration/schema definitions.
+- Re-ran cloud sandbox validation after the schema alignment: typecheck passed, all 9 unit tests passed, and ESLint passed.
+- Verified the four Preview environment variable values against the Neon development branch without exposing them: both Auth URLs match exactly and both database connection strings identify the development branch.
+- Latest code deployment: `dpl_5ZKH9P3JhTiScmjzQzJjJc28r3Q1`, READY, built from commit `489488867ea49cb5e45b2bc046fc49fb071e7188`; stable alias remains https://sentinel-platform-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app.
