@@ -4,7 +4,7 @@
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
 **Latest implementation commit:** `df62faac06247b76352b4a8d4169323911448616`  
-**Latest documentation checkpoint:** `b61ec0b1a24bce27388184900acfd332dc1ee2ef`
+**Latest documentation checkpoint:** `9135a5d2cd5074be8a735d2684902ce2d00456dc`
 
 ## 1. Application and dependencies
 
@@ -95,7 +95,7 @@ Until the Preview secret is configured, learner/class APIs that require the rest
 
 Next sequence:
 1. Resolve Vercel Git integration and branch-scoped Preview secret configuration.
-2. Complete positive/negative cross-tenant integration tests through the actual Neon Auth → Next.js → Pool transaction path.
+2. Complete signed-JWT Next.js request tests and cross-tenant end-to-end tests. Database-level positive/negative synthetic fixture tests have passed; actual Preview request-path testing remains blocked by the Vercel environment configuration.
 3. Implement class reassignment, learner correction, transfer, withdrawal, progression approval and academic-year rollover with explicit state transitions and audit history.
 4. Implement teacher allocation, class capacity and verified guardian relationships with safeguarding controls.
 5. Continue detailed KICD outcomes only from verified source editions with provenance, rights and specialist review.
