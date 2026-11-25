@@ -13,6 +13,7 @@ export type MarkingTask = {
   mark_version: number | null;
   awarded_score: string | number | null;
   marker_note: string | null;
+  marked_at: Date | string | null;
 };
 
 type Props = {
@@ -20,14 +21,15 @@ type Props = {
   attemptId: string;
   attemptStatus: string;
   latestDecisionType: string | null;
+  latestDecisionAt: Date | string | null;
   tasks: MarkingTask[];
 };
 
-export function AssessmentMarkingControls({ organisationId, attemptId, attemptStatus, latestDecisionType, tasks }: Props) {
+export function AssessmentMarkingControls({ organisationId, attemptId, attemptStatus, latestDecisionType, latestDecisionAt, tasks }: Props) {
   const router = useRouter();
   const [scores, setScores] = useState<Record<string, string>>(() => Object.fromEntries(tasks.map(task => [task.task_id, task.awarded_score === null ? '' : String(task.awarded_score)])));
   const [notes, setNotes] = useState<Record<string, string>>(() => Object.fromEntries(tasks.map(task => [task.task_id, task.marker_note ?? ''])));
-  const [latestMarks, setLatestMarks] = useState<Record<string, { markId: string | null; markVersion: number | null; awardedScore: string | number | null }>>(() => Object.fromEntries(tasks.map(task => [task.task_id, { markId: task.mark_id, markVersion: task.mark_version, awardedScore: task.awarded_score }])));
+  const [latestMarks, setLatestMarks] = useState<Record<string, { markId: string | null; markVersion: number | null; awardedScore: string | number | null; markedAt: Date | string | null }>>(() => Object.fromEntries(tasks.map(task => [task.task_id, { markId: task.mark_id, markVersion: task.mark_version, awardedScore: task.awarded_score, markedAt: task.marked_at }])));
   const [busyTask, setBusyTask] = useState<string | null>(null);
   const [finalizing, setFinalizing] = useState(false);
   const [error, setError] = useState('');
@@ -60,7 +62,7 @@ export function AssessmentMarkingControls({ organisationId, attemptId, attemptSt
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to save mark.');
-      setLatestMarks(current => ({ ...current, [task.task_id]: { markId: payload.markId, markVersion: (current[task.task_id]?.markVersion ?? 0) + 1, awardedScore: score } }));
+      setLatestMarks(current => ({ ...current, [task.task_id]: { markId: payload.markId, markVersion: (current[task.task_id]?.markVersion ?? 0) + 1, awardedScore: score, markedAt: new Date().toISOString() } }));
       setMessage('Mark saved to the append-only history.');
       router.refresh();
     } catch (cause) {
@@ -91,7 +93,11 @@ export function AssessmentMarkingControls({ organisationId, attemptId, attemptSt
   }
 
   const requiredTasksMarked = tasks.filter(task => task.required).every(task => Boolean(latestMarks[task.task_id]?.markId));
-  const canFinalize = canMark && requiredTasksMarked && tasks.some(task => task.required);
+  const correctionMarksAdded = correctionRequested && latestDecisionAt !== null && tasks.some(task => {
+    const markedAt = latestMarks[task.task_id]?.markedAt;
+    return task.required && markedAt !== null && markedAt !== undefined && new Date(markedAt).getTime() > new Date(latestDecisionAt).getTime();
+  });
+  const canFinalize = canMark && requiredTasksMarked && tasks.some(task => task.required) && (!correctionRequested || correctionMarksAdded);
 
   return <section className="mt-8 rounded-[18px] border border-[#DCE9ED] bg-white p-5">
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-[14px] font-semibold text-[#18364E]">{correctionRequested ? 'Correct rejected result' : 'Task marking'}</h2><p className="mt-1 text-[11px] leading-5 text-[#7C91A0]">{correctionRequested ? 'A moderator requested correction. New marks must supersede the latest task mark and include a reason.' : 'Marks are stored separately from immutable response evidence. Corrections before finalisation create a new mark version.'}</p></div><span className="rounded-full bg-[#EAF5F4] px-3 py-1.5 text-[10px] font-semibold capitalize text-[#087F86]">{attemptStatus}</span></div>
@@ -105,6 +111,6 @@ export function AssessmentMarkingControls({ organisationId, attemptId, attemptSt
     </div>
     {error && <p role="alert" className="mt-4 rounded-xl bg-[#FFF2F0] px-3 py-2 text-[11px] text-[#A43D34]">{error}</p>}
     {message && <p role="status" className="mt-4 rounded-xl bg-[#EDF8F5] px-3 py-2 text-[11px] text-[#176E66]">{message}</p>}
-    {canMark && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#E8EEF2] pt-4"><p className="text-[10px] text-[#8498A7]">Finalisation is blocked until every required task has a latest mark.</p><button type="button" onClick={() => void finalize()} disabled={!canFinalize || finalizing} className="rounded-full border border-[#087F86] px-5 py-2.5 text-[10px] font-semibold text-[#087F86] disabled:cursor-not-allowed disabled:opacity-40">{finalizing ? 'Finalising…' : correctionRequested ? 'Finalise corrected result' : 'Finalise result'}</button></div>}
+    {canMark && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[#E8EEF2] pt-4"><p className="text-[10px] text-[#8498A7]">Finalisation requires every required task to have a latest mark and, after a moderation correction request, at least one new reasoned mark version.</p><button type="button" onClick={() => void finalize()} disabled={!canFinalize || finalizing} className="rounded-full border border-[#087F86] px-5 py-2.5 text-[10px] font-semibold text-[#087F86] disabled:cursor-not-allowed disabled:opacity-40">{finalizing ? 'Finalising…' : correctionRequested ? 'Finalise corrected result' : 'Finalise result'}</button></div>}
   </section>;
 }
