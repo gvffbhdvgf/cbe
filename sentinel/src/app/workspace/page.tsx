@@ -10,7 +10,7 @@ const modules = [
   { title: 'Institutions & people', description: 'Organisation records, learner identity and workforce', href: '/workspace/organisations', icon: '◎', tag: 'Foundation', ready: true },
   { title: 'Curriculum intelligence', description: 'KICD editions, pathways and source-linked learning areas', href: '/workspace/curriculum', icon: '⌘', tag: 'Catalogue foundation', ready: true },
   { title: 'Class groups', description: 'Grade and academic-year class registers for authorised institutions', href: '/workspace/organisations', icon: '✳', tag: 'Foundation', ready: true },
-  { title: 'Assessment evidence', description: 'Instruments, marking, moderation and results', href: '#', icon: '↗', tag: 'Planned' },
+  { title: 'Assessment evidence', description: 'Assessment events, marking, moderation and governed results', href: '/workspace/organisations', icon: '↗', tag: 'Operational foundation', ready: true },
   { title: 'Progress & support', description: 'Learner progress, interventions and follow-up', href: '#', icon: '◉', tag: 'Planned' },
   { title: 'Analytics & reporting', description: 'Traceable indicators, cohorts and comparisons', href: '#', icon: '▥', tag: 'Planned' },
 ];
