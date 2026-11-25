@@ -120,6 +120,13 @@
       "when": 1795659000000,
       "tag": "0016_assessment_marking_results",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795659600000,
+      "tag": "0017_assessment_result_governance",
+      "breakpoints": true
     }
   ]
 }
