@@ -42,6 +42,14 @@ CREATE TABLE public.assessment_response_marks (
   )
 );
 --> statement-breakpoint
+COMMENT ON COLUMN public.assessment_responses.awarded_score IS 'Deprecated legacy field; do not write marks here. Use append-only assessment_response_marks.';
+--> statement-breakpoint
+COMMENT ON COLUMN public.assessment_responses.marked_by IS 'Deprecated legacy field; marking identity is recorded in assessment_response_marks.';
+--> statement-breakpoint
+COMMENT ON COLUMN public.assessment_responses.marked_at IS 'Deprecated legacy field; marking timestamps are recorded in assessment_response_marks.';
+--> statement-breakpoint
+COMMENT ON COLUMN public.assessment_responses.marker_note IS 'Deprecated legacy field; marker notes are recorded in assessment_response_marks.';
+--> statement-breakpoint
 
 CREATE INDEX assessment_response_marks_attempt_task_idx
   ON public.assessment_response_marks (tenant_organisation_id, organisation_id, attempt_id, task_id, mark_version DESC);
