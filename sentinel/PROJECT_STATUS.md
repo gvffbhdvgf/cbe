@@ -291,3 +291,15 @@ The stable alias was checked directly after deployment `dpl_6tzUHc6ssXokjudm4Ycx
 - Cloud validation: migration journal passed; TypeScript passed; 14/14 unit tests passed; ESLint passed; Next.js production build passed; npm audit reported 0 vulnerabilities.
 - Latest controlled Preview deployment: `dpl_12JJAnkF8GG3HDAidF1NTdQnYevo`, building from code commit `b71bfa9cc58292141709deabbe9a78298c6748de`. Browser verification is pending.
 - Detailed strands, sub-strands, outcomes, inquiry questions, experiences, competencies, values, PCIs, CSL and rubrics have not yet been ingested. Catalogue import is not full curriculum content implementation.
+
+
+### Latest curriculum Preview verification — 25 November 2026
+
+Deployment `dpl_12JJAnkF8GG3HDAidF1NTdQnYevo` is READY and browser-verified on the stable alias:
+
+- `GET /api/health`: HTTP 200, expected JSON.
+- `GET /auth/sign-in`: HTTP 200.
+- `GET /workspace/curriculum`: HTTP 307 redirect to sign-in for anonymous users.
+- `GET /api/organisations`: HTTP 401 JSON.
+- `GET /api/organisations/{uuid}/members`: HTTP 401 JSON.
+- These were read-only requests; no account was created and no data was changed.
