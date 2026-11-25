@@ -86,3 +86,35 @@ Intervention workflows and advanced analytics can follow once the assessment dat
 - Users cannot read or modify records outside their authorised organisational scope.
 - Corrections are auditable.
 - A learner transfer does not erase historical results.
+
+
+## Expanded enterprise capability scope — discovery baseline
+
+The product covers Grades 1–9. Grade 6 and Grade 9 source datasets are reference evidence only.
+
+In addition to the initial assessment and learner-progress requirements, discovery must cover:
+- Institution, administrative hierarchy, school units, academic years, terms, classes and streams.
+- Canonical person identity, learner admission/enrolment/progression/transfer and governed guardian relationships.
+- Teacher/workforce profiles, employment/engagement, school assignments, teaching allocations and workload, subject to data authority.
+- Teaching and learning operations such as schemes/plans, lesson preparation, learning activities, classroom evidence and curriculum coverage where validated.
+- KICD curriculum editions and pathways, including regular and applicable adapted/Special Needs Education designs.
+- Internal formative/summative, school-based, inter-school, zonal and external/national assessments.
+- Assessment instruments, blueprints, items/tasks, outcome mappings, scoring schemes, marking, moderation, approvals, publication and imports.
+- Learner progress, educator-reviewed learning needs, interventions, follow-up and impact review.
+- Inter-school and system analytics with eligible/participating/valid-result denominators, coverage, lineage and disclosure controls.
+- Governance, approvals, audit, privacy, retention, controlled exports, data quality and integration management.
+
+## Cross-domain invariants
+
+- One canonical Person identity; learner/staff profiles and relationships extend it.
+- Learner enrolments and teacher assignments are effective-dated and preserve history.
+- School and administrative hierarchy is configurable and historically traceable.
+- Curriculum editions/pathways are immutable once approved for operational use; mappings refer to exact versions.
+- Raw marks, performance levels and outcome mastery estimates are distinct.
+- Assessment results retain attempt, scoring and curriculum provenance.
+- Analytics are derived read models, not competing sources of truth.
+- Imports are idempotent, previewable, reconcilable and traceable.
+- Organisation-scope enforcement is server-side for every protected operation.
+- AI-generated analysis is assistive and reviewable; official learner decisions remain with authorised educators.
+
+Detailed conceptual model, relationship invariants and workflow sequences: [DOMAIN_MODEL_AND_WORKFLOWS.md](https://github.com/gvffbhdvgf/cbe/blob/sentinel/bootstrap/sentinel/docs/DOMAIN_MODEL_AND_WORKFLOWS.md).
