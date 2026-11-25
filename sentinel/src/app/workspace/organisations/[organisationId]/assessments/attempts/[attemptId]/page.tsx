@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth/server';
 import { BrandMark, SoftflixSignature } from '@/components/brand-mark';
 import { SignOutButton } from '@/components/sign-out-button';
 import { getAssessmentAttemptMarkingSheet } from '@/application/assessment/assessment-service';
+import { AssessmentMarkingControls } from './marking-controls';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -30,6 +31,7 @@ async function AssessmentAttemptContent({ params }: { params: Promise<{ organisa
     <div className="mx-auto max-w-[1000px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
       <p className="eyebrow">Assessment marking sheet</p><h1 className="mt-3 text-[32px] font-semibold tracking-[-.05em] text-[#102B45]">{first.event_title}</h1><p className="mt-2 text-[11px] text-[#718697]">Attempt {attemptId} · {first.attempt_status} · Enrolment {first.enrolment_id}</p>
       <div className="mt-8 space-y-3">{tasks.map((task:any)=><article key={task.task_id} className="rounded-[18px] border border-[#E1EAF0] bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[.13em] text-[#8A9CAB]">{task.task_code} · {task.response_type} {task.required?'· Required':'· Optional'}</p><h2 className="mt-2 text-[15px] font-semibold text-[#29465D]">{task.task_title}</h2></div><p className="text-[11px] font-semibold text-[#087F86]">Maximum {task.maximum_score}</p></div><div className="mt-4 rounded-xl bg-[#F6F9FA] p-4"><p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#8A9CAB]">Captured response</p><pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words text-[11px] leading-6 text-[#456175]">{JSON.stringify(task.response_payload??null,null,2)}</pre></div><div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#8A9CAB]"><span>{task.response_id ? 'Captured ' + new Date(task.captured_at).toLocaleString() : 'No response captured'}</span>{task.mark_id ? <span>Latest mark v{task.mark_version}: {task.awarded_score} · {task.marker_note}</span> : <span>Not marked</span>}</div></article>)}</div>
+      <AssessmentMarkingControls organisationId={organisationId} attemptId={attemptId} attemptStatus={first.attempt_status} latestDecisionType={first.latest_decision_type ?? null} tasks={tasks as any}/>
       <footer className="mt-12 flex items-center justify-between border-t border-[#E1EAF0] pt-5"><SoftflixSignature/><span className="text-[10px] text-[#9AABB7]">Immutable response evidence · Versioned marks</span></footer>
     </div>
   </main>;
