@@ -130,3 +130,14 @@ Official KICD catalogue:
 New domain design: [DOMAIN_MODEL_AND_WORKFLOWS.md](https://github.com/gvffbhdvgf/cbe/blob/sentinel/bootstrap/sentinel/docs/DOMAIN_MODEL_AND_WORKFLOWS.md). It defines bounded contexts, canonical conceptual entities, lifecycle invariants, end-to-end workflows, redundancy controls, solution-priority hypotheses and implementation-readiness gates.
 
 No production schema or application code has been created. Domain ownership, tenancy, workforce data authority, guardian access, assessment taxonomy, curriculum adoption, integration contracts, connectivity and service levels remain to be validated.
+
+
+## 25 November 2026 — Current design checkpoint
+
+New verified design documents:
+- DOMAIN_MODEL_AND_WORKFLOWS.md — bounded contexts, canonical entities, lifecycle invariants and core workflows.
+- PROBLEM_DISCOVERY_AND_VALIDATION_PLAN.md — hypotheses, stakeholder research, workflow observation, value metrics and solution selection.
+- SECURITY_PRIVACY_THREAT_MODEL.md — child-data privacy, DPIA gate, threat register, tenant isolation and release controls.
+- RELEASE_ROADMAP.md — dependency-aware vertical release sequence and pilot scorecard.
+
+All four files are present on sentinel/bootstrap. Notion handoff has corresponding discovery, domain, security and roadmap updates. No application code, production schema, live-data import, cloud resource or production deployment has been created.
