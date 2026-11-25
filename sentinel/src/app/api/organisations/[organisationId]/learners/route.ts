@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth/server';
 import { listLearners, registerLearner } from '@/application/learner/learner-service';
+import { mapLearnerApiError } from '@/application/learner/learner-errors';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -12,8 +13,8 @@ export async function GET(_request: Request, context: { params: Promise<{ organi
     const learners = await listLearners(data.user.id, organisationId);
     return Response.json({ learners });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to load learner register';
-    return Response.json({ error: message }, { status: message.includes('permission') ? 403 : 404 });
+    const mapped = mapLearnerApiError(error, 'Unable to load learner register', 500);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 }
 
@@ -40,7 +41,7 @@ export async function POST(request: Request, context: { params: Promise<{ organi
     });
     return Response.json({ learner }, { status: 201 });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to register learner';
-    return Response.json({ error: message }, { status: message.includes('permission') ? 403 : message.includes('not found') ? 404 : 400 });
+    const mapped = mapLearnerApiError(error, 'Unable to register learner', 400);
+    return Response.json({ error: mapped.message }, { status: mapped.status });
   }
 }
