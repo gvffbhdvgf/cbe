@@ -121,7 +121,13 @@ The development database contains:
 
 The current regular catalogue seed contains 120 grade offerings: 9 entries for each of Grades 1–3 (eight listed plus the flagged Indigenous Language discrepancy), 15 for each of Grades 4–6 and 16 for each of Grades 7–9. The SNE pathway catalogue is registered, but no SNE grade-level learning-area offering is treated as verified yet.
 
-## 6. Separate material catalogues
+## 6. Pilot source-document register
+
+The official [Grade 6 CRE design PDF](https://kicd.ac.ke/wp-content/uploads/2024/06/CRE-GRADE-6-DESIGN-APRIL-2024.pdf) has been identified and linked to the Grade 6 CRE offering. Its cover says **First Published in 2021**, while the file name/path indicates an April 2024 file. The revision/currentness relationship is not yet confirmed. Sentinel records the document as `identified`, review `pending`, rights `not_assessed`; it is not an approved active design.
+
+The document staging registry indexes five strand headings and 22 sub-strand headings from the source table of contents. It stores headings and page provenance only; no full learning-outcome, learning-experience, rubric or other body text has been transcribed. The next step is to confirm the current official revision and rights/permission conditions before extracting and reviewing substantive curriculum content.
+
+## 7. Separate material catalogues
 
 The following sources are stored separately and must not be merged into the curriculum design hierarchy:
 
@@ -130,7 +136,7 @@ The following sources are stored separately and must not be merged into the curr
 
 These sources can inform availability and discrepancy review, but they do not replace the official curriculum design PDFs.
 
-## 7. Next ingestion gates
+## 8. Next ingestion gates
 
 1. Download each grade-specific regular design PDF from the KICD page and retain the original file, URL, retrieval date and SHA-256 checksum.
 2. Confirm the official title, edition/revision, approval date and any effective date in the PDF foreword/preface.

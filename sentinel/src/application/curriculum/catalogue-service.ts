@@ -1,9 +1,9 @@
-import { asc, eq } from 'drizzle-orm';
+import { asc, count, eq } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
-import { curriculumEditions, curriculumGradeOfferings, curriculumLearningAreas, curriculumPathways, curriculumSources } from '@/infrastructure/database/schema/curriculum';
+import { curriculumDesignDocuments, curriculumEditions, curriculumGradeOfferings, curriculumLearningAreas, curriculumPathways, curriculumSourceNodes, curriculumSources } from '@/infrastructure/database/schema/curriculum';
 
 export async function listCurriculumCatalogue() {
-  const [pathways, offerings] = await Promise.all([
+  const [pathways, offerings, documents] = await Promise.all([
     db.select({ code: curriculumPathways.pathwayCode, name: curriculumPathways.name, modality: curriculumPathways.modality, categoryCode: curriculumPathways.categoryCode, catalogueStatus: curriculumPathways.catalogueStatus, description: curriculumPathways.description, sourceTitle: curriculumSources.title, sourceUrl: curriculumSources.url })
       .from(curriculumPathways)
       .leftJoin(curriculumSources, eq(curriculumPathways.sourceId, curriculumSources.id))
@@ -30,6 +30,26 @@ export async function listCurriculumCatalogue() {
       .innerJoin(curriculumEditions, eq(curriculumGradeOfferings.editionId, curriculumEditions.id))
       .innerJoin(curriculumSources, eq(curriculumGradeOfferings.sourceId, curriculumSources.id))
       .orderBy(asc(curriculumGradeOfferings.grade), asc(curriculumGradeOfferings.displayOrder)),
+    db.select({
+      documentCode: curriculumDesignDocuments.documentCode,
+      grade: curriculumGradeOfferings.grade,
+      areaCode: curriculumLearningAreas.areaCode,
+      title: curriculumDesignDocuments.title,
+      publicationLabel: curriculumDesignDocuments.publicationLabel,
+      firstPublishedYear: curriculumDesignDocuments.firstPublishedYear,
+      availabilityStatus: curriculumDesignDocuments.availabilityStatus,
+      reviewStatus: curriculumDesignDocuments.reviewStatus,
+      rightsStatus: curriculumDesignDocuments.rightsStatus,
+      sourceTitle: curriculumSources.title,
+      sourceUrl: curriculumSources.url,
+      indexedNodes: count(curriculumSourceNodes.id),
+    }).from(curriculumDesignDocuments)
+      .innerJoin(curriculumGradeOfferings, eq(curriculumDesignDocuments.gradeOfferingId, curriculumGradeOfferings.id))
+      .innerJoin(curriculumLearningAreas, eq(curriculumGradeOfferings.learningAreaId, curriculumLearningAreas.id))
+      .innerJoin(curriculumSources, eq(curriculumDesignDocuments.sourceId, curriculumSources.id))
+      .leftJoin(curriculumSourceNodes, eq(curriculumSourceNodes.documentId, curriculumDesignDocuments.id))
+      .groupBy(curriculumDesignDocuments.id, curriculumGradeOfferings.grade, curriculumLearningAreas.areaCode, curriculumSources.title, curriculumSources.url)
+      .orderBy(asc(curriculumGradeOfferings.grade), asc(curriculumLearningAreas.name)),
   ]);
-  return { pathways, offerings };
+  return { pathways, offerings, documents };
 }

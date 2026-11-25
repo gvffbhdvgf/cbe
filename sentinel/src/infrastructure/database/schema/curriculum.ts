@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { check, date, index, integer, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core';
+import { check, date, index, integer, jsonb, pgTable, text, timestamp, unique, uuid, varchar, type AnyPgColumn } from 'drizzle-orm/pg-core';
 
 export const curriculumSources = pgTable('curriculum_sources', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -75,4 +75,49 @@ export const curriculumGradeOfferings = pgTable('curriculum_grade_offerings', {
   check('curriculum_grade_offerings_grade_check', sql`${table.grade} BETWEEN 1 AND 9`),
   check('curriculum_grade_offerings_availability_check', sql`${table.availabilityStatus} IN ('document_listed', 'document_available', 'awaiting_publication', 'catalogue_discrepancy', 'not_confirmed')`),
   index('curriculum_grade_offerings_grade_pathway_idx').on(table.grade, table.pathwayId, table.displayOrder),
+]);
+
+
+export const curriculumDesignDocuments = pgTable('curriculum_design_documents', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentCode: varchar('document_code', { length: 120 }).notNull().unique(),
+  gradeOfferingId: uuid('grade_offering_id').notNull().references(() => curriculumGradeOfferings.id, { onDelete: 'restrict' }),
+  sourceId: uuid('source_id').notNull().references(() => curriculumSources.id, { onDelete: 'restrict' }),
+  title: varchar('title', { length: 300 }).notNull(),
+  publicationLabel: varchar('publication_label', { length: 180 }),
+  firstPublishedYear: integer('first_published_year'),
+  sourceFileLabel: varchar('source_file_label', { length: 240 }),
+  pageCount: integer('page_count'),
+  checksumSha256: varchar('checksum_sha256', { length: 64 }),
+  availabilityStatus: varchar('availability_status', { length: 24 }).notNull().default('identified'),
+  reviewStatus: varchar('review_status', { length: 24 }).notNull().default('pending'),
+  rightsStatus: varchar('rights_status', { length: 24 }).notNull().default('not_assessed'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('curriculum_design_documents_availability_check', sql`${table.availabilityStatus} IN ('identified', 'downloaded', 'extracted', 'reviewed', 'approved', 'superseded')`),
+  check('curriculum_design_documents_review_check', sql`${table.reviewStatus} IN ('pending', 'in_review', 'approved', 'rejected')`),
+  check('curriculum_design_documents_rights_check', sql`${table.rightsStatus} IN ('not_assessed', 'confirmed', 'restricted')`),
+  index('curriculum_design_documents_offering_idx').on(table.gradeOfferingId),
+]);
+
+export const curriculumSourceNodes = pgTable('curriculum_source_nodes', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  documentId: uuid('document_id').notNull().references(() => curriculumDesignDocuments.id, { onDelete: 'restrict' }),
+  parentId: uuid('parent_id').references((): AnyPgColumn => curriculumSourceNodes.id, { onDelete: 'restrict' }),
+  nodeType: varchar('node_type', { length: 32 }).notNull(),
+  nodeCode: varchar('node_code', { length: 80 }).notNull(),
+  title: varchar('title', { length: 300 }).notNull(),
+  sourcePage: integer('source_page'),
+  displayOrder: integer('display_order').notNull().default(0),
+  extractionStatus: varchar('extraction_status', { length: 24 }).notNull().default('catalogued'),
+  metadata: jsonb('metadata').notNull().default({}),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('curriculum_source_nodes_type_check', sql`${table.nodeType} IN ('strand', 'sub_strand', 'general_outcome', 'specific_outcome', 'learning_experience', 'inquiry_question', 'core_competency', 'value', 'pci', 'csl_activity', 'assessment_rubric', 'rubric_criterion')`),
+  check('curriculum_source_nodes_status_check', sql`${table.extractionStatus} IN ('catalogued', 'extracted', 'reviewed', 'approved', 'rejected')`),
+  unique('curriculum_source_nodes_document_type_code_unique').on(table.documentId, table.nodeType, table.nodeCode),
+  index('curriculum_source_nodes_parent_idx').on(table.parentId, table.displayOrder),
 ]);

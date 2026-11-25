@@ -43,6 +43,13 @@
       "when": 1795638000000,
       "tag": "0005_pathway_source_provenance",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795638500000,
+      "tag": "0006_curriculum_document_staging",
+      "breakpoints": true
     }
   ]
 }
