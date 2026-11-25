@@ -27,7 +27,7 @@ This directory is the isolated Sentinel project workspace within the `cbe` repos
 
 The Sentinel discovery documentation is established on the `sentinel/bootstrap` branch. It includes product requirements, architecture, security/environment guidance, a project handoff and an aggregate assessment evidence audit. Application implementation has not started. Requirements remain subject to validation against the original implementation brief, exact assessment source files, KICD curriculum designs and institutional workflows.
 
-See [Assessment Evidence Audit](docs/ASSESSMENT_EVIDENCE_AUDIT.md) for source inventory, confirmed aggregate findings, data-quality exceptions and curriculum-alignment implications.
+See [Assessment Evidence Audit](docs/ASSESSMENT_EVIDENCE_AUDIT.md) for source inventory, confirmed aggregate findings and data-quality exceptions. See [KICD Curriculum Alignment Register](docs/CURRICULUM_ALIGNMENT_REGISTER.md) for the official Grade 6 and Grade 9 learning-area baseline and mapping controls.
 
 ## Cloud-first working mode
 
