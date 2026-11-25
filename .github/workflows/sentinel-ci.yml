@@ -1,0 +1,56 @@
+name: Sentinel CI
+
+on:
+  push:
+    branches:
+      - sentinel/bootstrap
+    paths:
+      - 'sentinel/**'
+      - '.github/workflows/sentinel-ci.yml'
+  pull_request:
+    paths:
+      - 'sentinel/**'
+      - '.github/workflows/sentinel-ci.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sentinel-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Sentinel
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sentinel
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sentinel/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate migration journal
+        run: npm run db:check
+      - name: Lint
+        run: npm run lint
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run tests
+        run: npm test
+      - name: Build application
+        run: npm run build
+        env:
+          NEON_AUTH_BASE_URL: https://auth.invalid
+          NEON_AUTH_JWKS_URL: https://auth.invalid/.well-known/jwks.json
+          NEON_AUTH_COOKIE_SECRET: sentinel-ci-placeholder-secret-not-for-runtime
+          DATABASE_URL: postgresql://sentinel:sentinel@localhost:5432/sentinel
+          DATABASE_AUTHENTICATED_URL: postgresql://sentinel:sentinel@localhost:5432/sentinel
+          NEXT_PUBLIC_APP_URL: https://sentinel.invalid
