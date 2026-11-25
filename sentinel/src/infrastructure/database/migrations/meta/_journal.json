@@ -78,6 +78,13 @@
       "when": 1795641200000,
       "tag": "0010_controlled_class_placement",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795642000000,
+      "tag": "0011_grade6_cre_revised_source",
+      "breakpoints": true
     }
   ]
 }

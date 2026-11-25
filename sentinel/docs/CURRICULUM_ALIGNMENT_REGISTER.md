@@ -30,7 +30,8 @@ KICD's current Grade Six Designs page lists these regular curriculum design cate
 | Islamic Religious Education (IRE) | No distinct column in reviewed report | Not evidenced |
 | Indigenous and foreign languages | No distinct column in reviewed report | Not evidenced |
 
-KICD Grade Six Designs: https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/
+KICD Grade Six Designs: https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-six-designs/  
+Grade 6 CRE Revised 2024 PDF: https://kicd.ac.ke/wp-content/uploads/2024/10/CRE-GRADE-6-DESIGN-Revised.pdf
 
 The catalogue also lists Arabic, French, German, Indigenous Language and Mandarin. Their presence does not establish that they were assessed in this zonal exercise.
 

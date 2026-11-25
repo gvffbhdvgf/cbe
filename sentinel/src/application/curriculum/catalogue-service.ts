@@ -1,4 +1,4 @@
-import { asc, count, eq } from 'drizzle-orm';
+import { asc, count, desc, eq } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { curriculumDesignDocuments, curriculumEditions, curriculumGradeOfferings, curriculumLearningAreas, curriculumPathways, curriculumSourceNodes, curriculumSources } from '@/infrastructure/database/schema/curriculum';
 
@@ -43,13 +43,14 @@ export async function listCurriculumCatalogue() {
       sourceTitle: curriculumSources.title,
       sourceUrl: curriculumSources.url,
       indexedNodes: count(curriculumSourceNodes.id),
+      createdAt: curriculumDesignDocuments.createdAt,
     }).from(curriculumDesignDocuments)
       .innerJoin(curriculumGradeOfferings, eq(curriculumDesignDocuments.gradeOfferingId, curriculumGradeOfferings.id))
       .innerJoin(curriculumLearningAreas, eq(curriculumGradeOfferings.learningAreaId, curriculumLearningAreas.id))
       .innerJoin(curriculumSources, eq(curriculumDesignDocuments.sourceId, curriculumSources.id))
       .leftJoin(curriculumSourceNodes, eq(curriculumSourceNodes.documentId, curriculumDesignDocuments.id))
-      .groupBy(curriculumDesignDocuments.id, curriculumGradeOfferings.grade, curriculumLearningAreas.areaCode, curriculumSources.title, curriculumSources.url)
-      .orderBy(asc(curriculumGradeOfferings.grade), asc(curriculumLearningAreas.name)),
+      .groupBy(curriculumDesignDocuments.id, curriculumDesignDocuments.createdAt, curriculumGradeOfferings.grade, curriculumLearningAreas.areaCode, curriculumSources.title, curriculumSources.url)
+      .orderBy(asc(curriculumGradeOfferings.grade), asc(curriculumLearningAreas.name), desc(curriculumDesignDocuments.createdAt)),
   ]);
   return { pathways, offerings, documents };
 }

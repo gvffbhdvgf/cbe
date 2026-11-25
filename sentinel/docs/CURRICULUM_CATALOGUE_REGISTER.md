@@ -105,7 +105,7 @@ The catalogue layer is only the entry point. The detailed design ingestion model
 - Community Service Learning (CSL)
 - Assessment rubrics and evidence descriptors
 
-Source examples: [KICD Grade 6 CRE revised design (2024)](https://kicd.ac.ke/wp-content/uploads/2024/06/CRE-GRADE-6-DESIGN-APRIL-2024.pdf) and [KICD Grade 8 English design (2024)](https://kicd.ac.ke/wp-content/uploads/2024/06/English-Grade-8-Design-Formatted-April-2024.pdf).
+Source examples: [KICD Grade 6 CRE revised design (2024)](https://kicd.ac.ke/wp-content/uploads/2024/10/CRE-GRADE-6-DESIGN-Revised.pdf) and [KICD Grade 8 English design (2024)](https://kicd.ac.ke/wp-content/uploads/2024/06/English-Grade-8-Design-Formatted-April-2024.pdf).
 
 Do not infer missing outcomes, copy content across grades or pathways, or map a zonal assessment composite to a KICD learning area without documentary evidence and curriculum-specialist review.
 
@@ -123,9 +123,9 @@ The current regular catalogue seed contains 120 grade offerings: 9 entries for e
 
 ## 6. Pilot source-document register
 
-The official [Grade 6 CRE design PDF](https://kicd.ac.ke/wp-content/uploads/2024/06/CRE-GRADE-6-DESIGN-APRIL-2024.pdf) has been identified and linked to the Grade 6 CRE offering. Its cover says **First Published in 2021**, while the file name/path indicates an April 2024 file. The revision/currentness relationship is not yet confirmed. Sentinel records the document as `identified`, review `pending`, rights `not_assessed`; it is not an approved active design.
+The official [Grade 6 CRE Revised 2024 PDF](https://kicd.ac.ke/wp-content/uploads/2024/10/CRE-GRADE-6-DESIGN-Revised.pdf) is now identified as the current source candidate. Its cover states **First Published in 2021** and **Revised 2024** (ISBN 978-9914-724-78-3). The foreword says KICD reviewed and rationalised curriculum designs in 2024. The KICD Grade Six Designs catalogue lists CRE, although the exact embedded link to this PDF still needs direct confirmation. The PDF rights notice reserves reproduction/transcription rights; Sentinel records rights as `not_assessed` and review as `pending`.
 
-The document staging registry indexes five strand headings and 22 sub-strand headings from the source table of contents. It stores headings and page provenance only; no full learning-outcome, learning-experience, rubric or other body text has been transcribed. The next step is to confirm the current official revision and rights/permission conditions before extracting and reviewing substantive curriculum content.
+The earlier [June 2024 CRE PDF](https://kicd.ac.ke/wp-content/uploads/2024/06/CRE-GRADE-6-DESIGN-APRIL-2024.pdf) is retained as a historical source candidate, not silently overwritten. The revised 2024 staging document indexes five strand headings and 22 sub-strand headings. Notable corrections include strand 5 `Christian Living` (not `Christian Living Today`), sub-strand 2.5 `Jacob wrestles an Angel` (not `Jacob Meeting an Angel`), and revised strand page references 1, 8, 17, 32 and 39. Only short headings and source provenance are stored; no specific outcome, learning-experience or rubric body text has been transcribed.
 
 ## 7. Separate material catalogues
 
