@@ -9,8 +9,7 @@ export function AssessmentEventControls({ organisationId, eventId, status, endsA
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const canClose = status === 'open' && new Date(endsAt).getTime() <= Date.now();
-  const action = status === 'scheduled' ? 'open' : canClose ? 'close' : null;
+  const action = status === 'scheduled' ? 'open' : status === 'open' ? 'close' : null;
   if (!action) return null;
 
   async function run() {
