@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS public.platform_administrators (
-  user_id text PRIMARY KEY,
+  user_id uuid PRIMARY KEY REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   status varchar(16) NOT NULL DEFAULT 'active' CHECK (status IN ('active','suspended','revoked')),
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -8,12 +8,12 @@ CREATE TABLE IF NOT EXISTS public.platform_administrators (
 CREATE TABLE IF NOT EXISTS public.organisation_memberships (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
-  user_id text NOT NULL,
+  user_id uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   role varchar(32) NOT NULL CHECK (role IN ('organisation_admin','school_admin','teacher','assessor','viewer')),
   status varchar(16) NOT NULL DEFAULT 'active' CHECK (status IN ('invited','active','suspended','revoked')),
   starts_at timestamptz NOT NULL DEFAULT now(),
   ends_at timestamptz,
-  created_by text NOT NULL,
+  created_by uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CHECK (ends_at IS NULL OR ends_at > starts_at),
@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS organisation_memberships_org_status_idx ON public.org
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS public.audit_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  actor_user_id text NOT NULL,
+  actor_user_id uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   organisation_id uuid REFERENCES public.organisations(id) ON DELETE RESTRICT,
   action varchar(120) NOT NULL,
   resource_type varchar(80) NOT NULL,
