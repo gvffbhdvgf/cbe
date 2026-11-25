@@ -33,6 +33,7 @@ Created and verified on sentinel/bootstrap:
 - sentinel/.gitignore
 - sentinel/.env.example
 - sentinel/PROJECT_STATUS.md (this durable checkpoint)
+- sentinel/docs/ASSESSMENT_EVIDENCE_AUDIT.md
 
 No application code, pull request, default-branch merge, cloud resource or production deployment has been created.
 
@@ -65,20 +66,22 @@ No application code, pull request, default-branch merge, cloud resource or produ
 ## Evidence caveats
 
 - The external Notion implementation brief belongs to another workspace and has not yet been retrieved through the connected integration.
-- Preliminary Grade 6 totals suggested public/private enrolment 1,301 + 105 = 1,406 while combined cluster total was reported as 1,405. This one-learner discrepancy is unresolved and must be checked against exact source files.
-- Full outcome-by-outcome KICD mapping for Grades 6 and 9 has not been completed.
+- Grade 6 category totals are 1,406 (public 1,301 + private 105), but the source report contains conflicting cluster roll presentations: page 40 sums to 1,408; page 41 prints 1,405; cluster rows also differ for Sisiluma and Muchesima. See ASSESSMENT_EVIDENCE_AUDIT.md.
+- Grade 9 cluster total is 1,402. Its school-level table shows four private schools (roll 75), while the preface says five private schools participated; this requires clarification.
+- KICD curriculum structures and official Grade 6/Grade 9 resources have been reviewed at a structural level. Outcome-by-outcome mapping is not yet complete.
 
 ## Immediate next actions
 
 1. Retrieve the external Notion implementation brief through an authorised share/export route.
-2. Reopen the exact Grade 6 and Grade 9 assessment source files and reconcile all totals.
-3. Complete KICD curriculum mapping for the relevant Grades 6 and 9 learning areas, outcomes and assessment expectations.
-4. Validate institutional users, roles, school/cluster/zone hierarchy, approval workflows, imports, reporting and intervention processes.
-5. Inspect Cloudflare accounts and relevant existing resources read-only; do not provision without an approved architecture.
-6. Resolve the intended Vercel project/hosting arrangement. Do not use one of the unrelated existing projects by assumption, and do not enable per-commit production deployment.
-7. Reassess Neon after the database/environment plan is approved; current organisation has no projects.
-8. Define notification workflows, then select Resend or SenderKit.
-9. Finalise requirements and architecture before creating application features.
+2. Obtain written source-owner confirmation for Grade 6 conflicting cluster counts and Grade 9 private-school participation.
+3. Validate learner-level source records against school, cluster, category and gender aggregates.
+4. Obtain actual assessment papers, marking schemes and moderation records; then complete KICD outcome mapping.
+5. Validate institutional users, roles, school/cluster/zone hierarchy, approval workflows, imports, reporting and intervention processes.
+6. Inspect Cloudflare accounts and relevant existing resources read-only; do not provision without an approved architecture.
+7. Resolve the intended Vercel project/hosting arrangement. Do not use one of the unrelated existing projects by assumption, and do not enable per-commit production deployment.
+8. Reassess Neon after the database/environment plan is approved; current organisation has no projects.
+9. Define notification workflows, then select Resend or SenderKit.
+10. Finalise requirements and architecture before creating application features.
 
 ## Handoff instruction for future chats
 
