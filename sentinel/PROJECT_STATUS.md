@@ -314,3 +314,16 @@ Deployment `dpl_12JJAnkF8GG3HDAidF1NTdQnYevo` is READY and browser-verified on t
 - Applied migration `0006_curriculum_document_staging` to Neon `sentinel-development`; verified one source document, five strands and 22 sub-strands.
 - Cloud validation after the document staging changes: migration journal passed (7 migrations), TypeScript passed, 14/14 tests passed, lint passed, Next.js build passed, npm audit 0 vulnerabilities.
 - Latest controlled Preview deployment: `dpl_7cBovYD4KVexpFVaBHtbWXcGRvYp`, building from code commit `ab7cdc99413717446a32830c13037530516a61dc`. Browser verification is pending.
+
+
+### 25 November 2026 — Learner register and enrolment foundation
+
+- Added tenant-scoped `people`, `learner_profiles`, `classes`, `learner_enrolments`, `guardian_relationships` and `learner_progression_events` tables.
+- Composite foreign keys bind learner identities, enrolments, classes, guardian relationships and progression events to the same tenant boundary; class references must also match organisation, grade and academic year. One active enrolment per learner/tenant is enforced.
+- Added a server-side learner register API and administrator/school-administrator page to list and register learners. Admission writes person, learner profile, enrolment, progression event and audit event in one Neon HTTP batch.
+- Admission form uses data minimisation: required first/last name, optional middle/preferred name and optional date of birth, grade and academic year. It does not collect national identifiers, phone/email, health/disability data, biometrics, photographs or guardian contacts. Date of birth is not displayed in the register and personal details are excluded from audit metadata.
+- Added domain validation tests for names, grades, academic years and dates. Cloud checks: migration journal passed (8 migrations), TypeScript passed, 19/19 tests passed, lint passed, Next.js build passed, npm audit 0 vulnerabilities.
+- Applied migration `0007_learner_records_tenant_scope` on Neon `sentinel-development`; verified all six learner tables exist and contain zero rows.
+- Added [LEARNER_DATA_MODEL.md](docs/LEARNER_DATA_MODEL.md), including tenant boundaries, data minimisation and live-pilot gates.
+- Class creation/assignment, guardian verification and portal access, transfer workflows, learner updates/exits, RLS and cross-tenant integration tests remain outstanding.
+- Latest controlled Preview deployment: `dpl_ArC26w3rJ3vi7JjSuCygoYFBu2Uk`, building from code commit `ecccb2d7e51b64e4021e292219fd987ae924c473`.
