@@ -25,7 +25,9 @@ This directory is the isolated Sentinel project workspace within the `cbe` repos
 
 ## Current status
 
-The Sentinel bootstrap documentation is established on the `sentinel/bootstrap` branch. It includes product requirements, architecture, security/environment guidance and a project handoff. Application implementation has not started. Requirements remain subject to validation against the original implementation brief, exact assessment source files, KICD curriculum designs and institutional workflows.
+The Sentinel discovery documentation is established on the `sentinel/bootstrap` branch. It includes product requirements, architecture, security/environment guidance, a project handoff and an aggregate assessment evidence audit. Application implementation has not started. Requirements remain subject to validation against the original implementation brief, exact assessment source files, KICD curriculum designs and institutional workflows.
+
+See [Assessment Evidence Audit](docs/ASSESSMENT_EVIDENCE_AUDIT.md) for source inventory, confirmed aggregate findings, data-quality exceptions and curriculum-alignment implications.
 
 ## Cloud-first working mode
 
