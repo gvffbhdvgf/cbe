@@ -135,6 +135,31 @@ export async function recordAssessmentResultDecision(
   });
 }
 
+export async function recordAssessmentMarkCorrection(
+  actorUserId: string,
+  organisationId: string,
+  attemptId: string,
+  taskId: string,
+  awardedScore: number,
+  markerNote: string,
+  supersedesMarkId: string,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.record_assessment_mark_correction(
+      ${attemptId}::uuid, ${taskId}::uuid, ${awardedScore}::numeric,
+      ${markerNote}::text, ${supersedesMarkId}::uuid
+    ) AS mark_id`);
+    return result.rows[0]?.mark_id;
+  });
+}
+
+export async function finalizeAssessmentMarkCorrection(actorUserId: string, organisationId: string, attemptId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.finalize_assessment_mark_correction(${attemptId}::uuid) AS result_id`);
+    return result.rows[0]?.result_id;
+  });
+}
+
 export async function listAssessmentEvents(actorUserId: string, organisationId: string) {
   const [organisation] = await db.select({ id: organisations.id })
     .from(organisations)
