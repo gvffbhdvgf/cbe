@@ -16,6 +16,8 @@ export function mapLearnerApiError(
   const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
   if (code === '23505') return { message: 'A record with these details already exists', status: 409 };
   if (code === '42501') return { message: 'You do not have permission to perform this operation', status: 403 };
+  if (code === 'P0002') return { message: 'Enrolment not found', status: 404 };
+  if (code === '23514') return { message: 'The selected class is not valid for this active enrolment or placement state', status: 400 };
   const message = error instanceof Error ? error.message : fallback;
   if (message.toLowerCase().includes('permission')) return { message, status: 403 };
   if (message.toLowerCase().includes('not found') || message.toLowerCase().includes('inactive')) {

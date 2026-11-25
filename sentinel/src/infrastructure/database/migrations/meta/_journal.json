@@ -71,6 +71,13 @@
       "when": 1795640500000,
       "tag": "0009_class_creation_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795641200000,
+      "tag": "0010_controlled_class_placement",
+      "breakpoints": true
     }
   ]
 }

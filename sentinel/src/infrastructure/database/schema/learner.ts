@@ -119,7 +119,7 @@ export const learnerProgressionEvents = pgTable('learner_progression_events', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   foreignKey({ columns: [table.tenantOrganisationId, table.learnerId], foreignColumns: [learnerProfiles.tenantOrganisationId, learnerProfiles.id], name: 'learner_progression_tenant_learner_fkey' }).onDelete('restrict'),
-  check('learner_progression_event_type_check', sql`${table.eventType} IN ('admitted', 'promoted', 'repeated', 'transferred_in', 'transferred_out', 'withdrawn', 'graduated', 'reinstated')`),
+  check('learner_progression_event_type_check', sql`${table.eventType} IN ('admitted', 'promoted', 'repeated', 'transferred_in', 'transferred_out', 'withdrawn', 'graduated', 'reinstated', 'class_assigned')`),
   check('learner_progression_from_grade_check', sql`${table.fromGrade} IS NULL OR ${table.fromGrade} BETWEEN 1 AND 9`),
   check('learner_progression_to_grade_check', sql`${table.toGrade} IS NULL OR ${table.toGrade} BETWEEN 1 AND 9`),
   index('learner_progression_tenant_learner_idx').on(table.tenantOrganisationId, table.learnerId, table.effectiveAt),

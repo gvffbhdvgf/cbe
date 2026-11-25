@@ -8,9 +8,10 @@ const protectedTables = ['people','learner_profiles','classes','learner_enrolmen
 describe('learner RLS migration contract', () => {
   it('is present in the migration journal', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(10);
+    expect(journal.entries).toHaveLength(11);
     expect(journal.entries.at(-2)).toMatchObject({ idx: 8, tag: '0008_learner_record_rls' });
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 9, tag: '0009_class_creation_rls' });
+    expect(journal.entries.at(-2)).toMatchObject({ idx: 9, tag: '0009_class_creation_rls' });
+    expect(journal.entries.at(-1)).toMatchObject({ idx: 10, tag: '0010_controlled_class_placement' });
   });
   it('requires a non-login, non-bypass runtime role and installs the JWT extension', async () => {
     const migration = await readFile(migrationPath, 'utf8');
@@ -32,6 +33,16 @@ describe('learner RLS migration contract', () => {
     expect(migration).toContain('GRANT INSERT ON TABLE public.classes TO sentinel_learner_runtime');
     expect(migration).toContain('created_by = sentinel_private.current_user_id()');
     expect(migration).toContain('sentinel_private.can_manage_learner_records(tenant_organisation_id)');
+    expect(migration).not.toMatch(/GRANT\\s+[^;]*\\bUPDATE\\b[^;]*TO\\s+sentinel_learner_runtime/i);
+  });
+
+  it('uses a narrow stored operation for class placement without granting table UPDATE', async () => {
+    const migration = await readFile(new URL('./migrations/0010_controlled_class_placement.sql', import.meta.url), 'utf8');
+    expect(migration).toContain('SECURITY DEFINER');
+    expect(migration).toContain('FOR UPDATE');
+    expect(migration).toContain('class_record.grade = v_enrolment.grade');
+    expect(migration).toContain('class_record.academic_year = v_enrolment.academic_year');
+    expect(migration).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.assign_learner_to_class');
     expect(migration).not.toMatch(/GRANT\\s+[^;]*\\bUPDATE\\b[^;]*TO\\s+sentinel_learner_runtime/i);
   });
 

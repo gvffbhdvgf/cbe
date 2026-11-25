@@ -29,6 +29,14 @@ describe('learner API error mapping', () => {
     expect(mapLearnerApiError({ code: '42501' }, 'fallback', 500).status).toBe(403);
   });
 
+  it('returns 404 when the enrolment is not visible to the actor', () => {
+    expect(mapLearnerApiError({ code: 'P0002' }, 'fallback', 500).status).toBe(404);
+  });
+
+  it('returns 400 when the selected class does not match the enrolment', () => {
+    expect(mapLearnerApiError({ code: '23514' }, 'fallback', 400).status).toBe(400);
+  });
+
   it('returns the caller-selected default for unclassified errors', () => {
     expect(mapLearnerApiError(new Error('Invalid grade'), 'fallback', 400).status).toBe(400);
     expect(mapLearnerApiError(new Error('Unexpected database error'), 'fallback', 500).status).toBe(500);
