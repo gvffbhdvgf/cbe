@@ -8,7 +8,7 @@ const schemaPath = new URL('./schema/assessment.ts', import.meta.url);
 describe('assessment event eligible roster migration contract', () => {
   it('registers migration 0013 in sequence', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(18);
+    expect(journal.entries).toHaveLength(19);
     expect(journal.entries[13]).toMatchObject({ idx: 13, tag: '0013_assessment_event_eligible_roster' });
   });
 
