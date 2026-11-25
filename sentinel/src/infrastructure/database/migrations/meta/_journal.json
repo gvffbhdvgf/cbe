@@ -64,6 +64,13 @@
       "when": 1795639900000,
       "tag": "0008_learner_record_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795640500000,
+      "tag": "0009_class_creation_rls",
+      "breakpoints": true
     }
   ]
 }

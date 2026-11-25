@@ -7,7 +7,7 @@ import { canManageMembers } from '@/application/organisation/membership-policy';
 import { getOrganisationActorRole } from '@/application/organisation/membership-service';
 import { createLearnerRegistration, type LearnerRegistrationInput } from '@/domain/learner/learner';
 
-async function requireLearnerManager(actorUserId: string, organisationId: string) {
+export async function requireLearnerManager(actorUserId: string, organisationId: string) {
   const [organisation] = await db.select({ id: organisations.id }).from(organisations)
     .where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active'))).limit(1);
   if (!organisation) throw new Error('Organisation not found or inactive');
