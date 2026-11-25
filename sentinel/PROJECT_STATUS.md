@@ -303,3 +303,14 @@ Deployment `dpl_12JJAnkF8GG3HDAidF1NTdQnYevo` is READY and browser-verified on t
 - `GET /api/organisations`: HTTP 401 JSON.
 - `GET /api/organisations/{uuid}/members`: HTTP 401 JSON.
 - These were read-only requests; no account was created and no data was changed.
+
+
+### 25 November 2026 — Curriculum source-document staging
+
+- Added a curriculum document registry linked to a specific grade/pathway/edition offering and an authoritative source record.
+- Added a hierarchical extraction-staging table for strand, sub-strand, outcome, learning experience, inquiry question, competency, value, PCI, CSL and rubric node types. Every node retains document provenance, source page, extraction status and review state; it is a staging layer, not yet an approved canonical outcome store.
+- Identified the official Grade 6 CRE PDF: `CRE-GRADE-6-DESIGN-APRIL-2024.pdf`. The cover states “First Published in 2021” while the file path/name indicates an April 2024 file. Current revision status is therefore unresolved; document review is pending and rights/permission status is not assessed.
+- Indexed only five strand headings and 22 sub-strand headings from the PDF contents. No full learning-outcome, learning-experience or rubric body text was copied. All 27 headings remain in `catalogued` status and require curriculum-specialist review.
+- Applied migration `0006_curriculum_document_staging` to Neon `sentinel-development`; verified one source document, five strands and 22 sub-strands.
+- Cloud validation after the document staging changes: migration journal passed (7 migrations), TypeScript passed, 14/14 tests passed, lint passed, Next.js build passed, npm audit 0 vulnerabilities.
+- Latest controlled Preview deployment: `dpl_7cBovYD4KVexpFVaBHtbWXcGRvYp`, building from code commit `ab7cdc99413717446a32830c13037530516a61dc`. Browser verification is pending.
