@@ -332,11 +332,17 @@ REVOKE ALL ON FUNCTION sentinel_private.prevent_assessment_response_mutation() F
 --> statement-breakpoint
 
 REVOKE ALL ON FUNCTION sentinel_private.open_assessment_event(uuid) FROM PUBLIC;
+--> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.create_assessment_attempt(uuid, uuid) FROM PUBLIC;
+--> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.capture_assessment_response(uuid, uuid, jsonb) FROM PUBLIC;
+--> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.submit_assessment_attempt(uuid) FROM PUBLIC;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.open_assessment_event(uuid) TO sentinel_learner_runtime;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_attempt(uuid, uuid) TO sentinel_learner_runtime;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.capture_assessment_response(uuid, uuid, jsonb) TO sentinel_learner_runtime;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.submit_assessment_attempt(uuid) TO sentinel_learner_runtime;
