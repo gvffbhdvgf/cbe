@@ -49,7 +49,7 @@ No application code, pull request, default-branch merge, cloud resource or produ
 - GitHub repository access is confirmed. The working branch is sentinel/bootstrap.
 - Vercel team access is available. The team currently lists four projects: v0-build-project, v0-cms-and-ad-sense-blog, v0-supabase-setup and v0-agriculture-management-system. No project named sentinel was found; do not attach or alter an unrelated project. No deployment was triggered and no settings or environment variables were changed.
 - Neon organisation access is available, but the organisation currently returns no projects. Do not provision a database until the project architecture and environment plan are validated.
-- Cloudflare identity is connected. Account and resource inventory is the next read-only inspection step; no Cloudflare resources have been created or changed.
+- Cloudflare identity and account access are connected. Read-only inventory found one account and no zones or Worker scripts. No Cloudflare resources have been created or changed.
 - No secrets have been retrieved, copied, or exposed. Do not copy private credentials from plugin connections.
 
 ## Product/architecture principles
