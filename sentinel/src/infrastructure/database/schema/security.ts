@@ -1,9 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { check, pgTable, text, timestamp, uuid, varchar, jsonb, index, unique } from 'drizzle-orm/pg-core';
+import { check, pgSchema, pgTable, text, timestamp, uuid, varchar, jsonb, index, unique } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 
+const neonAuth = pgSchema('neon_auth');
+const authUsers = neonAuth.table('user', {
+  id: uuid('id').primaryKey(),
+});
+
 export const platformAdministrators = pgTable('platform_administrators', {
-  userId: text('user_id').primaryKey(),
+  userId: uuid('user_id').primaryKey().references(() => authUsers.id, { onDelete: 'restrict' }),
   status: varchar('status', { length: 16 }).notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -14,12 +19,12 @@ export const platformAdministrators = pgTable('platform_administrators', {
 export const organisationMemberships = pgTable('organisation_memberships', {
   id: uuid('id').defaultRandom().primaryKey(),
   organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
-  userId: text('user_id').notNull(),
+  userId: uuid('user_id').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
   role: varchar('role', { length: 32 }).notNull(),
   status: varchar('status', { length: 16 }).notNull().default('active'),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull().defaultNow(),
   endsAt: timestamp('ends_at', { withTimezone: true }),
-  createdBy: text('created_by').notNull(),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -33,7 +38,7 @@ export const organisationMemberships = pgTable('organisation_memberships', {
 
 export const auditEvents = pgTable('audit_events', {
   id: uuid('id').defaultRandom().primaryKey(),
-  actorUserId: text('actor_user_id').notNull(),
+  actorUserId: uuid('actor_user_id').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
   organisationId: uuid('organisation_id').references(() => organisations.id, { onDelete: 'restrict' }),
   action: varchar('action', { length: 120 }).notNull(),
   resourceType: varchar('resource_type', { length: 80 }).notNull(),
