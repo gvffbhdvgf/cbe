@@ -1,5 +1,5 @@
 import { jwtVerify, type JWTVerifyGetKey, type JWTPayload } from 'jose';
-import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
+import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '../../domain/learner/errors';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 

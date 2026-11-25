@@ -1,4 +1,4 @@
-import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
+import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '../../domain/learner/errors';
 
 export { LearnerAuthenticationError, LearnerRlsUnavailableError };
 

@@ -5,7 +5,7 @@ import { createRemoteJWKSet } from 'jose';
 import { auth } from '@/lib/auth/server';
 import * as schema from './schema';
 import { verifyNeonAccessToken } from './learner-jwt';
-import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
+import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '../../domain/learner/errors';
 
 function createLearnerDatabase() {
   const connectionString = process.env.DATABASE_AUTHENTICATED_URL;
