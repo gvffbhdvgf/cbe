@@ -8,7 +8,7 @@ import { SignOutButton } from '@/components/sign-out-button';
 
 const modules = [
   { title: 'Institutions & people', description: 'Organisation records, learner identity and workforce', href: '/workspace/organisations', icon: '◎', tag: 'Foundation', ready: true },
-  { title: 'Curriculum intelligence', description: 'KICD editions, pathways, learning areas and outcomes', href: '#', icon: '⌘', tag: 'In development' },
+  { title: 'Curriculum intelligence', description: 'KICD editions, pathways and source-linked learning areas', href: '/workspace/curriculum', icon: '⌘', tag: 'Catalogue foundation', ready: true },
   { title: 'Teaching & learning', description: 'Class groups, allocations and learning activities', href: '#', icon: '✳', tag: 'Planned' },
   { title: 'Assessment evidence', description: 'Instruments, marking, moderation and results', href: '#', icon: '↗', tag: 'Planned' },
   { title: 'Progress & support', description: 'Learner progress, interventions and follow-up', href: '#', icon: '◉', tag: 'Planned' },

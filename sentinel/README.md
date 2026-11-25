@@ -34,6 +34,8 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 - [Security & Environments](docs/SECURITY_AND_ENVIRONMENTS.md)
 - [Assessment Evidence Audit](docs/ASSESSMENT_EVIDENCE_AUDIT.md)
 - [KICD Curriculum Alignment Register](docs/CURRICULUM_ALIGNMENT_REGISTER.md)
+- [KICD Curriculum Catalogue Register](docs/CURRICULUM_CATALOGUE_REGISTER.md)
+- [KICD Curriculum Catalogue Register](docs/CURRICULUM_CATALOGUE_REGISTER.md)
 
 ## Governance, data and implementation design
 
@@ -57,7 +59,7 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 
 ## Current status
 
-Discovery, conceptual domain model, workflow, privacy/security threat model and dependency-aware release sequencing are documented on the sentinel/bootstrap branch. The first application vertical slice is implemented in the isolated development environment: managed-auth sign-in entry point, organisation directory, administrator-gated organisation registration, membership-scoped listing, audit events and a health endpoint. The exact stable Preview alias has been browser-verified: sign-in page HTTP 200, health endpoint HTTP 200 and unauthenticated organisation API HTTP 401 JSON. Successful authenticated sign-in, administrator bootstrap, cross-tenant integration tests and PostgreSQL RLS remain outstanding. The original external implementation brief, institutional workflow validation, data ownership, detailed curriculum edition inventory and legal/DPIA approvals remain open. This is an active development project, not a finished production system.
+Discovery, conceptual domain model, workflow, privacy/security threat model and dependency-aware release sequencing are documented on the sentinel/bootstrap branch. The application now includes a managed-auth sign-in entry point, administrator-gated organisation onboarding, organisation-scoped membership management, audit events, a source-linked KICD Grades 1–9 regular curriculum catalogue (120 grade offerings including one flagged source discrepancy), and a registered SNE pathway catalogue. The stable Preview alias has passed anonymous route checks for health, sign-in, organisation APIs and protected workspace redirects. Successful authenticated sign-in, first administrator provisioning, authenticated member-management tests, cross-tenant integration tests, detailed curriculum outcome ingestion, PostgreSQL RLS, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a finished production system.
 
 See the project handoff in Notion for continuity and cloud infrastructure status.
 
@@ -77,7 +79,7 @@ Never commit .env files, API tokens, private keys, database passwords, email cre
 
 The Next.js application lives in this directory. Run it with `npm ci`, `npm run dev`; validate with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. Database schema changes are versioned under `src/infrastructure/database/migrations`; use `npm run db:check` and `SENTINEL_ENVIRONMENT=development npm run db:migrate`. The migration runner accepts only the approved `sentinel-development` Neon endpoint. Never point development migration commands at Production.
 
-The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, membership-scoped organisation directory, platform-administrator-gated onboarding, organisation membership management with role boundaries, audit events, and a health endpoint.
+The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, organisation onboarding and member administration, a KICD curriculum catalogue browser, source-provenance metadata, audit events, and a health endpoint.
 
 ## Cloud resources
 

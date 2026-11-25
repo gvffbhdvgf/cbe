@@ -2,7 +2,7 @@
 
 **Status:** Structural register only; outcome mapping is not approved  
 **Reference date:** 25 November 2026  
-**Scope:** Regular curriculum, Grades 6 and 9
+**Scope:** Regular curriculum, Grades 1–9; assessment-report comparison examples remain Grades 6 and 9
 
 ## 1. Governing rule
 
@@ -55,6 +55,15 @@ KICD's current Grade Nine Designs page lists:
 KICD Grade Nine Designs: https://kicd.ac.ke/cbc-materials/curriculum-designs/grade-nine-designs/
 
 The catalogue also lists Arabic, French, German, Indigenous Language and Mandarin. Their presence does not establish assessment participation.
+
+
+## 2A. Catalogue coverage extension (Grades 1–9)
+
+The live Sentinel curriculum registry now has a source-linked regular catalogue for every grade from 1 through 9. The current KICD pages list eight lower-primary learning-area designs for Grades 1–3, 15 upper-primary designs for Grades 4–6, and 16 junior-school designs for Grades 7–9. A separate Indigenous Language entry for Grades 1–3 is flagged as a source discrepancy because it appears in the September 2026 complementary-materials submission scope but not on the current Lower Primary design page. It is not treated as a confirmed design offering.
+
+The SNE registry distinguishes HI, PI and VI adapted-design categories from framework modalities (regular with adaptations, accelerated/enriched, specialised and intervention) and from prevocational/vocational levels. Grade-level SNE offerings are not inferred from the index page; they require page-level document availability and content verification.
+
+See [CURRICULUM_CATALOGUE_REGISTER.md](CURRICULUM_CATALOGUE_REGISTER.md) for exact source URLs, grade-level catalogues, imported counts, discrepancy evidence and ingestion gates.
 
 ## 3. Assessment-report constructs that must remain distinct
 

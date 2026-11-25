@@ -22,6 +22,27 @@
       "when": 1795635600000,
       "tag": "0002_membership_active_uniqueness",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1795637000000,
+      "tag": "0003_curriculum_catalogue_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795637500000,
+      "tag": "0004_seed_curriculum_catalogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1795638000000,
+      "tag": "0005_pathway_source_provenance",
+      "breakpoints": true
     }
   ]
 }
