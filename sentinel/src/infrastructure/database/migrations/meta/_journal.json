@@ -99,6 +99,13 @@
       "when": 1795650000000,
       "tag": "0013_assessment_event_eligible_roster",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795653600000,
+      "tag": "0014_controlled_assessment_capture",
+      "breakpoints": true
     }
   ]
 }
