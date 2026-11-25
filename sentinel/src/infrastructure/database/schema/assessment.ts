@@ -250,7 +250,7 @@ export const assessmentResponseMarks = pgTable('assessment_response_marks', {
   markVersion: integer('mark_version').notNull(),
   awardedScore: numeric('awarded_score', { precision: 10, scale: 2 }).notNull(),
   markerNote: text('marker_note'),
-  supersedesMarkId: uuid('supersedes_mark_id'),
+  supersedesMarkId: uuid('supersedes_mark_id').references((): AnyPgColumn => assessmentResponseMarks.id, { onDelete: 'restrict' }),
   markedBy: uuid('marked_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
   markedAt: timestamp('marked_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
@@ -261,6 +261,5 @@ export const assessmentResponseMarks = pgTable('assessment_response_marks', {
   foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.taskId, table.instrumentVersionId], foreignColumns: [assessmentTasks.tenantOrganisationId, assessmentTasks.organisationId, assessmentTasks.id, assessmentTasks.instrumentVersionId], name: 'assessment_response_marks_task_fk' }).onDelete('restrict'),
   unique('assessment_response_marks_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.attemptId, table.taskId),
   unique('assessment_response_marks_version_unique').on(table.tenantOrganisationId, table.organisationId, table.attemptId, table.taskId, table.markVersion),
-  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.supersedesMarkId, table.attemptId, table.taskId], foreignColumns: [assessmentResponseMarks.tenantOrganisationId, assessmentResponseMarks.organisationId, assessmentResponseMarks.id, assessmentResponseMarks.attemptId, assessmentResponseMarks.taskId], name: 'assessment_response_marks_supersedes_fk' }).onDelete('restrict'),
   index('assessment_response_marks_attempt_task_idx').on(table.tenantOrganisationId, table.organisationId, table.attemptId, table.taskId, table.markVersion),
 ]);
