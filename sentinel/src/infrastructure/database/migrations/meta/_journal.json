@@ -127,6 +127,13 @@
       "when": 1795659600000,
       "tag": "0017_assessment_result_governance",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1795660200000,
+      "tag": "0018_assessment_result_correction",
+      "breakpoints": true
     }
   ]
 }
