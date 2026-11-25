@@ -181,3 +181,16 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Verified landing page and sign-in render in the cloud sandbox. Lint, typecheck, 9 tests, production build and dependency audit pass.
 - Vercel domain research: `softflix.com` is unavailable; `softflix.app` is available. Vercel quoted USD 9.99 for a one-year registration with auto-renew disabled. No purchase was made; registration is non-refundable, charged immediately to the team's default card, and taxes/fees may apply. Explicit purchase approval and registrant contact details are required.
 - No custom domain attached and no Vercel deployment created yet. The default Vercel project URL will be used for the first controlled preview; branded domain can be attached after registration.
+
+
+## 25 November 2026 — Sentinel development preview access configured
+
+- Confirmed Vercel deployment `dpl_5CjiKU2QWwpt8qW9wRqZbyEL4aAX` is READY on branch `sentinel/bootstrap` (commit `ddd7c97031c8e732b22452920c4ee2a3c5779aff`). Preview URL: https://sentinel-platform-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app
+- Confirmed Vercel project environment entries exist for `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL`, `NEON_AUTH_JWKS_URL`, and `NEON_AUTH_COOKIE_SECRET`; they are configured for production, preview and development. Secret values were not copied into source control or exposed. Their decrypted values could not be independently inspected through the connected Vercel API.
+- Confirmed Neon PostgreSQL 17.12 connectivity to database `sentinel` on the isolated `sentinel-development` branch. No production database was touched.
+- Added both the immutable deployment URL and stable branch alias to Neon Auth's Better Auth trusted-origin allowlist.
+- Vercel deployment protection initially redirected anonymous preview visitors to Vercel login. Created an alias-scoped protection override for the stable preview alias only; the temporary shareable bypass was revoked after the override was verified. Production protection settings were not changed.
+- Browser verification: stable preview alias renders the Sentinel landing page and branded sign-in screen. `/api/health` returns HTTP 200 with `{"status":"ok","service":"sentinel-platform"}`.
+- Authentication success remains unverified: no test user was created and no credentials were submitted. Neon Auth currently has email/password enabled, email verification required, self-service sign-up disabled, and no trusted origins before this configuration.
+- The preview alias is publicly reachable and must contain synthetic/demo data only. Do not load learner records until institutional authority, controller/processor roles, privacy notices/lawful basis, DPIA and access controls are approved.
+- No domain was purchased. No production deployment, production schema migration or live learner-data import occurred.
