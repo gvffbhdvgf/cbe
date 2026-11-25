@@ -225,3 +225,10 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Re-ran cloud sandbox validation after the schema alignment: typecheck passed, all 9 unit tests passed, and ESLint passed.
 - Verified the four Preview environment variable values against the Neon development branch without exposing them: both Auth URLs match exactly and both database connection strings identify the development branch.
 - Latest code deployment: `dpl_5ZKH9P3JhTiScmjzQzJjJc28r3Q1`, READY, built from commit `489488867ea49cb5e45b2bc046fc49fb071e7188`; stable alias remains https://sentinel-platform-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app.
+
+
+### Preview session-secret isolation
+
+- Replaced the shared Preview session-cookie secret with a newly generated independent 256-bit secret stored as a Vercel sensitive environment variable targeted only to Preview.
+- The existing cookie-secret variable now targets Production and Development only; those values were not read or exposed.
+- Redeployed the same verified application commit with the Preview-only secret. Deployment `dpl_VgBKY4YbxRDon1QWmwe2S1ctxQTS` reached READY and retains the stable preview alias.
