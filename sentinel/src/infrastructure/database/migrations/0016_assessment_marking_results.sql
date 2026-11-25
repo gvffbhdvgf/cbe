@@ -355,8 +355,8 @@ BEGIN
   END IF;
 
   SELECT
-    pg_catalog.coalesce(pg_catalog.sum(latest_mark.awarded_score), 0),
-    pg_catalog.sum(task.maximum_score)
+    COALESCE(SUM(latest_mark.awarded_score), 0),
+    SUM(task.maximum_score)
   INTO v_total_score, v_maximum_score
   FROM public.assessment_tasks AS task
   INNER JOIN public.assessment_responses AS response
