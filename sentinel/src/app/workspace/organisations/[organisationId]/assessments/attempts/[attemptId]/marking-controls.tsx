@@ -62,7 +62,7 @@ export function AssessmentMarkingControls({ organisationId, attemptId, attemptSt
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.error || 'Unable to save mark.');
-      setLatestMarks(current => ({ ...current, [task.task_id]: { markId: payload.markId, markVersion: (current[task.task_id]?.markVersion ?? 0) + 1, awardedScore: score, markedAt: new Date().toISOString() } }));
+      setLatestMarks(current => ({ ...current, [task.task_id]: { markId: payload.markId, markVersion: payload.markVersion ?? (current[task.task_id]?.markVersion ?? 0) + 1, awardedScore: payload.awardedScore ?? score, markedAt: payload.markedAt ?? new Date().toISOString() } }));
       setMessage('Mark saved to the append-only history.');
       router.refresh();
     } catch (cause) {
