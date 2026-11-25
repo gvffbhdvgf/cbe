@@ -92,6 +92,13 @@
       "when": 1795643000000,
       "tag": "0012_assessment_lifecycle_foundation",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795650000000,
+      "tag": "0013_assessment_event_eligible_roster",
+      "breakpoints": true
     }
   ]
 }
