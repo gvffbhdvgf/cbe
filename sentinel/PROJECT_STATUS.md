@@ -36,7 +36,7 @@ The target platform includes institution/school management; learner identity, ad
 - Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance and curriculum document staging.
 - Audit events and development-only migration runner.
 - PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, with a restricted learner runtime role and transaction-scoped verified identity context (migration 0008).
-- 31 automated tests currently pass; see the engineering checkpoint for validation details.
+- 31 automated tests passed at the last full execution; four additional API error-mapping tests were added afterward and remain unverified. See the engineering checkpoint for validation details.
 
 ## Current security boundary
 

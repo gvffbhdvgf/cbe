@@ -3,7 +3,9 @@
 **Date:** 25 November 2026  
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
-**Base commit inspected:** `e2507ec687e11e8e43f6ebdd99340fe33ff83782`
+**Base commit inspected:** `e2507ec687e11e8e43f6ebdd99340fe33ff83782`  
+**Latest implementation commit:** `623f2d4d27dd2ac1ed8c990643ba6f0281fb9b26`  
+**CI workflow commit:** `2fc875e3954526b3d227dd336d501d5d59658333`
 
 ## 1. Application and dependencies
 
@@ -73,12 +75,12 @@ A clean cloud checkout was created from the current GitHub branch; older ephemer
 | `npm run db:check` | Passed; nine migrations valid |
 | `npm run typecheck` | Passed |
 | `npm run lint` | Passed on baseline; rerun after final GitHub sync |
-| `npm test` | Passed; 31 tests across six files |
+| `npm test` | Last full execution passed 31 tests across six files; four additional API error-mapping tests have since been added and remain unexecuted |
 | `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
 JWT tests cover missing/malformed token, signature, issuer, expiry, UUID subject and session-subject mismatch. Migration contract tests cover the journal, role constraints, RLS enable/force and absence of DELETE grants.
 
-Clean install still reports a non-blocking peer-version warning in the Neon Auth dependency tree and an ESLint deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
+A GitHub Actions workflow now defines clean install, migration validation, lint, typecheck, tests and build on Sentinel branch/PR paths. No hosted workflow run or commit status check has been observed yet, so the workflow itself is not verified. Clean install still reports a non-blocking peer-version warning in the Neon Auth dependency tree and an ESLint deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
 
 ## 6. Vercel environment blocker
 

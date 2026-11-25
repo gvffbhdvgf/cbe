@@ -67,7 +67,7 @@ Discovery, domain modelling, security/privacy design and the first application v
 
 The restricted connection variable `DATABASE_AUTHENTICATED_URL` is not yet configured in Vercel: the `sentinel-platform` project has no connected Git repository, so Vercel rejected creation of a branch-scoped Preview variable. Do not widen this secret to all Preview deployments or Production as a workaround. Until the correct Preview configuration is available, RLS-backed learner operations fail closed.
 
-The current test suite has 31 passing tests. Authenticated end-to-end tests with a governed institutional test account, positive/negative cross-tenant integration tests, class creation and placement, transfer/progression, guardian verification, full KICD outcome ingestion, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a production-ready system.
+The last full test execution passed 31 tests. Four additional API error-mapping tests were added afterward and have not yet been executed; the new GitHub Actions workflow has not reported a hosted run or status check yet. Authenticated end-to-end tests with a governed institutional test account, positive/negative cross-tenant integration tests, class creation and placement, transfer/progression, guardian verification, full KICD outcome ingestion, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a production-ready system.
 
 See [PROJECT_STATUS.md](PROJECT_STATUS.md) and [Engineering Continuation Checkpoint](docs/ENGINEERING_CONTINUATION_CHECKPOINT.md) for the current handoff.
 
