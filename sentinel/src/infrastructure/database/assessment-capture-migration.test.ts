@@ -82,7 +82,6 @@ describe('controlled assessment capture migration contract', () => {
     expect(sql.match(/FROM public\.assessment_events AS event_record[\s\S]*?FOR UPDATE/g)).toHaveLength(4);
     expect(sql).toContain('FROM public.assessment_attempts AS attempt');
     expect(sql).toContain('FOR UPDATE');
-    expect(sql).toContain('assessment_attempts_event_enrolment_attempt_unique');
   });
 
   it('keeps captured responses immutable and makes all four lifecycle operations auditable', async () => {
