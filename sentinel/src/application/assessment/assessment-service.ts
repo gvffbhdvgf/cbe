@@ -81,6 +81,38 @@ export async function submitAssessmentAttempt(actorUserId: string, organisationI
   });
 }
 
+export async function closeAssessmentEvent(actorUserId: string, organisationId: string, eventId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.close_assessment_event(${eventId}::uuid) AS closed_at`);
+    return result.rows[0]?.closed_at;
+  });
+}
+
+export async function recordAssessmentMark(
+  actorUserId: string,
+  organisationId: string,
+  attemptId: string,
+  taskId: string,
+  awardedScore: number,
+  markerNote: string | null,
+  supersedesMarkId: string | null,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.record_assessment_mark(
+      ${attemptId}::uuid, ${taskId}::uuid, ${awardedScore}::numeric,
+      ${markerNote}::text, ${supersedesMarkId}::uuid
+    ) AS mark_id`);
+    return result.rows[0]?.mark_id;
+  });
+}
+
+export async function finalizeAssessmentMarking(actorUserId: string, organisationId: string, attemptId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.finalize_assessment_marking(${attemptId}::uuid) AS result_id`);
+    return result.rows[0]?.result_id;
+  });
+}
+
 export async function listAssessmentEvents(actorUserId: string, organisationId: string) {
   const [organisation] = await db.select({ id: organisations.id })
     .from(organisations)
