@@ -170,3 +170,14 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Browser smoke tests: landing page loads, sign-in page loads, unauthenticated workspace redirects to sign-in, public health endpoint returns service status.
 - Added `docs/IMPLEMENTATION_FOUNDATION.md` with exact resource status, limits, verification and blockers.
 - No production deployment, live learner data import, custom domain, email sending domain, or production schema migration exists.
+
+
+## 25 November 2026 — Softflix brand and visual design system
+
+- Established company/product brand architecture: Softflix is the company; Sentinel is the education operations and intelligence product.
+- Created original shield/open-book/north-star vector mark and favicon.
+- Reworked public landing page, authentication screen, workspace shell and organisation directory around a consistent design language: midnight navy, teal/aqua, restrained amber, readable sans-serif typography, generous whitespace, accessible hierarchy and restrained motion.
+- Added `docs/BRAND_AND_DESIGN_SYSTEM.md` documenting brand architecture, logo use, colour, typography, composition, iconography, data visualisation and accessibility rules.
+- Verified landing page and sign-in render in the cloud sandbox. Lint, typecheck, 9 tests, production build and dependency audit pass.
+- Vercel domain research: `softflix.com` is unavailable; `softflix.app` is available. Vercel quoted USD 9.99 for a one-year registration with auto-renew disabled. No purchase was made; registration is non-refundable, charged immediately to the team's default card, and taxes/fees may apply. Explicit purchase approval and registrant contact details are required.
+- No custom domain attached and no Vercel deployment created yet. The default Vercel project URL will be used for the first controlled preview; branded domain can be attached after registration.
