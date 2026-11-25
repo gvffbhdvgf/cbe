@@ -1,0 +1,20 @@
+# Local environment secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies and build output
+node_modules/
+.next/
+dist/
+build/
+coverage/
+
+# Local databases, logs and editor state
+*.sqlite
+*.db
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
