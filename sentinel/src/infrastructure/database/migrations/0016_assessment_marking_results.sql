@@ -142,7 +142,7 @@ BEGIN
 
   RETURN v_now;
 END;
-$;
+$$;
 --> statement-breakpoint
 
 CREATE FUNCTION sentinel_private.close_assessment_event(p_event_id uuid)
