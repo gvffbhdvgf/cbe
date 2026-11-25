@@ -20,7 +20,13 @@ The runner stores SHA-256 hashes and journal timestamps in `public.__drizzle_mig
 
 The initial organisation, membership, curriculum, document-staging and learner-record schemas were applied to the isolated development branch and reconciled with their SQL files. Migrations 0008–0010 are now versioned and recorded in `public.__drizzle_migrations`. Migration 0008 installs the `pg_session_jwt` extension dependency, security-definer identity/authority helpers, explicit least-privilege grants and RLS policies for learner/person/enrolment/class/progression/guardian/audit tables. Migration 0009 adds the guarded class INSERT privilege and policy. Migration 0010 adds the `class_assigned` progression event and a narrow `SECURITY DEFINER` placement function; the learner runtime role still has no general UPDATE/DELETE privilege. The restricted login role is provisioned separately per environment and inherits the non-login `sentinel_learner_runtime` group role.
 
-The runner's SHA-256 hash and journal timestamp are authoritative. Do not edit migration 0008 after application; add a new migration for subsequent policy changes.
+The runner's SHA-256 hash and journal timestamp are authoritative. Do not edit an applied migration; add a new migration for subsequent policy changes.
+
+## Legacy migration-ledger reconciliation
+
+The current source-controlled journal contains eleven entries (0000–0010). The isolated Neon development database's `public.__drizzle_migrations` table currently contains thirteen rows. Two additional historical rows have hashes `1bf91c6e83eb0ebf9f42c6e8ce28e2789a58b0a17e5f3b6a65c9e2d3e6a1d5b2` and `f0bf64b9a8d4a5d6c7e8f90123456789abcdef0123456789abcdef0123456789` (timestamps `1795639100000` and `1795639200000`). These hashes do not match any current source migration and no corresponding migration files appear in the available Git history.
+
+Both rows are preserved. The current runner matches migrations by their journal timestamp and SHA-256, so these orphan rows do not satisfy or replace any current journal entry. Do not delete, rewrite, reuse or guess the origin of either row. Reconcile only if an authoritative historical migration artifact or database change record is recovered.
 
 ## Prohibited
 

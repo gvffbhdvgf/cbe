@@ -3,7 +3,8 @@
 **Date:** 25 November 2026  
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
-**Latest implementation commit:** `df62faac06247b76352b4a8d4169323911448616`
+**Latest implementation commit:** `df62faac06247b76352b4a8d4169323911448616`  
+**Latest documentation checkpoint:** `bd24bea4fc26acfb558025b8b38e7c6dbc75e6ec`
 
 ## 1. Application and dependencies
 
@@ -48,7 +49,7 @@ Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Ne
 
 Neon project: `sentinel-platform`; development branch: `sentinel-development`; database: `sentinel`.
 
-Migration journal entries 0000–0010 are present (eleven migrations):
+The source-controlled migration journal has entries 0000–0010 (eleven migrations). The Neon ledger contains thirteen rows; two extra historical hashes are not represented in current source files or Git history and are preserved pending provenance investigation:
 - 0008 RLS foundation: SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`.
 - 0009 class creation RLS: SHA-256 `d284585be9a8f0a5071a06202435429cb34e484db79d6c37376a436089b4cf82`.
 - 0010 controlled class placement: SHA-256 `8bacb4f67b6602385d70ac53f423118a0a6d3cea57bb63d88dbad6527f30e6f2`.
@@ -57,7 +58,7 @@ Verified through Neon SQL transactions:
 - Restricted role can execute the placement function but has no UPDATE/DELETE privilege on learner enrolments.
 - Function is SECURITY DEFINER and the progression constraint includes `class_assigned`.
 - Synthetic identity without active authority receives a non-disclosing `P0002` enrolment-not-found response.
-- No live learner or guardian data has been imported. A positive placement workflow with a governed institutional test account remains outstanding.
+- No live learner or guardian data has been imported. The development branch currently has zero active organisations. A positive placement workflow and cross-tenant tests with a governed synthetic institutional account remain outstanding until an authorised test organisation/user fixture is provisioned.
 
 ## 5. Validation baseline
 

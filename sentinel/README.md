@@ -29,6 +29,8 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 - [Release Roadmap](docs/RELEASE_ROADMAP.md)
 - [ADR-001 — Tenant Boundary & Data Isolation](docs/ADR-001-TENANCY-AND-DATA-ISOLATION.md)
 - [ADR-002 — Learner Record RLS & Identity Context](docs/ADR-002-LEARNER-RECORD-RLS.md)
+- [ADR-003 — Organisation Class Groups](docs/ADR-003-CLASS-GROUPS.md)
+- [ADR-004 — Controlled Learner Class Placement](docs/ADR-004-CONTROLLED-CLASS-PLACEMENT.md)
 - [Security & Privacy Threat Model](docs/SECURITY_PRIVACY_THREAT_MODEL.md)
 - [Product Requirements](docs/PRODUCT_REQUIREMENTS.md)
 - [Architecture](docs/ARCHITECTURE.md)
@@ -63,11 +65,11 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 
 Discovery, domain modelling, security/privacy design and the first application vertical slices are implemented. The application includes managed authentication, organisation onboarding and membership administration, audit events, learner admission/listing, organisation-specific class creation/listing, controlled learner placement, and source-linked KICD Grades 1–9 regular curriculum and SNE pathway catalogues.
 
-**Learner-record database isolation is implemented on the isolated Neon development branch.** Migration 0008 enables and forces PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit tables. Learner reads and writes use a restricted database login inheriting the non-login `sentinel_learner_runtime` role. The server obtains a Neon Auth JWT, verifies it against the configured JWKS and issuer, checks that its subject matches the authenticated session, then establishes transaction-local claims and confirms the database identity before learner queries. The restricted role has no UPDATE or DELETE privileges.
+**Learner-record database isolation is implemented on the isolated Neon development branch.** Migrations 0008–0010 enable and force PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit tables, add class creation and expose controlled learner placement through a narrow SECURITY DEFINER function. Learner reads and writes use a restricted database login inheriting the non-login `sentinel_learner_runtime` role. The server obtains a Neon Auth JWT, verifies it against the configured JWKS and issuer, checks that its subject matches the authenticated session, then establishes transaction-local claims and confirms the database identity before learner queries. The restricted role has no general UPDATE or DELETE privileges; it receives EXECUTE on a narrow function for initial class placement.
 
 The restricted connection variable `DATABASE_AUTHENTICATED_URL` is not yet configured in Vercel: the `sentinel-platform` project has no connected Git repository, so Vercel rejected creation of a branch-scoped Preview variable. Do not widen this secret to all Preview deployments or Production as a workaround. Until the correct Preview configuration is available, RLS-backed learner operations fail closed.
 
-The latest clean cloud validation passed 43 tests across eight files, migration checks, ESLint, TypeScript, the Next.js production build and npm security audit (zero vulnerabilities). A GitHub Actions workflow is present, but no hosted workflow run/status check has been observed yet. Authenticated end-to-end tests with a governed institutional test account, positive/negative cross-tenant integration tests, class creation and placement, transfer/progression, guardian verification, full KICD outcome ingestion, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a production-ready system.
+The latest clean cloud validation passed 49 tests across nine files, 11 source-controlled migration checks, ESLint, TypeScript, the Next.js production build and npm security audit (zero vulnerabilities). The Neon migration ledger has 13 rows; two historical hashes are not represented by current migration files or Git history and have been preserved for investigation. A GitHub Actions workflow is present, but no hosted workflow run/status check has been observed yet. Authenticated end-to-end tests with a governed institutional test account, positive/negative cross-tenant integration tests, class creation and placement, transfer/progression, guardian verification, full KICD outcome ingestion, institutional workflow validation and legal/DPIA approvals remain outstanding. This is an active development project, not a production-ready system.
 
 See [PROJECT_STATUS.md](PROJECT_STATUS.md) and [Engineering Continuation Checkpoint](docs/ENGINEERING_CONTINUATION_CHECKPOINT.md) for the current handoff.
 
@@ -87,7 +89,7 @@ Never commit .env files, API tokens, private keys, database passwords, email cre
 
 The Next.js application lives in this directory. Run it with `npm ci`, `npm run dev`; validate with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. Database schema changes are versioned under `src/infrastructure/database/migrations`; use `npm run db:check` and `SENTINEL_ENVIRONMENT=development npm run db:migrate`. The migration runner accepts only the approved `sentinel-development` Neon endpoint. Never point development migration commands at Production.
 
-The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, organisation onboarding and member administration, a privacy-minimised learner register, a KICD curriculum catalogue browser, source-provenance metadata, audit events, and a health endpoint.
+The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, organisation onboarding and member administration, a privacy-minimised learner register, class-group register and controlled initial placement, a KICD curriculum catalogue browser, source-provenance metadata, audit events, and a health endpoint.
 
 ## Cloud resources
 

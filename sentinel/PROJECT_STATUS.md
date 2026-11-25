@@ -45,6 +45,7 @@ The target platform includes institution/school management; learner identity, ad
 - `sentinel_learner_runtime` is a NOLOGIN, NOBYPASSRLS, non-privileged database group role.
 - `sentinel_learner_login` is the development login role and inherits the group role. It has only SELECT/INSERT on explicitly approved learner/audit tables; no UPDATE or DELETE.
 - Learner operations must use `DATABASE_AUTHENTICATED_URL`, never the privileged `DATABASE_URL`.
+- The runtime login has no general UPDATE/DELETE privileges; initial class placement is exposed only through the narrowly validated SECURITY DEFINER function.
 - Server-side membership/organisation preflight still uses the existing privileged application connection. Keep its use narrow.
 - The JWT is verified with Neon Auth JWKS before claims are set transaction-locally. The database confirms the transaction identity before learner queries.
 - The database extension's fallback claims mode does not independently verify JWT signatures; do not bypass application verification or permit untrusted SQL.
@@ -77,4 +78,4 @@ Vercel project `sentinel-platform` is not connected to a Git repository. Vercel 
 - Vercel automatic deployments are disabled for `sentinel/bootstrap`; no uncontrolled production deployment.
 - Do not provision paid/persistent infrastructure or incur new service costs without approval.
 - Older ephemeral sandboxes are preserved; use fresh cloud checkouts and do not reset or overwrite stale work.
-- The external original implementation brief remains unrecovered; requirements dependent on it are provisional until an authorised share/export route is available.
+- The external original implementation brief remains unrecovered; requirements dependent on it are provisional until an authorised share/export route is available. The source-controlled migration journal has 11 entries (0000–0010); the Neon migration ledger has 13 rows, including two historical hashes with no matching current migration file or Git history. Those rows are preserved pending provenance investigation.
