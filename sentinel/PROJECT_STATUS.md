@@ -1,26 +1,30 @@
 # Sentinel — Project Handoff & Current Status
 
-Last checkpoint: 26 November 2026. Update this file and the linked Notion checkpoint after material progress.
+Last checkpoint: 25 November 2026. Update this file and the linked Notion checkpoint after material progress.
 
 ## Start here in future chats
+
 Read the Notion handoff page and the Sentinel Product & Engineering Blueprint before continuing:
 https://app.notion.com/p/423d7d0ea58d8133a62bea7223f4c98e
 
-Then inspect the latest GitHub branch state before editing. Do not repeat bootstrap work or assume approvals are complete.
+Then inspect the latest GitHub branch state through the GitHub integration before editing. Do not repeat bootstrap work or assume approvals are complete.
 
 ## Working agreement
+
 - Product: Sentinel, a curriculum-informed assessment and learning-improvement platform.
 - Repository: https://github.com/gvffbhdvgf/cbe
 - Working branch: sentinel/bootstrap
 - Isolate all project work under sentinel/.
-- Local-first development where practical; sync reviewed changes to GitHub and keep Notion aligned.
+- Cloud-first workflow: use GitHub, Notion, Vercel, Neon, Cloudflare and other connected plugins directly.
+- Do not use local-machine connectors, local shells/terminals, desktop/computer automation or ChatGPT Work unless the user explicitly changes this instruction.
+- Keep GitHub implementation and Notion documentation aligned.
 - Do not trigger Vercel production deployment on every commit. User cites a 24-hour deployment usage limit; use controlled/manual release deployment.
 - Evaluate Resend vs SenderKit before choosing a communications provider.
 - Use Cloudflare for relevant DNS, edge, security and R2 needs; Neon is the proposed PostgreSQL provider.
 - Never commit real secrets or expose connected-plugin OAuth credentials.
-- User asked to replace Local Commander with another local-computer plugin. Do not use Local Commander again unless asked.
 
 ## GitHub bootstrap
+
 Created and verified on sentinel/bootstrap:
 - sentinel/README.md
 - sentinel/docs/PRODUCT_REQUIREMENTS.md
@@ -33,29 +37,25 @@ Created and verified on sentinel/bootstrap:
 No application code, pull request, default-branch merge, cloud resource or production deployment has been created.
 
 ## Notion documents
+
 - Product & Engineering Blueprint: https://app.notion.com/p/423d7d0ea58d81638b15f921729421cc
 - Product Requirements: https://app.notion.com/p/423d7d0ea58d815eb288ec45f5803d81
 - Architecture: https://app.notion.com/p/423d7d0ea58d81688729de12925308d3
 - Security & Environments: https://app.notion.com/p/423d7d0ea58d81d38e5ae87efbf3824b
 - Current Handoff: https://app.notion.com/p/423d7d0ea58d8133a62bea7223f4c98e
 
-## Local tooling status
-- Local Commander previously failed to complete a Windows directory listing and reported unresolved execution leases. Do not use it again unless the user asks.
-- Remote Desktop Commander reports no devices paired/connected. No local files were changed through it.
-- Cmdexa reports Windows device Machukhu online and healthy, paired to the account (agent/helper version 0.6.423).
-- A Cmdexa read-only execution preflight was submitted to check Git, Node, npm, Python and PowerShell availability. It is waiting for local desktop approval; verdict is unverified. No command has executed and no local files have been changed through Cmdexa.
-- Next: approve the visible Cmdexa local read-only preflight on the Windows desktop. After completion, inspect tool availability and project path, then create/verify the local Sentinel workspace and sync sentinel/bootstrap.
-- Terminal Commands is another candidate, but do not start a billable Codespace without explicit consent.
-- Do not claim local setup succeeded until the connector confirms it.
+## Cloud service inspection
 
-## Vercel
-- Team access request for team_sXlkYQpoRcDz7TxGl5gWroZy was pending at last check.
-- No project settings or environment variables changed; no deployment triggered.
-- After access is granted, inspect project Git integration and environment targets. Configure a manual or controlled release path and verify no per-commit production deployments.
+- GitHub repository access is confirmed. The working branch is sentinel/bootstrap.
+- Vercel team access is available. The team currently lists four projects: v0-build-project, v0-cms-and-ad-sense-blog, v0-supabase-setup and v0-agriculture-management-system. No project named sentinel was found; do not attach or alter an unrelated project. No deployment was triggered and no settings or environment variables were changed.
+- Neon organisation access is available, but the organisation currently returns no projects. Do not provision a database until the project architecture and environment plan are validated.
+- Cloudflare identity is connected. Account and resource inventory is the next read-only inspection step; no Cloudflare resources have been created or changed.
+- No secrets have been retrieved, copied, or exposed. Do not copy private credentials from plugin connections.
 
 ## Product/architecture principles
+
 - Version KICD curriculum and preserve source provenance.
-- Learner identity is independent of school enrolment.
+- Learner identity is independent from school enrolment.
 - Raw marks, performance levels and curriculum-outcome mastery are distinct.
 - Results retain assessment, scoring and curriculum-version context.
 - Analytics show denominators and data coverage.
@@ -63,15 +63,23 @@ No application code, pull request, default-branch merge, cloud resource or produ
 - Recommended initial architecture: modular monolith, Next.js/TypeScript, PostgreSQL/Neon, Prisma subject to compatibility, Cloudflare where appropriate.
 
 ## Evidence caveats
+
 - The external Notion implementation brief belongs to another workspace and has not yet been retrieved through the connected integration.
 - Preliminary Grade 6 totals suggested public/private enrolment 1,301 + 105 = 1,406 while combined cluster total was reported as 1,405. This one-learner discrepancy is unresolved and must be checked against exact source files.
 - Full outcome-by-outcome KICD mapping for Grades 6 and 9 has not been completed.
 
 ## Immediate next actions
-1. Approve and complete the Cmdexa read-only preflight; inspect local tooling and paths.
-2. Create/verify the local sentinel workspace and sync sentinel/bootstrap.
-3. Obtain Vercel team approval; inspect project and deployment configuration without triggering builds.
-4. Retrieve the external Notion brief and reopen exact assessment files before finalising requirements.
-5. Validate Neon and Cloudflare account/project context before provisioning.
-6. Define communications workflows, then select Resend or SenderKit.
-7. Continue discovery and architecture validation before implementing application features.
+
+1. Retrieve the external Notion implementation brief through an authorised share/export route.
+2. Reopen the exact Grade 6 and Grade 9 assessment source files and reconcile all totals.
+3. Complete KICD curriculum mapping for the relevant Grades 6 and 9 learning areas, outcomes and assessment expectations.
+4. Validate institutional users, roles, school/cluster/zone hierarchy, approval workflows, imports, reporting and intervention processes.
+5. Inspect Cloudflare accounts and relevant existing resources read-only; do not provision without an approved architecture.
+6. Resolve the intended Vercel project/hosting arrangement. Do not use one of the unrelated existing projects by assumption, and do not enable per-commit production deployment.
+7. Reassess Neon after the database/environment plan is approved; current organisation has no projects.
+8. Define notification workflows, then select Resend or SenderKit.
+9. Finalise requirements and architecture before creating application features.
+
+## Handoff instruction for future chats
+
+Use cloud-connected plugins only. Read this checkpoint and the linked Sentinel Blueprint, Product Requirements, Architecture and Security documents. Inspect the latest GitHub branch and relevant cloud service state before changing anything. Do not use local-machine tooling or ChatGPT Work. Do not repeat completed bootstrap work, do not assume pending approvals have been granted, and update this checkpoint after material progress.
