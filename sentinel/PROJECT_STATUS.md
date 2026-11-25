@@ -1,6 +1,6 @@
 # Sentinel — Project Handoff & Current Status
 
-Last checkpoint: 25 November 2026. Working branch: `sentinel/bootstrap`.
+Last checkpoint: 26 November 2026. Working branch: `sentinel/bootstrap`.
 
 ## Start here
 
@@ -35,10 +35,11 @@ The target platform includes institution/school management; learner identity, ad
 - Learner admission/list service and administrator-facing register.
 - Organisation-specific class group creation/listing for Grades 1–9 by academic year, with unique class codes and audit events.
 - Controlled learner placement into a matching active class, effective-dated and audited through a narrow database function; reassignment is not enabled.
-- Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance and curriculum document staging.
+- Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance, curriculum document staging and authenticated source-structure browsing for versioned strand/sub-strand headings.
+- Grade 6 CRE June 2024 and Revised 2024 documents are preserved as separate source records; a source-comparison note records six changed heading/page rows. Neither source is approved for outcome ingestion.
 - Audit events and development-only migration runner.
 - PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, with a restricted learner runtime role and transaction-scoped verified identity context (migrations 0008–0010). Class creation and learner placement are permitted only to authorised organisation/school administrators; placement uses a narrow SECURITY DEFINER function rather than a general UPDATE grant.
-- 49 automated tests pass in the latest clean cloud validation, alongside lint, typecheck, migration validation, production build and a zero-vulnerability audit. See the engineering checkpoint for details.
+- 56 automated tests pass across 11 test files; lint, typecheck and production build pass in the current Sentinel workspace. A protected Vercel Preview deployment is READY for the curriculum browser. The preview has not been promoted to Production.
 
 ## Current security boundary
 
@@ -52,13 +53,13 @@ The target platform includes institution/school management; learner identity, ad
 
 ## Current blocker
 
-Vercel project `sentinel-platform` is not connected to a Git repository. Vercel rejected creation of the branch-scoped Preview variable `DATABASE_AUTHENTICATED_URL` with a 400 error. The team has no custom environments configured. Do not create a project-wide Preview secret as a workaround because that broadens the intended scope. Resolve the Git integration/project configuration deliberately, then add the restricted connection as a sensitive Preview-only variable for `sentinel/bootstrap`. No Production variable or deployment was changed.
+Vercel project `sentinel-platform` is not linked to the Git repository for automatic branch-scoped environment management. A protected Preview deployment is created directly from GitHub commit `a4e6f6c4faf321f6b9f282bd6a3ea1a08ec4a937`. The restricted `DATABASE_AUTHENTICATED_URL` Preview variable remains unconfigured; do not replace it with a project-wide or Production secret. Resolve the intended branch-scoped variable configuration before testing learner APIs. No Production variable or deployment was changed.
 
 ## Curriculum evidence and unresolved discrepancies
 
 - Regular curriculum offerings are source-linked for Grades 1–9; SNE pathways are catalogued without inferring unverified grade-level offerings.
 - The Indigenous Language lower-primary discrepancy remains flagged, not treated as a confirmed curriculum-design offering.
-- One Grade 6 CRE design PDF has conflicting edition clues (file label April 2024; cover says first published 2021); currentness and rights review remain pending.
+- Grade 6 CRE has two official source records: June 2024 file label/First Published 2021 and an October 2024 Revised 2024 PDF. They remain separate; revised-source catalogue linkage, curriculum review and rights review remain pending.
 - Five strand headings and 22 sub-strand headings are staged as catalogue headings only. Full outcomes/learning experiences have not been approved or ingested.
 - Grade 6 assessment evidence discrepancy remains unresolved: category totals report 1,406 while conflicting cluster tables report 1,408 and 1,405. Never silently reconcile these figures.
 
@@ -71,6 +72,13 @@ Vercel project `sentinel-platform` is not connected to a Git repository. Vercel 
 5. Continue KICD outcome ingestion only from source documents with verified edition, provenance, rights and curriculum-specialist review.
 6. Complete authenticated end-to-end, accessibility, performance and security testing.
 7. Complete legal/privacy/DPIA and institutional governance approvals before any live learner pilot.
+
+## Latest deployment checkpoint
+
+- Vercel project root directory is `sentinel`.
+- Preview deployment: https://sentinel-platform-56590wifk-pep-popsiis-projects.vercel.app (READY; SSO protected).
+- Public unauthenticated requests to `/` and `/api/health` redirect to Vercel SSO; health JSON is not publicly exposed.
+- Production has not been promoted or modified.
 
 ## Cloud and release guardrails
 
