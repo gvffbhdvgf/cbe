@@ -23,7 +23,7 @@ describe('Grade 6 CRE revised source registration', () => {
     const sql = await readFile(migration, 'utf8');
     expect(sql).toContain("'Christian Living'");
     expect(sql).toContain("'Jacob wrestles an Angel'");
-    expect(sql).toContain("'heading_only'");
+    expect(sql).toContain('heading_only');
     expect(sql).toContain('No specific learning outcome');
     expect(sql).not.toMatch(/INSERT INTO public\.curriculum_source_nodes[^;]*source_text/i);
   });

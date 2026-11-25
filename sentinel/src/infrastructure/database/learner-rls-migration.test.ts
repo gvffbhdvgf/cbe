@@ -8,10 +8,11 @@ const protectedTables = ['people','learner_profiles','classes','learner_enrolmen
 describe('learner RLS migration contract', () => {
   it('is present in the migration journal', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(11);
-    expect(journal.entries.at(-3)).toMatchObject({ idx: 8, tag: '0008_learner_record_rls' });
-    expect(journal.entries.at(-2)).toMatchObject({ idx: 9, tag: '0009_class_creation_rls' });
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 10, tag: '0010_controlled_class_placement' });
+    expect(journal.entries).toHaveLength(12);
+    expect(journal.entries.at(-4)).toMatchObject({ idx: 8, tag: '0008_learner_record_rls' });
+    expect(journal.entries.at(-3)).toMatchObject({ idx: 9, tag: '0009_class_creation_rls' });
+    expect(journal.entries.at(-2)).toMatchObject({ idx: 10, tag: '0010_controlled_class_placement' });
+    expect(journal.entries.at(-1)).toMatchObject({ idx: 11, tag: '0011_grade6_cre_revised_source' });
   });
   it('requires a non-login, non-bypass runtime role and installs the JWT extension', async () => {
     const migration = await readFile(migrationPath, 'utf8');
