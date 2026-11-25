@@ -241,3 +241,15 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Added [ADMINISTRATOR_BOOTSTRAP.md](docs/ADMINISTRATOR_BOOTSTRAP.md), a development-only, approval-gated runbook for promoting one verified managed-auth user to platform administrator. It does not create accounts or enable self-service sign-up.
 - Cloud sandbox validation after this change passed: TypeScript, all 9 unit tests and ESLint.
 - Latest controlled Preview deployment is READY: `dpl_46uury4FeiSBp8HpfqbNhSmKPdLZ`, code commit `0f3f2ff25c8fe5625069a7d4688dc01408bfb43b`. Production remains untouched.
+
+
+### 25 November 2026 — Foundation hardening and developer workflow
+
+- Added a shared sign-out control to the authenticated workspace and institution directory.
+- Corrected the organisation domain identity to use a UUID compatible with the PostgreSQL primary key; added domain validation for organisation and external-identifier length limits.
+- Added a migration journal checker and a Neon serverless migration runner. The runner requires an explicit development flag and rejects any database host other than the approved `sentinel-development` endpoint. Migration statements and their history record are executed transactionally; applied migration files are hash-checked and cannot be silently edited.
+- Reconciled the existing development schema with migration history: verified `organisations`, membership, administrator and audit structures, then recorded SHA-256 hashes for baseline migrations `0000_lovely_lilandra` and `0001_organisation_access` in `public.__drizzle_migrations`. No learner data was inserted.
+- Added `docs/DATABASE_MIGRATIONS.md`; corrected README project status to distinguish implemented foundation from unbuilt product modules.
+- Cloud sandbox verification on a clean `npm ci`: migration journal check passed; TypeScript passed; 9/9 unit tests passed; ESLint passed; Next.js production build passed; `npm audit` reported 0 vulnerabilities.
+- Latest controlled Vercel Preview deployment: `dpl_6tzUHc6ssXokjudm4YcxNffhkWMU`, READY, code commit `c6588e50b9899f63dc25abe5ca8e5108947a3d15`. Stable alias: https://sentinel-platform-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app.
+- Read-only browser re-verification of the latest deployment is in progress. Authenticated sign-in, administrator provisioning, cross-tenant integration tests and PostgreSQL RLS remain unverified/not implemented.
