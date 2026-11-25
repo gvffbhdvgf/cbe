@@ -11,7 +11,8 @@ Then inspect the latest GitHub branch state through the GitHub integration befor
 
 ## Working agreement
 
-- Product: Sentinel, a curriculum-informed assessment and learning-improvement platform.
+- Product: Sentinel, a comprehensive, enterprise-grade education management and intelligence platform supporting Grades 1–9.
+- Grade 6 and Grade 9 datasets are reference evidence for discovery and validation only; they do not constrain platform coverage.
 - Repository: https://github.com/gvffbhdvgf/cbe
 - Working branch: sentinel/bootstrap
 - Isolate all project work under sentinel/.
@@ -23,6 +24,28 @@ Then inspect the latest GitHub branch state through the GitHub integration befor
 - Use Cloudflare for relevant DNS, edge, security and R2 needs; Neon is the proposed PostgreSQL provider.
 - Never commit real secrets or expose connected-plugin OAuth credentials.
 
+## Expanded product scope
+
+The product is to be discovered and designed as one coherent platform, including:
+- Institution, organisation and school management
+- Learner identity, admission, enrolment, progression and transfer history
+- Teacher/workforce records, assignments, workload and relevant professional workflows
+- Versioned Grade 1–9 curriculum intelligence
+- Teaching and learning operations where validated
+- Internal, school-based, inter-school/zonal and external assessment management
+- Learner progress, learning-gap analysis and educator-led interventions
+- Inter-school, cluster, zone and system-level analytics
+- Governance, security, privacy, approvals, audit and data lifecycle
+- Integrations, reporting, imports/exports, notifications and platform administration
+
+This is the target discovery scope, not an assertion that every feature is approved for the first release. User requires design thinking, ideation, problem discovery, value evaluation and a transparent algorithmic approach to comparing solution options. The new discovery framework defines the method, weighted decision model, data-redundancy principles, enterprise quality attributes and implementation readiness gates.
+
+## Product discovery baseline
+
+See [PRODUCT_DISCOVERY_AND_SOLUTION_SELECTION.md](https://github.com/gvffbhdvgf/cbe/blob/sentinel/bootstrap/sentinel/docs/PRODUCT_DISCOVERY_AND_SOLUTION_SELECTION.md).
+
+The method is: empathise with stakeholders and observe workflows; define evidence-backed problems; ideate multiple options including process changes; prototype critical journeys; test with representative users; measure value and revise. Hard safety/privacy/legal/operability gates precede weighted scoring. The initial weighted model prioritises learner/educator impact, problem severity, reach, feasibility, data quality/redundancy, security, usability/connectivity, lifecycle cost and evidence confidence. Weights are provisional and must be calibrated with stakeholders.
+
 ## GitHub bootstrap
 
 Created and verified on sentinel/bootstrap:
@@ -30,11 +53,12 @@ Created and verified on sentinel/bootstrap:
 - sentinel/docs/PRODUCT_REQUIREMENTS.md
 - sentinel/docs/ARCHITECTURE.md
 - sentinel/docs/SECURITY_AND_ENVIRONMENTS.md
+- sentinel/docs/ASSESSMENT_EVIDENCE_AUDIT.md
+- sentinel/docs/CURRICULUM_ALIGNMENT_REGISTER.md
+- sentinel/docs/PRODUCT_DISCOVERY_AND_SOLUTION_SELECTION.md
 - sentinel/.gitignore
 - sentinel/.env.example
 - sentinel/PROJECT_STATUS.md (this durable checkpoint)
-- sentinel/docs/ASSESSMENT_EVIDENCE_AUDIT.md
-- sentinel/docs/CURRICULUM_ALIGNMENT_REGISTER.md
 
 No application code, pull request, default-branch merge, cloud resource or production deployment has been created.
 
@@ -57,12 +81,14 @@ No application code, pull request, default-branch merge, cloud resource or produ
 ## Product/architecture principles
 
 - Version KICD curriculum and preserve source provenance.
-- Learner identity is independent from school enrolment.
+- Learner and teacher identities are independent from time-bound school enrolments/assignments.
+- Canonical records have clear ownership; avoid module-specific duplicate master data.
 - Raw marks, performance levels and curriculum-outcome mastery are distinct.
 - Results retain assessment, scoring and curriculum-version context.
-- Analytics show denominators and data coverage.
+- Analytics show denominators, data coverage and lineage.
+- Imports should be idempotent, validated, reconcilable and auditable.
 - Educators remain responsible for high-stakes learner decisions.
-- Recommended initial architecture: modular monolith, Next.js/TypeScript, PostgreSQL/Neon, Prisma subject to compatibility, Cloudflare where appropriate.
+- Prefer clear domain boundaries and a maintainable architecture; do not choose microservices without evidence.
 
 ## Evidence caveats
 
@@ -73,16 +99,17 @@ No application code, pull request, default-branch merge, cloud resource or produ
 
 ## Immediate next actions
 
-1. Retrieve the external Notion implementation brief through an authorised share/export route.
-2. Obtain written source-owner confirmation for Grade 6 conflicting cluster counts and Grade 9 private-school participation.
-3. Validate learner-level source records against school, cluster, category and gender aggregates.
-4. Obtain actual assessment papers, marking schemes and moderation records; then complete KICD outcome mapping.
-5. Validate institutional users, roles, school/cluster/zone hierarchy, approval workflows, imports, reporting and intervention processes.
-6. Inspect Cloudflare accounts and relevant existing resources read-only; do not provision without an approved architecture.
-7. Resolve the intended Vercel project/hosting arrangement. Do not use one of the unrelated existing projects by assumption, and do not enable per-commit production deployment.
-8. Reassess Neon after the database/environment plan is approved; current organisation has no projects.
-9. Define notification workflows, then select Resend or SenderKit.
-10. Finalise requirements and architecture before creating application features.
+1. Retrieve the external Notion brief through an authorised share/export route.
+2. Map stakeholders and validate actual workflows across learner, teacher, school, assessment, curriculum, analytics and governance domains.
+3. Confirm institutional hierarchy, role/permission model, teacher-management boundaries and external assessment requirements.
+4. Obtain written source-owner confirmation for Grade 6 conflicting cluster counts and Grade 9 private-school participation.
+5. Validate learner-level source records against school, cluster, category and gender aggregates.
+6. Obtain actual assessment papers, marking schemes and moderation records; then complete KICD outcome mapping.
+7. Validate privacy/legal responsibilities, retention, hosting constraints, expected scale, connectivity and service levels with authorised owners.
+8. Resolve the intended Vercel project/hosting arrangement. Do not use one of the unrelated existing projects by assumption, and do not enable per-commit production deployment.
+9. Reassess Neon after the database/environment plan is approved; current organisation has no projects.
+10. Define notification workflows, then select Resend or SenderKit.
+11. Prototype and test high-risk workflows before scaffolding production application code.
 
 ## Handoff instruction for future chats
 
