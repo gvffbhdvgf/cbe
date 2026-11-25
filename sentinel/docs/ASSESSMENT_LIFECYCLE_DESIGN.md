@@ -1,11 +1,11 @@
 # Sentinel — Assessment Lifecycle Design
 
-**Status:** Partially implemented foundation. Domain contracts, migrations 0012–0014, assessment RLS, an immutable eligible-enrolment roster, controlled event scheduling/opening, roster-bound attempt creation, immutable response capture and submission are implemented; marking and later governance workflows remain pending.
+**Status:** Core capture and first marking/result-generation milestone implemented on development. Migrations 0012–0016, assessment RLS, immutable eligible-enrolment roster, controlled event scheduling/opening/closure, roster-bound attempt creation, immutable response capture, reasoned incomplete-attempt voiding, append-only versioned marks and immutable result generation are implemented. Moderation, approval, publication and post-finalization correction remain pending.
 **Scope:** First vertical slice for internal school-based assessment. Inter-school, zonal and external assessment exchange follow after the core lifecycle and governance contracts are proven.
 
 ## 1. Current repository and database facts
 
-The current Sentinel PostgreSQL schema contains organisation, identity, learner, class, enrolment, guardian, audit, curriculum and assessment lifecycle tables. Assessment migration 0012 added programmes, instrument versions, tasks, outcome mappings, events, attempts, responses, results and decisions. Migration 0013 added a frozen eligible-enrolment roster and a controlled scheduling operation. Migration 0014 adds controlled event opening, attempt creation, response capture and submission. Every operation requires verified actor identity and active assessment authority, enforces the event window, and appends an audit event. Attempts can only be created for enrolments in the frozen event roster; response rows are immutable and required tasks must be answered before submission. Migration 0015 makes the audit log itself append-only.
+The current Sentinel PostgreSQL schema contains organisation, identity, learner, class, enrolment, guardian, audit, curriculum and assessment lifecycle tables. Assessment migration 0012 added programmes, instrument versions, tasks, outcome mappings, events, attempts, responses, results and decisions. Migration 0013 added a frozen eligible-enrolment roster and a controlled scheduling operation. Migration 0014 adds controlled event opening, attempt creation, response capture and submission. Every operation requires verified actor identity and active assessment authority, enforces the event window, and appends an audit event. Attempts can only be created for enrolments in the frozen event roster; response rows are immutable and required tasks must be answered before submission. Migration 0015 makes the audit log itself append-only. Migration 0016 adds immutable task marks, reasoned supersession, incomplete-attempt voiding after the event end, event closure and atomic result generation.
 
 The learner model provides tenant-scoped learner profiles and effective-dated enrolments. The curriculum model provides versioned design documents and source nodes. Source-node types already reserve `specific_outcome`, `general_outcome`, `assessment_rubric` and `rubric_criterion`, but the current Grade 6 CRE sample contains only strand/sub-strand headings. It must not be treated as a verified outcome bank.
 
@@ -47,8 +47,10 @@ Use relational columns for identifiers, scope, state, dates and score values. Us
 3. Tasks are mapped to approved curriculum outcomes where available. If no verified outcomes exist, the event may proceed with an explicit unmapped status, but cannot claim outcome-level coverage.
 4. The event is reviewed and scheduled through `sentinel_private.schedule_assessment_event`. Scheduling requires an approved instrument and active programme, snapshots active learner profiles with active enrolments effective on the event start date, records the eligibility denominator and actor in audit history, and changes the event status atomically. The snapshot is immutable; the attempt foreign key rejects anyone outside it. The event date is interpreted in UTC until an organisation timezone is modelled.
 5. An authorised assessment officer opens the event only within its UTC event window. Attempt creation is restricted to an enrolment in the frozen eligibility roster. Until class and teacher allocations exist, teachers cannot perform school-wide capture. Responses are captured once per task against the exact instrument version; submission requires every required task response.
-6. Responses are marked against the exact scoring scheme. Raw responses remain distinguishable from awarded scores.
-7. Results enter moderation where required. Moderators record decisions without silently changing original marks.
+6. After the event ends, incomplete in-progress attempts must be voided with a reason before event closure. Closing is blocked while any in-progress attempt remains.
+7. Markers append task-level mark versions separately from immutable response evidence. Each score must be within the task maximum; a correction before finalization must supersede the latest mark and include a reason.
+8. Result finalization is atomic and requires a captured response and latest mark for every required task. It creates immutable result version 1 and marks the attempt. The initial result denominator includes required tasks only; optional tasks are excluded pending a richer scoring-scheme model.
+9. Results enter moderation where required. Moderators record decisions without silently changing original marks.
 8. An authorised approver publishes the result set. Published reports display coverage, denominators, data-quality warnings and as-of time.
 9. Corrections use a reasoned superseding record and trigger recalculation of derived reports while retaining the original publication lineage.
 
@@ -76,10 +78,10 @@ Defer:
 1. **Domain contracts — implemented:** Event/attempt lifecycle, enrolment scope, scoring and immutability contracts have 13 focused unit tests.
 2. **Database schema and migrations — implemented on development:** Migration 0012 adds nine relational tables, composite tenant/grade/year/instrument/enrolment constraints, forced RLS, approved-outcome mapping validation, append-only result/decision history and instrument locking. Migration 0013 adds the immutable eligible-enrolment roster, a roster FK on attempts, forced RLS and the audited `schedule_assessment_event` SECURITY DEFINER operation. The runtime role has SELECT-only table access; scheduling is exposed only through the controlled function.
 3. **Read API — implemented:** GET /api/organisations/{organisationId}/assessments/events has both application role preflight and database RLS. Only platform administrators, organisation administrators, school administrators and assessors may read assessment data; teachers/viewers remain denied pending class assignment modelling.
-4. **Controlled application use cases — partially implemented:** Event opening, roster-bound attempt creation, immutable response capture and submission use SECURITY DEFINER functions and authenticated API routes. Marking, moderation, approval and publication remain pending. No direct client writes.
+4. **Controlled application use cases — partially implemented:** Event opening, roster-bound attempt creation, immutable response capture, submission, reasoned incomplete-attempt voiding, event closure, append-only task marking and result finalization use SECURITY DEFINER functions and authenticated API routes. Moderation, approval, publication and post-finalization correction remain pending. No direct client writes.
 5. **API and UI — pending:** Build authorised workflows with server-side scope checks, clear validation feedback and accessible forms.
 6. **Synthetic integration tests — pending:** Exercise scheduling with effective-dated eligible/ineligible enrolments, empty rosters, non-approved instruments, inactive programmes, concurrent scheduling, attempts outside the roster, two tenants, mismatched grade/year, duplicate attempts, stale instrument versions, unapproved outcomes, correction history and RLS denial.
-7. **Reporting — pending:** Reconcile eligible, participating, submitted, valid and approved denominators against source attempts.
+7. **Reporting — pending:** Reconcile eligible, participating, submitted, marked, moderated, approved and published denominators against source attempts.
 
 Exit only when every published result can be traced to learner enrolment, assessment event, immutable instrument/scoring version, curriculum mapping status, marking evidence and approval history, and cross-tenant negative tests pass.
 
@@ -93,3 +95,16 @@ Exit only when every published result can be traced to learner enrolment, assess
 - Which retention and disclosure rules apply to raw responses, learner work and published reports?
 
 These decisions should be validated with institutional owners before enabling inter-school or external assessment ingestion.
+
+
+## 8. Marking and result-generation implementation (migration 0016)
+
+- `assessment_response_marks` is a separate append-only table scoped to the attempt, task, tenant, organisation and instrument version. It preserves each mark version and links a correction to the immediately preceding mark for that same task.
+- Raw `assessment_responses` remain immutable. Legacy `awarded_score`, `marked_by`, `marked_at` and `marker_note` columns are retained for compatibility but explicitly deprecated; no marking operation writes them.
+- `record_assessment_mark` locks the attempt and response, requires a submitted attempt and closed/marking event, validates score against the task maximum and records a reason for supersession.
+- `void_assessment_attempt` permits only an in-progress attempt after the event end and requires a reason. `close_assessment_event` requires the event end to have passed and no remaining in-progress attempts.
+- `finalize_assessment_marking` locks the attempt, verifies every required task has a response and latest mark, aggregates required-task marks and maxima, inserts immutable result version 1 and advances the attempt to `marked`.
+- The runtime role has SELECT only on the mark table and no direct INSERT/UPDATE/DELETE. The four privileged operations are SECURITY DEFINER functions with PUBLIC execution revoked and narrow runtime EXECUTE grants. Forced RLS remains enabled.
+- Development validation: migration 0016 applied and recorded in the Neon migration ledger; forced RLS and runtime privileges verified; all four functions rejected unauthenticated calls with SQLSTATE 42501. The full migration also executed successfully on a disposable child branch that was subsequently deleted.
+- Automated validation: GitHub Actions run [45715279233](https://github.com/gvffbhdvgf/cbe/actions/runs/45715279233) passed lint, typecheck, 103 tests across 18 files and production build.
+- Remaining: moderated/approved/published result transitions, post-finalization correction, event-level completion aggregation, and signed-JWT authenticated end-to-end tests. Optional-task scoring policy must be revisited when versioned scoring schemes are implemented.
