@@ -276,3 +276,18 @@ The stable alias was checked directly after deployment `dpl_6tzUHc6ssXokjudm4Ycx
 - Added five membership-policy tests. Clean cloud install checks: migration journal passed, TypeScript passed, 14/14 tests passed, lint passed, production build passed, npm audit 0 vulnerabilities.
 - Latest controlled Preview deployment: `dpl_9SsJRv437GD7Wp66B5W7m56CXucX`, READY, code commit `912a6e241173cfa04865afbbb76e85e0ad630ae2`.
 - Authenticated member-management flows remain unverified because no administrator/test account exists. The latest anonymous API/page checks are in progress.
+
+
+### 25 November 2026 — KICD curriculum catalogue foundation
+
+- Added a source-linked curriculum registry and authenticated catalogue browser for Grades 1–9.
+- Seeded the isolated Neon development database with 12 KICD source records, 2 catalogue editions, 9 pathway records, 20 canonical learning-area labels and 120 grade offerings.
+- Regular catalogue counts: Grades 1–3 each contain 8 KICD-listed designs plus one explicitly flagged Indigenous Language discrepancy; Grades 4–6 each contain 15; Grades 7–9 each contain 16.
+- The lower-primary discrepancy is evidence-based: Indigenous Language appears in the September 2026 complementary-materials submission scope but is absent from the current KICD Lower Primary curriculum-design page. It is not treated as confirmed curriculum design.
+- Registered HI, PI and VI adapted pathways, plus accelerated/enriched, specialised, intervention, prevocational and vocational modalities. No SNE grade-level learning-area offering is inferred or seeded until individual grade documents are validated.
+- Curriculum design catalogue, approved materials addendum, complementary-materials submission and the 2019 Basic Education Curriculum Framework are stored as distinct source types.
+- Added source provenance, edition status, pathway metadata, availability status and migration history through migrations 0003–0005. The six-migration journal and development schema were verified; all 120 regular offerings reconcile to grade-level source catalogues.
+- Added the Curriculum Intelligence workspace module and a grade/pathway browser with official source links and discrepancy status.
+- Cloud validation: migration journal passed; TypeScript passed; 14/14 unit tests passed; ESLint passed; Next.js production build passed; npm audit reported 0 vulnerabilities.
+- Latest controlled Preview deployment: `dpl_12JJAnkF8GG3HDAidF1NTdQnYevo`, building from code commit `b71bfa9cc58292141709deabbe9a78298c6748de`. Browser verification is pending.
+- Detailed strands, sub-strands, outcomes, inquiry questions, experiences, competencies, values, PCIs, CSL and rubrics have not yet been ingested. Catalogue import is not full curriculum content implementation.
