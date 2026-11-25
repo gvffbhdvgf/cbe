@@ -8,13 +8,15 @@ const protectedTables = ['people','learner_profiles','classes','learner_enrolmen
 describe('learner RLS migration contract', () => {
   it('is present in the migration journal', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(14);
+    expect(journal.entries).toHaveLength(16);
     expect(journal.entries[8]).toMatchObject({ idx: 8, tag: '0008_learner_record_rls' });
     expect(journal.entries[9]).toMatchObject({ idx: 9, tag: '0009_class_creation_rls' });
     expect(journal.entries[10]).toMatchObject({ idx: 10, tag: '0010_controlled_class_placement' });
     expect(journal.entries[11]).toMatchObject({ idx: 11, tag: '0011_grade6_cre_revised_source' });
     expect(journal.entries[12]).toMatchObject({ idx: 12, tag: '0012_assessment_lifecycle_foundation' });
     expect(journal.entries[13]).toMatchObject({ idx: 13, tag: '0013_assessment_event_eligible_roster' });
+    expect(journal.entries[14]).toMatchObject({ idx: 14, tag: '0014_controlled_assessment_capture' });
+    expect(journal.entries[15]).toMatchObject({ idx: 15, tag: '0015_audit_history_immutability' });
   });
   it('requires a non-login, non-bypass runtime role and installs the JWT extension', async () => {
     const migration = await readFile(migrationPath, 'utf8');

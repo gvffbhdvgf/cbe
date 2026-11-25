@@ -7,8 +7,8 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('assessment lifecycle migration contract', () => {
   it('registers the additive migration as sequence 0012', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(14);
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 13, tag: '0013_assessment_event_eligible_roster' });
+    expect(journal.entries).toHaveLength(16);
+    expect(journal.entries[12]).toMatchObject({ idx: 12, tag: '0012_assessment_lifecycle_foundation' });
   });
 
   it('enforces tenant, organisation, grade, year and instrument consistency with relational constraints', async () => {

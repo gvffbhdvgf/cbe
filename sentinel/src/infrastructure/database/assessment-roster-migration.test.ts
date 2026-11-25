@@ -8,8 +8,8 @@ const schemaPath = new URL('./schema/assessment.ts', import.meta.url);
 describe('assessment event eligible roster migration contract', () => {
   it('registers migration 0013 in sequence', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(14);
-    expect(journal.entries.at(-1)).toMatchObject({ idx: 13, tag: '0013_assessment_event_eligible_roster' });
+    expect(journal.entries).toHaveLength(16);
+    expect(journal.entries[13]).toMatchObject({ idx: 13, tag: '0013_assessment_event_eligible_roster' });
   });
 
   it('snapshots the effective enrolment and learner scope at the event date', async () => {
