@@ -78,7 +78,7 @@ describe('controlled assessment capture migration contract', () => {
 
   it('serializes event and attempt transitions to prevent concurrent duplicate lifecycle changes', async () => {
     const sql = await readFile(migrationPath, 'utf8');
-    expect(sql.match(/FROM public\\.assessment_events AS event_record[\\s\\S]*?FOR UPDATE/g)).toHaveLength(2);
+    expect(sql.match(/FROM public\.assessment_events AS event_record[\s\\S]*?FOR UPDATE/g)).toHaveLength(2);
     expect(sql).toContain('FROM public.assessment_attempts AS attempt');
     expect(sql).toContain('FOR UPDATE');
     expect(sql).toContain('assessment_attempts_event_enrolment_attempt_unique');
@@ -104,7 +104,7 @@ describe('controlled assessment capture migration contract', () => {
       expect(sql).toContain(`REVOKE ALL ON FUNCTION sentinel_private.${signature} FROM PUBLIC`);
       expect(sql).toContain(`GRANT EXECUTE ON FUNCTION sentinel_private.${signature} TO sentinel_learner_runtime`);
     }
-    expect(sql).not.toMatch(/GRANT\\s+(?:ALL|INSERT|UPDATE|DELETE)[^;]*assessment_(?:events|attempts|responses)/i);
+    expect(sql).not.toMatch(/GRANT\s+(?:ALL|INSERT|UPDATE|DELETE)[^;]*assessment_(?:events|attempts|responses)/i);
   });
 
 });
