@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.organisation_memberships (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CHECK (ends_at IS NULL OR ends_at > starts_at),
-  UNIQUE (organisation_id, user_id, role)
+  CONSTRAINT organisation_memberships_org_user_role_unique UNIQUE (organisation_id, user_id, role)
 );
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS organisation_memberships_user_status_idx ON public.organisation_memberships (user_id, status, starts_at, ends_at);
