@@ -68,3 +68,25 @@ Use separate databases and credentials for each environment. Never reuse product
 - File malware scanning and retention
 - Notification provider and delivery policy
 - Data residency, backup and recovery objectives
+
+
+## Expanded enterprise domain design (25 November 2026)
+
+See [DOMAIN_MODEL_AND_WORKFLOWS.md](https://github.com/gvffbhdvgf/cbe/blob/sentinel/bootstrap/sentinel/docs/DOMAIN_MODEL_AND_WORKFLOWS.md) for the conceptual model and end-to-end workflows.
+
+The product domain now explicitly includes Identity & Access, Organisation, People & Workforce, Learner Records, Curriculum, Teaching & Learning, Assessment, Results & Progress, Intervention, Analytics & Reporting, Governance & Audit, and Integration & Exchange.
+
+Canonical data rules:
+- Person identity is separate from learner/staff profiles and time-bounded enrolments/assignments.
+- Organisation hierarchy is configurable and effective-dated.
+- Curriculum editions/pathways are versioned and preserve official source provenance.
+- Regular and applicable adapted/SNE curriculum pathways must be representable without duplicating learner identity.
+- Assessment attempts retain learner, enrolment, event and scoring-scheme context.
+- Item-to-outcome mappings reference exact curriculum editions and require expert review.
+- Published results are immutable snapshots; corrections are reasoned, authorised revisions.
+- Analytics are derived, denominator-aware and carry data-as-of time, coverage and lineage.
+- Imports are previewable, validated, idempotent, reconcilable and auditable.
+
+Core workflows documented: institution setup/academic rollover; learner admission/progression/transfer; teacher onboarding/allocation; curriculum publication/adoption; assessment creation/administration; results import/reconciliation; inter-school analytics; learner intervention; data correction/governance.
+
+Do not create a physical schema or application code until ownership, tenancy, identifiers, workflow states, privacy controls, integration contracts and operational requirements have been validated.
