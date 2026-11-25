@@ -1,9 +1,9 @@
 # Sentinel — Engineering Continuation Checkpoint
 
-**Date:** 26 November 2026  
-**Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
-**Branch:** `sentinel/bootstrap`  
-**Latest implementation commit:** `a4e6f6c4faf321f6b9f282bd6a3ea1a08ec4a937`  
+**Date:** 26 November 2026
+**Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)
+**Branch:** `sentinel/bootstrap`
+**Latest implementation commit:** Follow the current `sentinel/bootstrap` branch head; do not rely on a pinned historical SHA.
 **Latest documentation checkpoint:** 26 November 2026; this file is maintained with the branch status.
 
 ## 1. Application and dependencies
@@ -50,7 +50,7 @@ Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Ne
 
 Neon project: `sentinel-platform`; development branch: `sentinel-development`; database: `sentinel`.
 
-The source-controlled migration journal has entries 0000–0012 (thirteen migrations). The Neon ledger contains fifteen rows; two historical hashes are not represented in current source files or Git history and are preserved pending provenance investigation. Migration 0012 assessment schema SHA-256: e96a971f24d9feb4906b3b395403c52dbb5a3d34cf239a65132db5a12dcbb5f9.
+The source-controlled migration journal has entries 0000–0013 (fourteen migrations). The Neon ledger contains sixteen rows; two historical hashes are not represented in current source files or Git history and are preserved pending provenance investigation. Migration 0012 assessment schema SHA-256: e96a971f24d9feb4906b3b395403c52dbb5a3d34cf239a65132db5a12dcbb5f9. Migration 0013 eligible-roster SHA-256: 593992ecfc18ab4e350acca996ae57968629cc1593623341e7a47b8b1ff4447e.
 - 0008 RLS foundation: SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`.
 - 0009 class creation RLS: SHA-256 `d284585be9a8f0a5071a06202435429cb34e484db79d6c37376a436089b4cf82`.
 - 0010 controlled class placement: SHA-256 `8bacb4f67b6602385d70ac53f423118a0a6d3cea57bb63d88dbad6527f30e6f2`.
@@ -68,10 +68,10 @@ A fresh cloud checkout of the latest GitHub branch completed:
 | Check | Result |
 |---|---|
 | Clean `npm ci` | Passed; zero vulnerabilities reported |
-| `npm run db:check` | Passed; thirteen migrations valid |
+| `npm run db:check` | Passed; fourteen migrations valid |
 | `npm run lint` | Passed |
 | `npm run typecheck` | Passed |
-| `npm test` | Passed; 77 tests across fourteen files (including assessment domain, migration and access-policy contracts) |
+| `npm test` | Passed; 83 tests across fifteen files (including assessment domain, migration, access-policy and frozen-roster contracts) |
 | `npm run build` | Passed; Next.js production build and route generation completed with ephemeral local-only environment placeholders |
 | `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
@@ -94,9 +94,9 @@ Until the Preview secret is configured, learner/class APIs that require the rest
 - Five strand and 22 sub-strand headings are staged; detailed outcomes/learning experiences are not yet approved or ingested.
 - Grade 6 assessment discrepancy remains unresolved: category total 1,406 versus cluster tables 1,408 and 1,405.
 
-Assessment lifecycle domain contracts are implemented in `src/domain/assessment/assessment.ts` with thirteen focused tests. Migration `0012_assessment_lifecycle_foundation` is applied transactionally to the isolated development branch with hash `e96a971f24d9feb4906b3b395403c52dbb5a3d34cf239a65132db5a12dcbb5f9`. It creates nine assessment tables and adds composite scope constraints for event/instrument/enrolment/attempt relationships. All nine tables have forced RLS; active platform administrators, organisation administrators, school administrators and assessors can read within their organisation. Teachers and viewers are excluded from school-wide raw assessment access until class allocation and explicit assignment authority are implemented. The runtime role has SELECT only and no write privileges.
+Assessment lifecycle domain contracts are implemented in `src/domain/assessment/assessment.ts` with thirteen focused tests. Migration `0012_assessment_lifecycle_foundation` is applied transactionally to the isolated development branch with hash `e96a971f24d9feb4906b3b395403c52dbb5a3d34cf239a65132db5a12dcbb5f9`. It creates nine assessment tables and adds composite scope constraints for event/instrument/enrolment/attempt relationships. Migration `0013_assessment_event_eligible_roster` is applied to the same development branch with hash `593992ecfc18ab4e350acca996ae57968629cc1593623341e7a47b8b1ff4447e`. It adds an immutable, RLS-protected eligible-enrolment roster, constrains attempts to roster membership and exposes the controlled `sentinel_private.schedule_assessment_event(uuid)` operation. All nine tables have forced RLS; active platform administrators, organisation administrators, school administrators and assessors can read within their organisation. Teachers and viewers are excluded from school-wide raw assessment access until class allocation and explicit assignment authority are implemented. The runtime role has SELECT only on assessment tables and no direct write privileges. Event scheduling is the single controlled write operation: it requires an authorised actor, a draft event, approved instrument and active programme; snapshots active enrolments effective on the event start date; records the eligible denominator in audit history; and changes the event to scheduled atomically. The event date is interpreted in UTC until organisation timezone support exists.
 
-Outcome mapping approval is constrained to reviewed `specific_outcome` nodes from approved, rights-confirmed curriculum documents with matching grade and learning area. Results and decision history are append-only; instrument versions lock after attempts exist; response scores cannot exceed task maxima. A read-only events API is implemented at GET /api/organisations/{organisationId}/assessments/events with matching application preflight and database RLS. No assessment or learner records have been inserted. Controlled server-side write operations and database state-transition enforcement remain the next step.
+Outcome mapping approval is constrained to reviewed `specific_outcome` nodes from approved, rights-confirmed curriculum documents with matching grade and learning area. Results and decision history are append-only; instrument versions lock after attempts exist; response scores cannot exceed task maxima. A read-only events API is implemented at GET /api/organisations/{organisationId}/assessments/events with matching application preflight and database RLS. No assessment or learner records have been inserted. Attempt capture, marking, moderation, approval, publication and correction operations remain pending, as do authenticated integration tests of the scheduling operation.
 
 Next sequence:
 1. Resolve Vercel Git integration and branch-scoped Preview secret configuration.
@@ -104,7 +104,8 @@ Next sequence:
 3. Implement class reassignment, learner correction, transfer, withdrawal, progression approval and academic-year rollover with explicit state transitions and audit history.
 4. Implement teacher allocation, class capacity and verified guardian relationships with safeguarding controls.
 5. Continue detailed KICD outcomes only from verified source editions with provenance, rights and specialist review.
-6. Complete privacy/DPIA, security, accessibility and performance validation before any live learner pilot.
+6. Implement controlled attempt capture, marking, moderation, approval, publication and correction operations with append-only audit history.
+7. Complete privacy/DPIA, security, accessibility and performance validation before any live learner pilot.
 
 ## 8. Non-negotiable guardrails
 
