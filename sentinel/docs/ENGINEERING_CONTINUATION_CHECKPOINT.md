@@ -50,7 +50,7 @@ Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Ne
 
 Neon project: `sentinel-platform`; development branch: `sentinel-development`; database: `sentinel`.
 
-The source-controlled migration journal has entries 0000–0010 (eleven migrations). The Neon ledger contains thirteen rows; two extra historical hashes are not represented in current source files or Git history and are preserved pending provenance investigation:
+The source-controlled migration journal has entries 0000–0011 (twelve migrations). The Neon ledger contains thirteen rows; one extra historical hash is not represented in current source files or Git history and is preserved pending provenance investigation:
 - 0008 RLS foundation: SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`.
 - 0009 class creation RLS: SHA-256 `d284585be9a8f0a5071a06202435429cb34e484db79d6c37376a436089b4cf82`.
 - 0010 controlled class placement: SHA-256 `8bacb4f67b6602385d70ac53f423118a0a6d3cea57bb63d88dbad6527f30e6f2`.
@@ -71,11 +71,11 @@ A fresh cloud checkout of the latest GitHub branch completed:
 | `npm run db:check` | Passed; eleven migrations valid |
 | `npm run lint` | Passed |
 | `npm run typecheck` | Passed |
-| `npm test` | Passed; 56 tests across eleven files |
-| `npm run build` | Passed; Next.js production build and route generation completed |
+| `npm test` | Passed; 69 tests across twelve files (including the assessment-domain increment) |
+| `npm run build` | Passed; Next.js production build and route generation completed with ephemeral local-only environment placeholders |
 | `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
-The suite covers JWT verification, RLS migration contracts, class validation, placement date validation, error mapping, organisation and membership policies. The Neon Auth dependency tree still emits a non-blocking peer-version warning; ESLint 9.39.5 also emits a deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
+The suite covers JWT verification, RLS migration contracts, class validation, placement date validation, error mapping, organisation and membership policies, and assessment event/attempt lifecycle, tenant-enrolment scope, scoring and instrument-version invariants. The assessment-domain increment also passed `npm run lint` and `npm run typecheck`; its fresh production build passed using ephemeral local-only auth/database placeholders; no deployment secrets were changed. The Neon Auth dependency tree still emits a non-blocking peer-version warning; ESLint 9.39.5 also emits a deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
 
 A GitHub Actions workflow exists for Node 22 clean install, migration validation, lint, typecheck, tests and build. No hosted workflow run/status check has been observed yet; the cloud validation above is the verified execution.
 
@@ -93,6 +93,10 @@ Until the Preview secret is configured, learner/class APIs that require the rest
 - Grade 6 CRE source edition/currentness and rights review remain pending.
 - Five strand and 22 sub-strand headings are staged; detailed outcomes/learning experiences are not yet approved or ingested.
 - Grade 6 assessment discrepancy remains unresolved: category total 1,406 versus cluster tables 1,408 and 1,405.
+
+Assessment lifecycle domain contracts are now implemented in `src/domain/assessment/assessment.ts` with thirteen focused tests. They validate event/attempt state transitions, moderation gates, immutable approved attempts, event-to-enrolment tenant/organisation/grade/year matching, task score limits, performance-band overlap and instrument immutability after attempts exist. No assessment schema or migration has been applied yet.
+
+Read-only Neon inspection found forced RLS on learner enrolments and audit events, but not on curriculum document/node tables or organisation memberships. The current `sentinel_private.can_manage_learner_records` predicate is deliberately admin-only; do not reuse it as the teacher/assessor authorization rule. Assessment-specific roles, capability checks and row policies must be designed before the assessment schema is applied.
 
 Next sequence:
 1. Resolve Vercel Git integration and branch-scoped Preview secret configuration.
