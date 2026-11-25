@@ -1,6 +1,6 @@
-ALTER TABLE public.learner_progression_events DROP CONSTRAINT learner_progression_event_type_check;
+ALTER TABLE public.learner_progression_events DROP CONSTRAINT learner_progression_events_event_type_check;
 --> statement-breakpoint
-ALTER TABLE public.learner_progression_events ADD CONSTRAINT learner_progression_event_type_check CHECK (event_type IN ('admitted', 'promoted', 'repeated', 'transferred_in', 'transferred_out', 'withdrawn', 'graduated', 'reinstated', 'class_assigned'));
+ALTER TABLE public.learner_progression_events ADD CONSTRAINT learner_progression_events_event_type_check CHECK (event_type IN ('admitted', 'promoted', 'repeated', 'transferred_in', 'transferred_out', 'withdrawn', 'graduated', 'reinstated', 'class_assigned'));
 --> statement-breakpoint
 CREATE OR REPLACE FUNCTION sentinel_private.assign_learner_to_class(
   p_enrolment_id uuid,
