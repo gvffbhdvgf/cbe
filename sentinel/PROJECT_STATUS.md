@@ -327,3 +327,16 @@ Deployment `dpl_12JJAnkF8GG3HDAidF1NTdQnYevo` is READY and browser-verified on t
 - Added [LEARNER_DATA_MODEL.md](docs/LEARNER_DATA_MODEL.md), including tenant boundaries, data minimisation and live-pilot gates.
 - Class creation/assignment, guardian verification and portal access, transfer workflows, learner updates/exits, RLS and cross-tenant integration tests remain outstanding.
 - Latest controlled Preview deployment: `dpl_ArC26w3rJ3vi7JjSuCygoYFBu2Uk`, building from code commit `ecccb2d7e51b64e4021e292219fd987ae924c473`.
+
+
+### Learner Preview browser verification — 25 November 2026
+
+The stable Preview alias was checked read-only after deployment `dpl_ArC26w3rJ3vi7JjSuCygoYFBu2Uk`:
+
+- `/api/health`: HTTP 200 JSON with expected service status.
+- `/auth/sign-in`: HTTP 200 HTML; email/password form renders.
+- `/api/organisations/{uuid}/learners`: HTTP 401 JSON authentication-required.
+- `/api/organisations/{uuid}/members`: HTTP 401 JSON authentication-required.
+- `/workspace/organisations/{uuid}/learners`: HTTP 307 redirect to sign-in, then HTTP 200.
+- `/workspace/curriculum`: HTTP 307 redirect to sign-in, then HTTP 200.
+- No credentials were submitted and no write operations were performed. This verifies anonymous boundaries, not authenticated CRUD behaviour.
