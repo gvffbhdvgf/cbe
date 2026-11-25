@@ -34,6 +34,7 @@ Created and verified on sentinel/bootstrap:
 - sentinel/.env.example
 - sentinel/PROJECT_STATUS.md (this durable checkpoint)
 - sentinel/docs/ASSESSMENT_EVIDENCE_AUDIT.md
+- sentinel/docs/CURRICULUM_ALIGNMENT_REGISTER.md
 
 No application code, pull request, default-branch merge, cloud resource or production deployment has been created.
 
