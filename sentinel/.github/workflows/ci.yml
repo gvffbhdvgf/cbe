@@ -29,4 +29,10 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # Build-time placeholders only: dynamic routes are not executed during the build.
+      # Never use production credentials in CI, and never run the app against these values.
       - run: npm run build
+        env:
+          DATABASE_URL: postgresql://sentinel_ci:sentinel_ci@127.0.0.1:5432/sentinel_ci?sslmode=disable
+          NEON_AUTH_BASE_URL: https://example.neon.tech/auth
+          NEON_AUTH_COOKIE_SECRET: sentinel-ci-only-placeholder-secret-32-characters
