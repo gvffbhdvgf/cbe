@@ -27,6 +27,7 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 - [Problem Discovery & Validation Plan](docs/PROBLEM_DISCOVERY_AND_VALIDATION_PLAN.md)
 - [Domain Model & Core Workflows](docs/DOMAIN_MODEL_AND_WORKFLOWS.md)
 - [Release Roadmap](docs/RELEASE_ROADMAP.md)
+- [ADR-001 — Tenant Boundary & Data Isolation](docs/ADR-001-TENANCY-AND-DATA-ISOLATION.md)
 - [Security & Privacy Threat Model](docs/SECURITY_PRIVACY_THREAT_MODEL.md)
 - [Product Requirements](docs/PRODUCT_REQUIREMENTS.md)
 - [Architecture](docs/ARCHITECTURE.md)
