@@ -23,7 +23,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install
+          cache: npm
+          cache-dependency-path: sentinel/package-lock.json
+      - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
