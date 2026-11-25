@@ -1,6 +1,6 @@
 # Sentinel — Project Handoff & Current Status
 
-Last checkpoint: 25 November 2026. Update this file and the linked Notion checkpoint after material progress.
+Last checkpoint: 26 November 2026. Update this file and the linked Notion checkpoint after material progress.
 
 ## Start here in future chats
 Read the Notion handoff page and the Sentinel Product & Engineering Blueprint before continuing:
@@ -28,6 +28,7 @@ Created and verified on sentinel/bootstrap:
 - sentinel/docs/SECURITY_AND_ENVIRONMENTS.md
 - sentinel/.gitignore
 - sentinel/.env.example
+- sentinel/PROJECT_STATUS.md (this durable checkpoint)
 
 No application code, pull request, default-branch merge, cloud resource or production deployment has been created.
 
@@ -39,10 +40,13 @@ No application code, pull request, default-branch merge, cloud resource or produ
 - Current Handoff: https://app.notion.com/p/423d7d0ea58d8133a62bea7223f4c98e
 
 ## Local tooling status
-- Local Commander previously failed to complete a Windows directory listing and reported unresolved execution leases.
-- Remote Desktop Commander currently reports no devices connected. Do not assume it can access the user's Windows machine until paired.
-- Alternative candidates: Cmdexa (Windows pairing and PowerShell execution with local approval) and Terminal Commands (connected companions / workspace card). Test only after device pairing and user approvals; don't start a billable Codespace without explicit consent.
-- Do not create a local directory or claim local setup succeeded until a connector confirms it.
+- Local Commander previously failed to complete a Windows directory listing and reported unresolved execution leases. Do not use it again unless the user asks.
+- Remote Desktop Commander reports no devices paired/connected. No local files were changed through it.
+- Cmdexa reports Windows device Machukhu online and healthy, paired to the account (agent/helper version 0.6.423).
+- A Cmdexa read-only execution preflight was submitted to check Git, Node, npm, Python and PowerShell availability. It is waiting for local desktop approval; verdict is unverified. No command has executed and no local files have been changed through Cmdexa.
+- Next: approve the visible Cmdexa local read-only preflight on the Windows desktop. After completion, inspect tool availability and project path, then create/verify the local Sentinel workspace and sync sentinel/bootstrap.
+- Terminal Commands is another candidate, but do not start a billable Codespace without explicit consent.
+- Do not claim local setup succeeded until the connector confirms it.
 
 ## Vercel
 - Team access request for team_sXlkYQpoRcDz7TxGl5gWroZy was pending at last check.
@@ -64,7 +68,7 @@ No application code, pull request, default-branch merge, cloud resource or produ
 - Full outcome-by-outcome KICD mapping for Grades 6 and 9 has not been completed.
 
 ## Immediate next actions
-1. Connect an alternative local tooling plugin (Cmdexa or Remote Desktop Commander) and verify the paired device.
+1. Approve and complete the Cmdexa read-only preflight; inspect local tooling and paths.
 2. Create/verify the local sentinel workspace and sync sentinel/bootstrap.
 3. Obtain Vercel team approval; inspect project and deployment configuration without triggering builds.
 4. Retrieve the external Notion brief and reopen exact assessment files before finalising requirements.
