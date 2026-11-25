@@ -18,7 +18,7 @@ The runner stores SHA-256 hashes and journal timestamps in `public.__drizzle_mig
 
 ## Existing baseline
 
-The initial organisation schema and organisation-access schema were applied to the isolated development branch before migration automation was established. Their current schema was inspected and reconciled with the SQL files. The corresponding hashes for `0000_lovely_lilandra` and `0001_organisation_access` are recorded in the migration metadata table, so the runner recognises both as applied.
+The initial organisation schema and organisation-access schema were applied to the isolated development branch before migration automation was established. Their current schema was inspected and reconciled with the SQL files. The corresponding hashes for `0000_lovely_lilandra`, `0001_organisation_access`, and `0002_membership_active_uniqueness` are recorded in the migration metadata table, so the runner recognises all three as applied.
 
 ## Prohibited
 

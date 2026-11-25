@@ -71,7 +71,20 @@ Legend: A=administer, C=create, R=read, U=update, D=delete/archive, Ap=approve, 
 
 This is a starting point, not a permission grant. Translate each cell into explicit policy rules and tests.
 
-## 4. Separation of duties
+## 4. Implemented foundation policy (development only)
+
+The first organisation-access slice currently implements these narrower application roles; this does not replace the full candidate catalogue above and is not an institutional authority approval:
+
+| Actor | May add / revoke | Restrictions |
+|---|---|---|
+| Platform administrator | All organisation roles | Platform administrator privilege is separate and cannot be granted through this membership API |
+| Organisation administrator | School administrator, teacher, assessor, viewer | Cannot promote or revoke another organisation administrator |
+| School administrator | Teacher, assessor, viewer | Cannot assign/revoke school or organisation administrator roles |
+| Teacher / assessor / viewer | None | No membership administration |
+
+The current API can grant access only to an existing verified, active Neon Auth account. It does not create accounts, send invitation email, or grant platform-administrator privileges. Membership role changes and revocations are audited. The database permits at most one active membership per user per organisation; the historical role constraint preserves prior role rows for reactivation. The last active organisation administrator cannot be revoked.
+
+## 5. Separation of duties
 
 - Assessment creator should not be sole publication approver.
 - Marker cannot moderate own marking.
@@ -81,7 +94,7 @@ This is a starting point, not a permission grant. Translate each cell into expli
 - Platform support cannot grant itself learner-record access.
 - Emergency access is time-limited, reason-coded, monitored and reviewed.
 
-## 5. Lifecycle controls
+## 6. Lifecycle controls
 
 - Role assignments carry start/end dates, issuer, approver, scope and reason.
 - Delegations are narrow, explicit, time-bounded and revocable.
@@ -91,7 +104,7 @@ This is a starting point, not a permission grant. Translate each cell into expli
 - Service identities use endpoint-level scopes and independent rotation.
 - Small-group suppression thresholds require policy approval.
 
-## 6. Validation questions
+## 7. Validation questions
 
 1. Which authority owns each user and data domain?
 2. Is county → sub-county → zone → cluster → school accurate everywhere?
@@ -102,7 +115,7 @@ This is a starting point, not a permission grant. Translate each cell into expli
 7. Which workforce attributes are necessary and who owns them?
 8. Who owns break-glass review and incident response?
 
-## 7. Required pilot tests
+## 8. Required pilot tests
 
 - Cross-school and cross-tenant reads, writes and exports are denied.
 - Teacher access ends when assignment ends.

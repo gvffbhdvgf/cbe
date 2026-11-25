@@ -1,10 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { check, pgSchema, pgTable, text, timestamp, uuid, varchar, jsonb, index, unique } from 'drizzle-orm/pg-core';
+import { check, pgSchema, pgTable, text, timestamp, uuid, varchar, jsonb, index, unique, uniqueIndex, boolean } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 
 const neonAuth = pgSchema('neon_auth');
-const authUsers = neonAuth.table('user', {
+export const authUsers = neonAuth.table('user', {
   id: uuid('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  emailVerified: boolean('emailVerified').notNull(),
+  banned: boolean('banned'),
 });
 
 export const platformAdministrators = pgTable('platform_administrators', {
@@ -29,6 +33,7 @@ export const organisationMemberships = pgTable('organisation_memberships', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   unique('organisation_memberships_org_user_role_unique').on(table.organisationId, table.userId, table.role),
+  uniqueIndex('organisation_memberships_one_active_per_user_idx').on(table.organisationId, table.userId).where(sql`${table.status} = 'active'`),
   check('organisation_memberships_role_check', sql`${table.role} IN ('organisation_admin', 'school_admin', 'teacher', 'assessor', 'viewer')`),
   check('organisation_memberships_status_check', sql`${table.status} IN ('invited', 'active', 'suspended', 'revoked')`),
   check('organisation_memberships_effective_dates_check', sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`),

@@ -15,6 +15,13 @@
       "when": 1795634550000,
       "tag": "0001_organisation_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795635600000,
+      "tag": "0002_membership_active_uniqueness",
+      "breakpoints": true
     }
   ]
 }

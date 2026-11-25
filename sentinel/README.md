@@ -77,7 +77,7 @@ Never commit .env files, API tokens, private keys, database passwords, email cre
 
 The Next.js application lives in this directory. Run it with `npm ci`, `npm run dev`; validate with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. Database schema changes are versioned under `src/infrastructure/database/migrations`; use `npm run db:check` and `SENTINEL_ENVIRONMENT=development npm run db:migrate`. The migration runner accepts only the approved `sentinel-development` Neon endpoint. Never point development migration commands at Production.
 
-The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, membership-scoped organisation directory, platform-administrator-gated onboarding, domain-level organisation invariants, audit events, and a health endpoint.
+The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, membership-scoped organisation directory, platform-administrator-gated onboarding, organisation membership management with role boundaries, audit events, and a health endpoint.
 
 ## Cloud resources
 
