@@ -56,6 +56,8 @@ CREATE POLICY assessment_response_marks_select
   FOR SELECT TO sentinel_learner_runtime
   USING (sentinel_private.can_access_assessment_data(organisation_id));
 --> statement-breakpoint
+REVOKE ALL ON TABLE public.assessment_response_marks FROM PUBLIC, sentinel_learner_runtime;
+--> statement-breakpoint
 GRANT SELECT ON TABLE public.assessment_response_marks TO sentinel_learner_runtime;
 --> statement-breakpoint
 
