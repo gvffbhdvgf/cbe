@@ -39,7 +39,7 @@ The target platform includes institution/school management; learner identity, ad
 - Grade 6 CRE June 2024 and Revised 2024 documents are preserved as separate source records; a source-comparison note records six changed heading/page rows. Neither source is approved for outcome ingestion.
 - Audit events and development-only migration runner.
 - PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, with a restricted learner runtime role and transaction-scoped verified identity context (migrations 0008–0010). Class creation and learner placement are permitted only to authorised organisation/school administrators; placement uses a narrow SECURITY DEFINER function rather than a general UPDATE grant.
-- 56 automated tests pass across 11 test files; lint, typecheck and production build pass in the current Sentinel workspace. A protected Vercel Preview deployment is READY for the curriculum browser. The preview has not been promoted to Production.
+- 69 automated tests pass across 12 test files after adding the first assessment domain contracts; lint and typecheck pass. A fresh production build passed using ephemeral local-only auth/database placeholders; no deployment secrets were changed. A protected Vercel Preview deployment is READY for the curriculum browser. The preview has not been promoted to Production.
 
 ## Current security boundary
 
@@ -70,8 +70,9 @@ Vercel project `sentinel-platform` is not linked to the Git repository for autom
 3. Implement learner correction, class reassignment, transfer, withdrawal, progression approval and academic-year rollover with explicit state transitions and audit history. Initial class placement is implemented; reassignment is not.
 4. Implement teacher allocation, class capacity and verified guardian relationships with safeguarding-controlled access.
 5. Continue KICD outcome ingestion only from source documents with verified edition, provenance, rights and curriculum-specialist review.
-6. Complete authenticated end-to-end, accessibility, performance and security testing.
-7. Complete legal/privacy/DPIA and institutional governance approvals before any live learner pilot.
+6. Continue the assessment lifecycle: relational schema, composite tenant/enrolment constraints, assessment-specific RLS, controlled state transitions and append-only result decisions. The first pure TypeScript contracts now cover event/attempt state transitions, enrolment scope matching, task scoring, performance bands and instrument immutability.
+7. Complete authenticated end-to-end, accessibility, performance and security testing.
+8. Complete legal/privacy/DPIA and institutional governance approvals before any live learner pilot.
 
 ## Latest deployment checkpoint
 
@@ -86,4 +87,4 @@ Vercel project `sentinel-platform` is not linked to the Git repository for autom
 - Vercel automatic deployments are disabled for `sentinel/bootstrap`; no uncontrolled production deployment.
 - Do not provision paid/persistent infrastructure or incur new service costs without approval.
 - Older ephemeral sandboxes are preserved; use fresh cloud checkouts and do not reset or overwrite stale work.
-- The external original implementation brief remains unrecovered; requirements dependent on it are provisional until an authorised share/export route is available. The source-controlled migration journal has 11 entries (0000–0010); the Neon migration ledger has 13 rows, including two historical hashes with no matching current migration file or Git history. Those rows are preserved pending provenance investigation.
+- The external original implementation brief remains unrecovered; requirements dependent on it are provisional until an authorised share/export route is available. The source-controlled migration journal has 12 entries (0000–0011); the Neon migration ledger has 13 rows, including one historical hash with no matching current migration file or Git history. Those rows are preserved pending provenance investigation.
