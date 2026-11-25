@@ -70,6 +70,7 @@ Use GitHub, Notion, Vercel, Neon, Cloudflare and other connected plugins directl
 Never commit .env files, API tokens, private keys, database passwords, email credentials or other secrets. Commit only a sanitised .env.example containing variable names and safe placeholders.
 
 - [Implementation Foundation & Cloud Resource Status](docs/IMPLEMENTATION_FOUNDATION.md)
+- [Softflix Sentinel Brand & Design System](docs/BRAND_AND_DESIGN_SYSTEM.md)
 
 ## Application workspace
 
