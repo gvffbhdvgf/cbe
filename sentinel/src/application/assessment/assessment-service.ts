@@ -277,7 +277,10 @@ export async function getAssessmentAttemptMarkingSheet(actorUserId: string, orga
         mark.mark_version,
         mark.awarded_score,
         mark.marker_note,
-        mark.marked_at
+        mark.marked_at,
+        lifecycle.id AS result_id,
+        lifecycle.lifecycle_status,
+        lifecycle.latest_decision_type
       FROM public.assessment_attempts AS attempt
       INNER JOIN public.assessment_events AS event_record
         ON event_record.id = attempt.event_id
@@ -302,6 +305,15 @@ export async function getAssessmentAttemptMarkingSheet(actorUserId: string, orga
         ORDER BY mark_record.mark_version DESC
         LIMIT 1
       ) AS mark ON true
+      LEFT JOIN LATERAL (
+        SELECT result_record.id, result_record.lifecycle_status, result_record.latest_decision_type, result_record.result_version
+        FROM public.assessment_result_lifecycle AS result_record
+        WHERE result_record.attempt_id = attempt.id
+          AND result_record.tenant_organisation_id = attempt.tenant_organisation_id
+          AND result_record.organisation_id = attempt.organisation_id
+        ORDER BY result_record.result_version DESC
+        LIMIT 1
+      ) AS lifecycle ON true
       WHERE attempt.organisation_id = ${organisationId}::uuid
         AND attempt.id = ${attemptId}::uuid
       ORDER BY task.display_order, task.task_code
