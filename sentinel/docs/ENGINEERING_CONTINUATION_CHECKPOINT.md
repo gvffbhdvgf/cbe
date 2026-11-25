@@ -1,10 +1,10 @@
 # Sentinel — Engineering Continuation Checkpoint
 
-**Date:** 25 November 2026  
+**Date:** 26 November 2026  
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
-**Latest implementation commit:** `df62faac06247b76352b4a8d4169323911448616`  
-**Latest documentation checkpoint:** `9135a5d2cd5074be8a735d2684902ce2d00456dc`
+**Latest implementation commit:** `a4e6f6c4faf321f6b9f282bd6a3ea1a08ec4a937`  
+**Latest documentation checkpoint:** 26 November 2026; this file is maintained with the branch status.
 
 ## 1. Application and dependencies
 
@@ -30,7 +30,8 @@ Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Ne
 - Learner admission/list service and administrator-facing register; learner reads and admission writes now use the restricted RLS transaction path.
 - Organisation-specific class-group creation/listing for Grades 1–9 by academic year, with unique class codes and audit events.
 - Controlled, effective-dated learner placement into a matching active class, with progression and audit records.
-- Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance and curriculum document staging.
+- Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance, curriculum document staging and authenticated source-structure browsing for versioned strand/sub-strand headings.
+- Grade 6 CRE June 2024 and Revised 2024 source records remain separate. A source-comparison note records six changed heading/page rows; neither source is approved for outcome ingestion.
 - PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, restricted runtime role and transaction-scoped verified identity context (migrations 0008–0010).
 
 ## 3. Learner RLS and identity boundary
@@ -70,7 +71,7 @@ A fresh cloud checkout of the latest GitHub branch completed:
 | `npm run db:check` | Passed; eleven migrations valid |
 | `npm run lint` | Passed |
 | `npm run typecheck` | Passed |
-| `npm test` | Passed; 49 tests across nine files |
+| `npm test` | Passed; 56 tests across eleven files |
 | `npm run build` | Passed; Next.js production build and route generation completed |
 | `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
@@ -78,9 +79,9 @@ The suite covers JWT verification, RLS migration contracts, class validation, pl
 
 A GitHub Actions workflow exists for Node 22 clean install, migration validation, lint, typecheck, tests and build. No hosted workflow run/status check has been observed yet; the cloud validation above is the verified execution.
 
-## 6. Vercel environment blocker
+## 6. Vercel Preview and environment boundary
 
-The Vercel project `sentinel-platform` exists but is not connected to a Git repository. Vercel rejected creation of a branch-scoped Preview variable `DATABASE_AUTHENTICATED_URL` because no Git repository is connected. Do not broaden the restricted connection to every Preview or Production. Resolve the intended Git integration/project linkage first, then add the restricted connection as a sensitive Preview-only variable scoped to `sentinel/bootstrap`. No Production variable or deployment was changed.
+The Vercel project `sentinel-platform` exists; its root directory is now `sentinel`. A protected Preview deployment for `sentinel/bootstrap` is READY at https://sentinel-platform-56590wifk-pep-popsiis-projects.vercel.app (commit `a4e6f6c4faf321f6b9f282bd6a3ea1a08ec4a937`). Public unauthenticated requests to `/` and `/api/health` redirect to Vercel SSO; no health payload is exposed publicly. The project is not linked for automatic branch-scoped environment management, and `DATABASE_AUTHENTICATED_URL` remains unconfigured. Do not broaden this restricted connection to every Preview or Production as a workaround. No Production variable or deployment was changed.
 
 Until the Preview secret is configured, learner/class APIs that require the restricted database connection intentionally fail closed.
 
