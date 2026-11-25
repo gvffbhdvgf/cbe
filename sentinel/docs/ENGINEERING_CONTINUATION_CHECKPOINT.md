@@ -1,5 +1,20 @@
 # Sentinel — Engineering Continuation Checkpoint
 
+## 26 November 2026 — Assessment marking and result-generation milestone
+
+Latest source commit: [17adc7a](https://github.com/gvffbhdvgf/cbe/commit/17adc7a1104eaae050bf256c69fb79dc7f0cef24). GitHub Actions [45715279233](https://github.com/gvffbhdvgf/cbe/actions/runs/45715279233) passed migration-journal validation, lint, TypeScript, 103 tests across 18 files, and the production build.
+
+Migration 0016 is registered and applied to the isolated Neon development branch only. It adds:
+- Append-only, versioned task marks separate from immutable learner response evidence.
+- Task maximum-score enforcement and reasoned supersession of the latest mark before result finalization.
+- Reason-required voiding of incomplete in-progress attempts after the event end; event closure is blocked until all attempts are submitted or voided.
+- Atomic result generation after every required task has a captured response and latest mark. Result version 1 is immutable; the attempt advances to `marked`.
+- Authenticated routes for event closure, attempt voiding, task marking and marking finalization.
+
+Database verification on the development branch confirmed forced RLS on `assessment_response_marks`, runtime SELECT-only table access (no INSERT/UPDATE/DELETE), and SECURITY DEFINER-only function access with PUBLIC execution revoked. Unauthenticated calls to all four new privileged functions were rejected with SQLSTATE 42501. A temporary child branch was used to validate the complete migration transaction and was deleted afterward. No assessment records were created. Production database and deployment remain unchanged.
+
+The initial result denominator currently includes required tasks only; optional tasks are excluded pending a richer scoring-scheme model. Mark corrections are supported by supersession only before finalization. Moderation, approval, publication and post-finalization correction remain the next governance milestone.
+
 **Date:** 26 November 2026
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)
 **Branch:** `sentinel/bootstrap`
@@ -30,6 +45,7 @@ Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Ne
 - Learner admission/list service and administrator-facing register; learner reads and admission writes now use the restricted RLS transaction path.
 - Organisation-specific class-group creation/listing for Grades 1–9 by academic year, with unique class codes and audit events.
 - Controlled, effective-dated learner placement into a matching active class, with progression and audit records.
+- Controlled assessment event closure, reasoned voiding of incomplete attempts after the event end, append-only versioned task marks, and atomic immutable result generation (migration 0016).
 - Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance, curriculum document staging and authenticated source-structure browsing for versioned strand/sub-strand headings.
 - Grade 6 CRE June 2024 and Revised 2024 source records remain separate. A source-comparison note records six changed heading/page rows; neither source is approved for outcome ingestion.
 - PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, restricted runtime role and transaction-scoped verified identity context (migrations 0008–0010).
@@ -50,7 +66,7 @@ Sentinel is a Next.js App Router modular monolith using TypeScript, React 19, Ne
 
 Neon project: `sentinel-platform`; development branch: `sentinel-development`; database: `sentinel`.
 
-The source-controlled migration journal has entries 0000–0015 (sixteen migrations). The Neon ledger contains eighteen rows; two historical hashes are not represented in current source files or Git history and are preserved pending provenance investigation. Migration 0012 assessment schema SHA-256: e96a971f24d9feb4906b3b395403c52dbb5a3d34cf239a65132db5a12dcbb5f9. Migration 0013 eligible-roster SHA-256: 593992ecfc18ab4e350acca996ae57968629cc1593623341e7a47b8b1ff4447e. Migration 0014 controlled-capture SHA-256: febc678c45b1968502101f25d8c752bce2bea9acbf5d503ef3af5f3f9d411c14 and is applied to development. Migration 0015 audit-history immutability SHA-256: ca2ebd31b6580e9e04aebb827f3e123319ce93edd4a5c33f0a1db58fae2a6c6b and is applied to development.
+The source-controlled migration journal has entries 0000–0016 (seventeen migrations). The Neon development ledger contains nineteen rows: the sixteen prior source migrations, two historical hashes not represented in current source files or Git history (preserved pending provenance investigation), and migration 0016. Migration 0012 assessment schema SHA-256: e96a971f24d9feb4906b3b395403c52dbb5a3d34cf239a65132db5a12dcbb5f9. Migration 0013 eligible-roster SHA-256: 593992ecfc18ab4e350acca996ae57968629cc1593623341e7a47b8b1ff4447e. Migration 0014 controlled-capture SHA-256: febc678c45b1968502101f25d8c752bce2bea9acbf5d503ef3af5f3f9d411c14 and is applied to development. Migration 0015 audit-history immutability SHA-256: ca2ebd31b6580e9e04aebb827f3e123319ce93edd4a5c33f0a1db58fae2a6c6b and is applied to development. Migration 0016 assessment marking/results SHA-256: 0f139f08b7e3636b66d91efcb2fdaf1e10d0a39f6416523d125a67ac22279dc1 and is applied to development.
 - 0008 RLS foundation: SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`.
 - 0009 class creation RLS: SHA-256 `d284585be9a8f0a5071a06202435429cb34e484db79d6c37376a436089b4cf82`.
 - 0010 controlled class placement: SHA-256 `8bacb4f67b6602385d70ac53f423118a0a6d3cea57bb63d88dbad6527f30e6f2`.
@@ -68,16 +84,16 @@ A fresh cloud checkout of the latest GitHub branch completed:
 | Check | Result |
 |---|---|
 | Clean `npm ci` | Passed; zero vulnerabilities reported |
-| `npm run db:check` | Passed; sixteen migrations valid |
+| `npm run db:check` | Passed; seventeen migrations valid |
 | `npm run lint` | Passed |
 | `npm run typecheck` | Passed |
-| `npm test` | Passed; 91 tests across seventeen files (including assessment domain, migration, access-policy and frozen-roster contracts) |
+| `npm test` | Passed; 103 tests across eighteen files (including append-only marking, result generation and attempt-void contracts) |
 | `npm run build` | Passed; Next.js production build and route generation completed with ephemeral local-only environment placeholders |
 | `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
 The suite covers JWT verification, RLS migration contracts, class validation, placement date validation, error mapping, organisation and membership policies, and assessment event/attempt lifecycle, tenant-enrolment scope, scoring and instrument-version invariants. The assessment-domain increment also passed `npm run lint` and `npm run typecheck`; its fresh production build passed using ephemeral local-only auth/database placeholders; no deployment secrets were changed. The Neon Auth dependency tree still emits a non-blocking peer-version warning; ESLint 9.39.5 also emits a deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
 
-GitHub Actions run [45713501617](https://github.com/gvffbhdvgf/cbe/actions/runs/45713501617) on commit `16ff21256f892f45f12bf9742d475ba08d67c1b9` passed all stages: clean install, migration validation, lint, typecheck, 91 tests across seventeen files, and production build. Build used ephemeral CI-only placeholders; no deployment secrets were changed.
+GitHub Actions run [45715279233](https://github.com/gvffbhdvgf/cbe/actions/runs/45715279233) on commit `17adc7a1104eaae050bf256c69fb79dc7f0cef24` passed all stages: clean install, migration validation, lint, typecheck, 103 tests across eighteen files, and production build. Build used ephemeral CI-only placeholders; no deployment secrets were changed. Earlier run [45713501617](https://github.com/gvffbhdvgf/cbe/actions/runs/45713501617) is retained as the prior 91-test baseline.
 
 ## 6. Vercel Preview and environment boundary
 
@@ -94,15 +110,18 @@ Until the Preview secret is configured, learner/class APIs that require the rest
 - Five strand and 22 sub-strand headings are staged; detailed outcomes/learning experiences are not yet approved or ingested.
 - Grade 6 assessment discrepancy remains unresolved: category total 1,406 versus cluster tables 1,408 and 1,405.
 
-Assessment lifecycle domain contracts are implemented in `src/domain/assessment/assessment.ts` with thirteen focused tests. Migrations 0012–0015 are applied to the isolated development branch:
+Assessment lifecycle domain contracts are implemented in `src/domain/assessment/assessment.ts` with thirteen focused tests. Migrations 0012–0016 are applied to the isolated development branch:
 
 - Migration 0012 creates the relational assessment model, composite tenant/grade/year/instrument/enrolment constraints, forced RLS, approved-outcome mapping validation, append-only result/decision history and instrument-version locking.
 - Migration 0013 adds the immutable, RLS-protected eligible-enrolment roster, a roster FK on attempts and the audited `sentinel_private.schedule_assessment_event(uuid)` operation.
 - Migration 0014 adds controlled event opening with UTC start/end, active authority, approved-instrument, active-programme and frozen-roster checks; attempt creation restricted to exact frozen-roster enrolments; immutable per-task response capture; and submission only after every required task response exists. Four authenticated API operations call SECURITY DEFINER database functions; no direct assessment-table write privileges are granted to the runtime role.
 - Migration 0015 makes the audit log itself append-only. Assessment responses, results, decisions and eligibility snapshots also reject updates/deletes.
+- Migration 0016 adds `assessment_response_marks` as a separate append-only, versioned record linked to the immutable captured response and exact instrument task. Marks are bounded by each task maximum; corrections before result finalization must explicitly supersede the latest mark and include a reason. The mutable-looking legacy marking columns on `assessment_responses` are documented as deprecated and are not used.
+- Migration 0016 adds controlled attempt voiding (in-progress attempts only, after event end, with a reason), event closure (only after all attempts are submitted or voided), and atomic marking finalization. A result is created only when every required task has a response and latest mark. The initial result denominator includes required tasks only; optional tasks are excluded pending a richer scoring-scheme model. Finalization creates immutable result version 1 and moves the attempt to `marked`.
+- New authenticated API routes cover event close, incomplete-attempt void, task mark capture and marking finalization. Moderation, approval, publication and post-finalization correction remain unimplemented.
 - Teacher-level capture remains disabled until class and teacher allocations and explicit assignment authority are modelled.
 
-All assessment tables have forced RLS. Active platform administrators, organisation administrators, school administrators and assessors can read within their organisation. Teachers and viewers remain excluded from school-wide raw assessment access. The event date is interpreted in UTC until organisation timezone support exists. No assessment or learner records have been inserted. Marking, moderation, approval, publication and reasoned correction remain pending; authenticated end-to-end testing of the new capture lifecycle also remains outstanding.
+All assessment tables have forced RLS. Active platform administrators, organisation administrators, school administrators and assessors can read within their organisation. Teachers and viewers remain excluded from school-wide raw assessment access. The event date is interpreted in UTC until organisation timezone support exists. No assessment or learner records have been inserted. Moderation, approval, publication and post-finalization correction remain pending; authenticated end-to-end testing of the capture/marking lifecycle also remains outstanding.
 
 Outcome mapping approval is constrained to reviewed `specific_outcome` nodes from approved, rights-confirmed curriculum documents with matching grade and learning area. Results and decision history are append-only; instrument versions lock after attempts exist; response scores cannot exceed task maxima. A read-only events API is implemented at GET /api/organisations/{organisationId}/assessments/events with matching application preflight and database RLS. No assessment or learner records have been inserted. Controlled event opening, attempt creation, response capture and submission are implemented and migration 0014 is applied. Marking, moderation, approval, publication and correction operations remain pending, as do authenticated integration tests of the complete capture workflow.
 
@@ -112,7 +131,7 @@ Next sequence:
 3. Implement class reassignment, learner correction, transfer, withdrawal, progression approval and academic-year rollover with explicit state transitions and audit history.
 4. Implement teacher allocation, class capacity and verified guardian relationships with safeguarding controls.
 5. Continue detailed KICD outcomes only from verified source editions with provenance, rights and specialist review.
-6. Implement marking, moderation, approval, publication and correction operations with append-only audit history; validate the new controlled attempt flow with governed synthetic fixtures.
+6. Implement moderation, approval, publication and post-finalization correction operations with append-only audit history; validate capture and marking end-to-end with governed synthetic fixtures.
 7. Complete privacy/DPIA, security, accessibility and performance validation before any live learner pilot.
 
 ## 8. Non-negotiable guardrails
