@@ -22,7 +22,7 @@ export async function POST(request: Request, context: { params: Promise<{ organi
   if (typeof supersedesMarkId !== 'string' || !uuidPattern.test(supersedesMarkId)) return Response.json({ error: 'A valid supersedesMarkId is required' }, { status: 400 });
   try {
     const markId = await recordAssessmentMarkCorrection(data.user.id, organisationId, attemptId, taskId, awardedScore, markerNote.trim(), supersedesMarkId);
-    return Response.json({ markId, attemptId, taskId, corrected: true }, { status: 201 });
+    return Response.json({ markId: markId?.mark_id, markVersion: markId?.mark_version, awardedScore: markId?.awarded_score, markedAt: markId?.marked_at, attemptId, taskId, corrected: true }, { status: 201 });
   } catch (error) {
     if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 });
     if (error instanceof LearnerRlsUnavailableError) return Response.json({ error: 'Assessment data service is temporarily unavailable' }, { status: 503 });
