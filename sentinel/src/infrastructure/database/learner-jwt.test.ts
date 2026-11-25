@@ -30,7 +30,7 @@ beforeAll(async () => {
 
 describe('verifyNeonAccessToken', () => {
   it('rejects a missing token', async () => {
-    await expect(verifyNeonAccessToken(null, jwks, issuer, subject)).rejects.toThrow('access token is required');
+    await expect(verifyNeonAccessToken(null, jwks, issuer, subject)).rejects.toThrow('Authentication required');
   });
   it('accepts a signed, unexpired token for the authenticated user', async () => {
     const payload = await verifyNeonAccessToken(await signToken(), jwks, issuer, subject);
