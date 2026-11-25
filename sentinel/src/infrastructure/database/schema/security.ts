@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, uuid, varchar, jsonb, index, unique } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { check, pgTable, text, timestamp, uuid, varchar, jsonb, index, unique } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 
 export const platformAdministrators = pgTable('platform_administrators', {
@@ -6,7 +7,9 @@ export const platformAdministrators = pgTable('platform_administrators', {
   status: varchar('status', { length: 16 }).notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  check('platform_administrators_status_check', sql`${table.status} IN ('active', 'suspended', 'revoked')`),
+]);
 
 export const organisationMemberships = pgTable('organisation_memberships', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -21,6 +24,9 @@ export const organisationMemberships = pgTable('organisation_memberships', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   unique('organisation_memberships_org_user_role_unique').on(table.organisationId, table.userId, table.role),
+  check('organisation_memberships_role_check', sql`${table.role} IN ('organisation_admin', 'school_admin', 'teacher', 'assessor', 'viewer')`),
+  check('organisation_memberships_status_check', sql`${table.status} IN ('invited', 'active', 'suspended', 'revoked')`),
+  check('organisation_memberships_effective_dates_check', sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`),
   index('organisation_memberships_user_status_idx').on(table.userId, table.status, table.startsAt, table.endsAt),
   index('organisation_memberships_org_status_idx').on(table.organisationId, table.status),
 ]);
@@ -35,6 +41,6 @@ export const auditEvents = pgTable('audit_events', {
   metadata: jsonb('metadata').notNull().default({}),
   occurredAt: timestamp('occurred_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
-  index('audit_events_org_time_idx').on(table.organisationId, table.occurredAt),
-  index('audit_events_actor_time_idx').on(table.actorUserId, table.occurredAt),
+  index('audit_events_org_time_idx').on(table.organisationId, table.occurredAt.desc()),
+  index('audit_events_actor_time_idx').on(table.actorUserId, table.occurredAt.desc()),
 ]);
