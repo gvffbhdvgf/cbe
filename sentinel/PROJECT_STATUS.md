@@ -114,3 +114,19 @@ No application code, pull request, default-branch merge, cloud resource or produ
 ## Handoff instruction for future chats
 
 Use cloud-connected plugins only. Read this checkpoint and the linked Sentinel Blueprint, Product Requirements, Architecture and Security documents. Inspect the latest GitHub branch and relevant cloud service state before changing anything. Do not use local-machine tooling or ChatGPT Work. Do not repeat completed bootstrap work, do not assume pending approvals have been granted, and update this checkpoint after material progress.
+
+
+## 25 November 2026 — Enterprise domain and KICD Grades 1–9 design
+
+The product is a comprehensive Grades 1–9 platform. KICD catalogue research confirms Regular Curriculum designs are organised as Lower Primary (Grades 1–3), Upper Primary (Grades 4–6) and Junior School (Grades 7–9), with adapted Special Needs Education designs also published across grades. Curriculum architecture must support versioned regular/adapted pathways and source provenance; do not hard-code Grade 6/9 or assume one flat subject list.
+
+Official KICD catalogue:
+- https://kicd.ac.ke/cbc-materials/curriculum-designs/regular-curriculum-designs/
+- https://kicd.ac.ke/cbc-materials/lower-primary/
+- https://kicd.ac.ke/cbc-materials/curriculum-designs/upper-primary-designs/
+- https://kicd.ac.ke/cbc-materials/curriculum-designs/junior-school-designs/
+- https://kicd.ac.ke/cbc-materials/curriculum-designs/sne-curriculum-designs/
+
+New domain design: [DOMAIN_MODEL_AND_WORKFLOWS.md](https://github.com/gvffbhdvgf/cbe/blob/sentinel/bootstrap/sentinel/docs/DOMAIN_MODEL_AND_WORKFLOWS.md). It defines bounded contexts, canonical conceptual entities, lifecycle invariants, end-to-end workflows, redundancy controls, solution-priority hypotheses and implementation-readiness gates.
+
+No production schema or application code has been created. Domain ownership, tenancy, workforce data authority, guardian access, assessment taxonomy, curriculum adoption, integration contracts, connectivity and service levels remain to be validated.
