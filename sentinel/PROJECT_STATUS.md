@@ -253,3 +253,14 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Cloud sandbox verification on a clean `npm ci`: migration journal check passed; TypeScript passed; 9/9 unit tests passed; ESLint passed; Next.js production build passed; `npm audit` reported 0 vulnerabilities.
 - Latest controlled Vercel Preview deployment: `dpl_6tzUHc6ssXokjudm4YcxNffhkWMU`, READY, code commit `c6588e50b9899f63dc25abe5ca8e5108947a3d15`. Stable alias: https://sentinel-platform-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app.
 - Read-only browser re-verification of the latest deployment is in progress. Authenticated sign-in, administrator provisioning, cross-tenant integration tests and PostgreSQL RLS remain unverified/not implemented.
+
+
+### Latest Preview browser verification — 25 November 2026
+
+The stable alias was checked directly after deployment `dpl_6tzUHc6ssXokjudm4YcxNffhkWMU`:
+
+- `GET /api/health`: HTTP 200, JSON `{"status":"ok","service":"sentinel-platform"}`.
+- `GET /api/organisations`: HTTP 401, JSON `{"error":"Authentication required"}`.
+- `GET /auth/sign-in`: HTTP 200, sign-in page rendered.
+- `GET /workspace`: HTTP 307 redirect to `/auth/sign-in`, then HTTP 200 sign-in page.
+- No credentials were submitted and no write operation was performed.
