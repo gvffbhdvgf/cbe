@@ -232,3 +232,12 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Replaced the shared Preview session-cookie secret with a newly generated independent 256-bit secret stored as a Vercel sensitive environment variable targeted only to Preview.
 - The existing cookie-secret variable now targets Production and Development only; those values were not read or exposed.
 - Redeployed the same verified application commit with the Preview-only secret. Deployment `dpl_VgBKY4YbxRDon1QWmwe2S1ctxQTS` reached READY and retains the stable preview alias.
+
+
+### Managed-auth identity integrity and bootstrap runbook
+
+- Changed administrator, membership and audit actor identifiers from free-form text to UUID foreign keys referencing `neon_auth."user"(id)`. This prevents orphaned access grants and ties all privileged actions to real managed-auth identities.
+- Applied the corresponding additive type/FK changes on `sentinel-development`; verified the resulting constraints and column types through Neon schema inspection. The tables remain empty.
+- Added [ADMINISTRATOR_BOOTSTRAP.md](docs/ADMINISTRATOR_BOOTSTRAP.md), a development-only, approval-gated runbook for promoting one verified managed-auth user to platform administrator. It does not create accounts or enable self-service sign-up.
+- Cloud sandbox validation after this change passed: TypeScript, all 9 unit tests and ESLint.
+- Latest controlled Preview deployment is READY: `dpl_46uury4FeiSBp8HpfqbNhSmKPdLZ`, code commit `0f3f2ff25c8fe5625069a7d4688dc01408bfb43b`. Production remains untouched.
