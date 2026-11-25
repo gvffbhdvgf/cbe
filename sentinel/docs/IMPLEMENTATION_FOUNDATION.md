@@ -50,7 +50,7 @@ Before live data or production schema activation, Sentinel must resolve controll
 - `npm run typecheck` — passed.
 - `npm test` — passed, 9 tests across domain and authorization policy.
 - `npm run build` — passed with dynamic authenticated workspace routes.
-- Curriculum browser increment: `npm run lint`, `npm run typecheck`, `npm test` (56 tests across 11 files), and production build passed.
+- Curriculum browser increment: `npm run lint`, `npm run typecheck`, `npm test` (56 tests across 11 files), and production build passed. Assessment domain-contract increment: lint and typecheck passed; 69 tests across 12 files passed, including 13 new assessment contract tests. A fresh production build passed using ephemeral local-only auth/database placeholders; no deployment secrets were changed.
 - Vercel preview deployment `dpl_HwztYhBCAFGkidfH3hShFeV92wBo` — READY for commit `a4e6f6c4faf321f6b9f282bd6a3ea1a08ec4a937`; unauthenticated preview root and `/api/health` redirect to Vercel SSO, so no public health payload is exposed.
 - `npm audit` — 0 vulnerabilities after removing unused tooling that introduced moderate development-dependency advisories.
 - Cloud sandbox browser — public landing page and sign-in page loaded; unauthenticated `/workspace` redirected to `/auth/sign-in`; `/api/health` returned `{"status":"ok","service":"sentinel-platform"}`.
@@ -65,6 +65,12 @@ The sign-in success path, password reset, session persistence and invitation pro
 4. **Production environment:** no custom domain, production data, production schema migration, or production deployment exists.
 5. **Identity and authorisation:** the app's initial access policy is not yet connected to an institutional role-assignment store, data-controller boundary or row-level security policies.
 6. **Repository automation:** GitHub CI configuration is included, but a successful hosted GitHub Actions run has not yet been observed. Vercel automatic deployments remain disabled by design.
+
+## Assessment lifecycle — current increment
+
+The first pure TypeScript assessment contracts are implemented under `src/domain/assessment/`. They cover event lifecycle preconditions, moderation gates, attempt state transitions, immutable approved attempts, tenant/organisation/grade/year enrolment matching, task maximums, awarded-score bounds, non-overlapping performance bands and instrument-version immutability after attempts exist. Thirteen focused tests pass. No assessment database tables or migrations have been applied yet.
+
+A read-only inspection of the isolated Neon development branch confirmed that learner enrolments and audit events have forced RLS, while curriculum document/node tables and organisation memberships currently do not. The existing runtime group role is `sentinel_learner_runtime`; its existing manager predicate is intentionally limited to organisation/school administrators. Assessment access therefore needs a separate capability-aware database policy and role/grant design rather than reusing learner-record manager authority. Existing membership roles include organisation administrator, school administrator, teacher, assessor and viewer.
 
 ## Next engineering increments
 
