@@ -194,3 +194,17 @@ Next gates: reconcile the original external implementation brief; validate autho
 - Authentication success remains unverified: no test user was created and no credentials were submitted. Neon Auth currently has email/password enabled, email verification required, self-service sign-up disabled, and no trusted origins before this configuration.
 - The preview alias is publicly reachable and must contain synthetic/demo data only. Do not load learner records until institutional authority, controller/processor roles, privacy notices/lawful basis, DPIA and access controls are approved.
 - No domain was purchased. No production deployment, production schema migration or live learner-data import occurred.
+
+
+## 25 November 2026 — Administrator access and organisation onboarding foundation
+
+- Added Preview-only Vercel environment overrides for `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `NEON_AUTH_BASE_URL` and `NEON_AUTH_JWKS_URL`. They point to Neon branch `sentinel-development`. Existing Production and Development targets were retained separately. The cookie secret remains shared across targets; consider rotating/separating it before production.
+- Applied additive schema on Neon `sentinel-development`: `platform_administrators`, `organisation_memberships` and `audit_events`. The existing `organisations` table remains empty.
+- Added Drizzle schema definitions and migration `0001_organisation_access.sql`.
+- Added server-side membership-scoped organisation listing, effective-date checks, platform-administrator-gated organisation registration, creator membership assignment and audit event recording. The three onboarding writes use Neon HTTP `db.batch` to keep them atomic.
+- Added `GET/POST /api/organisations`; the API route is excluded from the auth middleware redirect so unauthenticated requests receive JSON 401 responses and authenticated non-platform-admin requests receive 403.
+- Updated the institution directory to display only active organisations linked to the signed-in user and show registration UI only to platform administrators.
+- No platform administrator or test user has been provisioned. Neon Auth self-service sign-up remains disabled and no email delivery provider is configured. Initial platform-admin provisioning and administrator invitation/account activation remain explicit operational gates; do not seed a guessed user ID or enable open sign-up.
+- A controlled Vercel Preview deployment was built from commit `5cee290e72f2f2d82ef215b70ff504c4f8800b82` and is READY. TypeScript compilation passed. Anonymous endpoint verification is pending against this latest deployment after the API middleware correction.
+- Tenant enforcement currently uses server-side membership predicates in the application data-access path. PostgreSQL RLS has not been enabled; do not claim database-enforced RLS. Add RLS only with a connection/transaction-scoped tenant context design that is compatible with Neon HTTP and tested against cross-tenant access.
+- No Production schema changes, Production environment changes, live learner data, test accounts, domain purchase or Production deployment occurred.
