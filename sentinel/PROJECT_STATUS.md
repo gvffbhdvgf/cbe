@@ -33,10 +33,11 @@ The target platform includes institution/school management; learner identity, ad
 - Organisation onboarding and organisation-scoped membership administration.
 - Tenant-scoped learner identity, profiles, classes, enrolments, guardian relationship and progression-event schema.
 - Learner admission/list service and administrator-facing register.
+- Organisation-specific class group creation/listing for Grades 1–9 by academic year, with unique class codes and audit events.
 - Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance and curriculum document staging.
 - Audit events and development-only migration runner.
-- PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, with a restricted learner runtime role and transaction-scoped verified identity context (migration 0008).
-- 31 automated tests passed at the last full execution; four additional API error-mapping tests were added afterward and remain unverified. See the engineering checkpoint for validation details.
+- PostgreSQL RLS for learner/person/enrolment/class/progression/guardian/audit records, with a restricted learner runtime role and transaction-scoped verified identity context (migrations 0008–0009). Class creation is permitted only to authorised organisation/school administrators.
+- 43 automated tests pass in the latest clean cloud validation, alongside lint, typecheck, migration validation, production build and a zero-vulnerability audit. See the engineering checkpoint for details.
 
 ## Current security boundary
 
@@ -63,7 +64,7 @@ Vercel project `sentinel-platform` is not connected to a Git repository. Vercel 
 
 1. Resolve Vercel Git integration and branch-scoped Preview secret configuration.
 2. Complete positive/negative cross-tenant integration tests through the actual Neon Auth → Next.js → Pool transaction path.
-3. Implement class creation, learner placement, update/correction, transfer, withdrawal, progression approval and academic-year rollover with explicit state transitions and audit history.
+3. Implement learner placement/class assignment, update/correction, transfer, withdrawal, progression approval and academic-year rollover with explicit state transitions and audit history. Class creation/listing is implemented; placement is not.
 4. Implement verified guardian relationships and safeguarding-controlled access.
 5. Continue KICD outcome ingestion only from source documents with verified edition, provenance, rights and curriculum-specialist review.
 6. Complete authenticated end-to-end, accessibility, performance and security testing.

@@ -18,7 +18,7 @@ The runner stores SHA-256 hashes and journal timestamps in `public.__drizzle_mig
 
 ## Existing baseline
 
-The initial organisation, membership, curriculum, document-staging and learner-record schemas were applied to the isolated development branch and reconciled with their SQL files. Migration 0008 (`0008_learner_record_rls`) is now versioned and recorded in `public.__drizzle_migrations`. It installs the `pg_session_jwt` extension dependency, security-definer identity/authority helpers, explicit least-privilege grants and RLS policies for learner/person/enrolment/class/progression/guardian/audit tables. The restricted login role is provisioned separately per environment and inherits the non-login `sentinel_learner_runtime` group role.
+The initial organisation, membership, curriculum, document-staging and learner-record schemas were applied to the isolated development branch and reconciled with their SQL files. Migrations 0008–0009 are now versioned and recorded in `public.__drizzle_migrations`. Migration 0008 installs the `pg_session_jwt` extension dependency, security-definer identity/authority helpers, explicit least-privilege grants and RLS policies for learner/person/enrolment/class/progression/guardian/audit tables. Migration 0009 adds the guarded class INSERT privilege and policy; class UPDATE/DELETE remain denied. The restricted login role is provisioned separately per environment and inherits the non-login `sentinel_learner_runtime` group role.
 
 The runner's SHA-256 hash and journal timestamp are authoritative. Do not edit migration 0008 after application; add a new migration for subsequent policy changes.
 

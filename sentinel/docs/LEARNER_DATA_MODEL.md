@@ -1,6 +1,6 @@
 # Sentinel — Learner Records and Enrolment Model
 
-**Status:** Development schema, learner-register vertical slice and PostgreSQL RLS foundation implemented. No live learner or guardian data has been loaded. This is not a production-ready admissions workflow.
+**Status:** Development schema, learner register, class-group register and PostgreSQL RLS foundation implemented. No live learner or guardian data has been loaded. This is not a production-ready admissions workflow.
 
 ## 1. Tenant and identity boundaries
 
@@ -32,9 +32,10 @@ Date of birth is not shown in the learner register list. Audit metadata contains
 - API routes authenticate independently of UI state and check organisation membership on the server.
 - People, learner profiles, classes, enrolments, guardians and progression events use tenant-aware composite foreign keys.
 - One active enrolment is allowed per learner per tenant.
-- Admission, progression and audit writes execute in one transaction through the restricted learner runtime role.
+- Admission, class creation, progression and audit writes execute in one transaction through the restricted learner runtime role.
+- Organisation administrators can create and list class groups by grade and academic year. Class codes are unique per organisation/grade/year and are normalised to uppercase. Class placement, teacher allocation and capacity management are separate future workflows.
 - Learner reads/writes obtain a Neon Auth JWT, verify its signature and issuer against JWKS, require its subject to match the authenticated session, set transaction-local claims, and confirm the database identity before querying.
-- PostgreSQL RLS is enabled and forced for people, learner profiles, classes, enrolments, guardian relationships, progression events and audit events (migration 0008).
+- PostgreSQL RLS is enabled and forced for people, learner profiles, classes, enrolments, guardian relationships, progression events and audit events (migrations 0008–0009). Class SELECT and INSERT policies are tenant- and authority-scoped.
 - The login role inherits a NOLOGIN/NOBYPASSRLS group role and has only explicit SELECT/INSERT privileges; UPDATE and DELETE are not granted.
 - No automated progression, placement or high-stakes decision is made by the system.
 
@@ -46,7 +47,7 @@ The database extension's fallback claims mode does not verify signatures itself.
 2. Confirm data-controller/processor roles, lawful basis, parent/guardian notices and consent requirements, retention, access/correction/deletion workflows and breach response.
 3. Validate the actual institution hierarchy and data ownership with participating institutions.
 4. Implement class creation/assignment, admissions approval, duplicate detection, transfers, exits, progression approval and guardian verification.
-5. Complete positive/negative integration tests proving a user in one organisation cannot list, create or infer another organisation's learner records, and verify the actual Neon Auth → Next.js → Pool transaction path.
+5. Complete positive/negative integration tests proving a user in one organisation cannot list, create or infer another organisation's learner/class records, and verify the actual Neon Auth → Next.js → Pool transaction path.
 6. Add update/correction and deletion/archive policies only after the relevant workflows and authority model are approved; the runtime currently has no UPDATE/DELETE privilege.
 7. Confirm encryption, backup/restore, audit retention, operational access and restricted support procedures.
 8. Use synthetic fixtures in development only. Do not import real children’s records until all gates are approved.

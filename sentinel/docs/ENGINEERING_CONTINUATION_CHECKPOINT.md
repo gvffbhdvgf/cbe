@@ -4,8 +4,8 @@
 **Repository:** [gvffbhdvgf/cbe](https://github.com/gvffbhdvgf/cbe)  
 **Branch:** `sentinel/bootstrap`  
 **Base commit inspected:** `e2507ec687e11e8e43f6ebdd99340fe33ff83782`  
-**Latest implementation commit:** `623f2d4d27dd2ac1ed8c990643ba6f0281fb9b26`  
-**CI workflow commit:** `2fc875e3954526b3d227dd336d501d5d59658333`
+**Latest verified implementation commit:** `1642d4687d47db04b7507a268b88cf5c1686c53b`  
+**Latest full validation:** 25 November 2026, clean cloud checkout.
 
 ## 1. Application and dependencies
 
@@ -31,6 +31,7 @@ CI uses Node.js 22 and `npm ci`.
 - Organisation onboarding and organisation-scoped membership administration.
 - Tenant-scoped learner identity, profiles, classes, enrolments, guardian relationship and progression-event schema.
 - Learner admission/list service and administrator-facing register.
+- Organisation-specific class-group creation/listing by grade and academic year, with audit events and a guarded class INSERT RLS policy (migration 0009).
 - Source-linked KICD Grades 1–9 curriculum catalogue, pathway provenance and curriculum document staging.
 - Audit events and development-only migration runner restricted to the approved `sentinel-development` Neon endpoint.
 - PostgreSQL RLS foundation for learner/person/enrolment/class/progression/guardian/audit records (migration 0008).
@@ -42,7 +43,7 @@ The development database already contained a partially configured RLS state that
 
 - `sentinel_learner_runtime` is NOLOGIN, NOBYPASSRLS and non-privileged.
 - `sentinel_learner_login` is a development login role inheriting the group role.
-- The login has SELECT/INSERT only on explicitly approved learner/audit tables; no UPDATE or DELETE.
+- The login has SELECT/INSERT only on explicitly approved learner, class and audit tables; no UPDATE or DELETE.
 - Learner service reads and admission writes use a dedicated Neon WebSocket Pool/Drizzle transaction through `DATABASE_AUTHENTICATED_URL`.
 - The application obtains a Neon Auth JWT, verifies it against configured JWKS and issuer, and requires the JWT subject to match the authenticated session user ID.
 - Verified claims are installed using transaction-local `set_config('request.jwt.claims', ..., true)`; the database checks `sentinel_private.current_user_id()` before learner queries.
@@ -55,7 +56,7 @@ The privileged `DATABASE_URL` remains for organisation/membership preflight and 
 
 Neon project: `sentinel-platform`; development branch: `sentinel-development`; database: `sentinel`.
 
-Migration journal entries 0000–0008 are present (nine migrations). Migration 0008 is recorded in `public.__drizzle_migrations` with SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`.
+Migration journal entries 0000–0009 are present (ten migrations). Migration 0008 is recorded with SHA-256 `27664c83dd0b7ad1b00a3c4c26ac8243a2acb07abdc7c7f828aad58f77db2b68`; migration 0009 class-creation RLS is also recorded with SHA-256 `d284585be9a8f0a5071a06202435429cb34e484db79d6c37376a436089b4cf82`.
 
 The restricted login was tested through Neon SQL transactions:
 - Synthetic claims resolve to the expected database identity.
@@ -78,7 +79,7 @@ A clean cloud checkout was created from the current GitHub branch; older ephemer
 | `npm test` | Last full execution passed 31 tests across six files; four additional API error-mapping tests have since been added and remain unexecuted |
 | `npm audit --audit-level=low` | Passed; zero vulnerabilities reported |
 
-JWT tests cover missing/malformed token, signature, issuer, expiry, UUID subject and session-subject mismatch. Migration contract tests cover the journal, role constraints, RLS enable/force and absence of DELETE grants.
+JWT tests cover missing/malformed token, signature, issuer, expiry, UUID subject and session-subject mismatch. Migration contract tests cover the journal, role constraints, RLS enable/force, class INSERT scope and absence of DELETE grants. Class-domain tests cover grade/year/code/name validation; API error tests cover 401/403/409/503 mappings.
 
 A GitHub Actions workflow now defines clean install, migration validation, lint, typecheck, tests and build on Sentinel branch/PR paths. No hosted workflow run or commit status check has been observed yet, so the workflow itself is not verified. Clean install still reports a non-blocking peer-version warning in the Neon Auth dependency tree and an ESLint deprecation notice. Do not apply dependency overrides or major upgrades without compatibility review.
 
@@ -100,7 +101,7 @@ Do not broaden the restricted connection to every Preview or Production. Resolve
 Next sequence:
 1. Resolve Vercel Git integration and branch-scoped Preview secret configuration.
 2. Run positive/negative cross-tenant tests through the actual Neon Auth → Next.js → Pool transaction path.
-3. Implement class creation and learner placement with tenant/authority validation.
+3. Implement learner placement/class assignment with tenant/authority validation; class creation/listing is complete.
 4. Add learner corrections, transfers, exits, progression approval and year rollover.
 5. Implement verified guardian access and safeguarding controls.
 6. Continue detailed KICD outcomes only from verified source editions with provenance, rights and specialist review.
