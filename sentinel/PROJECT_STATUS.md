@@ -208,3 +208,12 @@ Next gates: reconcile the original external implementation brief; validate autho
 - A controlled Vercel Preview deployment was built from commit `5cee290e72f2f2d82ef215b70ff504c4f8800b82` and is READY. TypeScript compilation passed. Anonymous endpoint verification is pending against this latest deployment after the API middleware correction.
 - Tenant enforcement currently uses server-side membership predicates in the application data-access path. PostgreSQL RLS has not been enabled; do not claim database-enforced RLS. Add RLS only with a connection/transaction-scoped tenant context design that is compatible with Neon HTTP and tested against cross-tenant access.
 - No Production schema changes, Production environment changes, live learner data, test accounts, domain purchase or Production deployment occurred.
+
+
+### Verification follow-up
+
+- Cloud sandbox checks on the latest `sentinel/bootstrap` branch: `npm ci` completed with 0 reported vulnerabilities; `npm run typecheck` passed; `npm test` passed (2 files, 9 tests); `npm run lint` passed.
+- Vercel Preview build completed successfully, including Next.js production build and TypeScript validation.
+- Browser verification against the stable Preview alias confirmed unauthenticated `GET /api/organisations` returns HTTP 401, `application/json`, body `{"error":"Authentication required"}`; `GET /api/health` returns HTTP 200 and `{"status":"ok","service":"sentinel-platform"}`.
+- Authenticated end-to-end flows, platform-admin onboarding, tenant-crossing integration tests and database query behaviour under real user sessions remain unverified because no user account was provisioned.
+- npm install reports non-blocking peer dependency/deprecation warnings for the Neon Auth dependency tree and ESLint 9; these should be reviewed during dependency maintenance.
