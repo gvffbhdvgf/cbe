@@ -120,6 +120,21 @@ export async function finalizeAssessmentMarking(actorUserId: string, organisatio
   });
 }
 
+export async function recordAssessmentResultDecision(
+  actorUserId: string,
+  organisationId: string,
+  resultId: string,
+  decisionType: 'moderation_approved' | 'moderation_rejected' | 'correction_requested' | 'result_approved' | 'result_published',
+  reason: string,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.record_assessment_result_decision(
+      ${resultId}::uuid, ${decisionType}::text, ${reason}::text
+    ) AS decision_id`);
+    return result.rows[0]?.decision_id;
+  });
+}
+
 export async function listAssessmentEvents(actorUserId: string, organisationId: string) {
   const [organisation] = await db.select({ id: organisations.id })
     .from(organisations)
