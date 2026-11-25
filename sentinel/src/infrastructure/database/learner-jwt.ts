@@ -1,5 +1,5 @@
 import { jwtVerify, type JWTVerifyGetKey, type JWTPayload } from 'jose';
-import { LearnerAuthenticationError } from '@/application/learner/learner-errors';
+import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -16,7 +16,11 @@ export async function verifyNeonAccessToken(
   let payload: JWTPayload;
   try {
     ({ payload } = await jwtVerify(token, jwks, { issuer }));
-  } catch {
+  } catch (error) {
+    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+    if (code.includes('TIMEOUT') || code.includes('FETCH') || error instanceof TypeError) {
+      throw new LearnerRlsUnavailableError();
+    }
     throw new LearnerAuthenticationError('The Neon Auth access token is invalid or expired');
   }
 

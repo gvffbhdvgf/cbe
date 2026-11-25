@@ -1,16 +1,6 @@
-export class LearnerRlsUnavailableError extends Error {
-  constructor() {
-    super('Learner data service is temporarily unavailable');
-    this.name = 'LearnerRlsUnavailableError';
-  }
-}
+import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
-export class LearnerAuthenticationError extends Error {
-  constructor(message = 'Authentication required') {
-    super(message);
-    this.name = 'LearnerAuthenticationError';
-  }
-}
+export { LearnerAuthenticationError, LearnerRlsUnavailableError };
 
 export function mapLearnerApiError(
   error: unknown,

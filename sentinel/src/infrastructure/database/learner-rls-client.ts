@@ -5,7 +5,7 @@ import { createRemoteJWKSet } from 'jose';
 import { auth } from '@/lib/auth/server';
 import * as schema from './schema';
 import { verifyNeonAccessToken } from './learner-jwt';
-import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/application/learner/learner-errors';
+import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
 function createLearnerDatabase() {
   const connectionString = process.env.DATABASE_AUTHENTICATED_URL;
@@ -67,12 +67,22 @@ export async function withAuthenticatedLearnerDb<T>(
   const claims = await getVerifiedClaims(actorUserId);
   database ??= createLearnerDatabase();
 
-  return database.transaction(async (tx) => {
-    await tx.execute(sql`SELECT set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`);
-    const identity = await tx.execute(sql`SELECT sentinel_private.current_user_id() AS user_id`);
-    if (identity.rows[0]?.user_id !== actorUserId) {
-      throw new Error('The database did not establish the verified learner identity');
+  try {
+    return await database.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('request.jwt.claims', ${JSON.stringify(claims)}, true)`);
+      const identity = await tx.execute(sql`SELECT sentinel_private.current_user_id() AS user_id`);
+      if (identity.rows[0]?.user_id !== actorUserId) {
+        throw new LearnerAuthenticationError('The database did not establish the verified learner identity');
+      }
+      return work(tx);
+    });
+  } catch (error) {
+    if (error instanceof LearnerAuthenticationError || error instanceof LearnerRlsUnavailableError) throw error;
+    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+    const message = error instanceof Error ? error.message : '';
+    if (/^(08|53)/.test(code) || /ECONN|ETIMEDOUT|ECONNREFUSED|websocket|fetch failed|connection.*(closed|timeout|refused)/i.test(message)) {
+      throw new LearnerRlsUnavailableError();
     }
-    return work(tx);
-  });
+    throw error;
+  }
 }
