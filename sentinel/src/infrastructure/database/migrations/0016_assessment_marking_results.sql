@@ -87,6 +87,64 @@ FOR EACH ROW EXECUTE FUNCTION sentinel_private.prevent_assessment_mark_mutation(
 REVOKE ALL ON FUNCTION sentinel_private.prevent_assessment_mark_mutation() FROM PUBLIC;
 --> statement-breakpoint
 
+CREATE FUNCTION sentinel_private.void_assessment_attempt(p_attempt_id uuid, p_reason text)
+RETURNS timestamptz
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $
+DECLARE
+  v_actor_id uuid;
+  v_attempt public.assessment_attempts%ROWTYPE;
+  v_event public.assessment_events%ROWTYPE;
+  v_now timestamptz := pg_catalog.now();
+BEGIN
+  v_actor_id := sentinel_private.current_user_id();
+  IF v_actor_id IS NULL THEN
+    RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501';
+  END IF;
+  IF p_reason IS NULL OR pg_catalog.length(pg_catalog.btrim(p_reason)) = 0 THEN
+    RAISE EXCEPTION 'A reason is required to void an assessment attempt' USING ERRCODE = '22023';
+  END IF;
+
+  SELECT attempt.* INTO v_attempt
+  FROM public.assessment_attempts AS attempt
+  WHERE attempt.id = p_attempt_id
+    AND sentinel_private.can_access_assessment_data(attempt.organisation_id)
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Assessment attempt not found or access denied' USING ERRCODE = 'P0002';
+  END IF;
+  IF v_attempt.status <> 'in_progress' THEN
+    RAISE EXCEPTION 'Only an in-progress attempt can be voided by this operation' USING ERRCODE = '23514';
+  END IF;
+
+  SELECT event_record.* INTO v_event
+  FROM public.assessment_events AS event_record
+  WHERE event_record.id = v_attempt.event_id
+    AND event_record.organisation_id = v_attempt.organisation_id
+  FOR UPDATE;
+  IF NOT FOUND OR v_event.status <> 'open' OR v_now < v_event.ends_at THEN
+    RAISE EXCEPTION 'An incomplete attempt can only be voided after its open assessment event has ended' USING ERRCODE = '23514';
+  END IF;
+
+  UPDATE public.assessment_attempts
+  SET status = 'voided', updated_at = v_now
+  WHERE id = v_attempt.id;
+
+  INSERT INTO public.audit_events (
+    actor_user_id, organisation_id, action, resource_type, resource_id, metadata
+  ) VALUES (
+    v_actor_id, v_attempt.organisation_id, 'assessment.attempt_voided',
+    'assessment_attempt', v_attempt.id::text,
+    jsonb_build_object('eventId', v_event.id, 'reason', pg_catalog.btrim(p_reason), 'voidedAt', v_now)
+  );
+
+  RETURN v_now;
+END;
+$;
+--> statement-breakpoint
+
 CREATE FUNCTION sentinel_private.close_assessment_event(p_event_id uuid)
 RETURNS timestamptz
 LANGUAGE plpgsql
@@ -426,11 +484,15 @@ END;
 $$;
 --> statement-breakpoint
 
+REVOKE ALL ON FUNCTION sentinel_private.void_assessment_attempt(uuid, text) FROM PUBLIC;
+--> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.close_assessment_event(uuid) FROM PUBLIC;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.record_assessment_mark(uuid, uuid, numeric, text, uuid) FROM PUBLIC;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.finalize_assessment_marking(uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION sentinel_private.void_assessment_attempt(uuid, text) TO sentinel_learner_runtime;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.close_assessment_event(uuid) TO sentinel_learner_runtime;
 --> statement-breakpoint
