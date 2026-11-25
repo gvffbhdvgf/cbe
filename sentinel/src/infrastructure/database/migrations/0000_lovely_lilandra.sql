@@ -1,4 +1,4 @@
-CREATE TABLE "organisations" (
+CREATE TABLE IF NOT EXISTS "organisations" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(240) NOT NULL,
 	"status" varchar(24) DEFAULT 'active' NOT NULL,
@@ -8,4 +8,4 @@ CREATE TABLE "organisations" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX "organisations_issuer_value_unique" ON "organisations" USING btree ("identifier_issuer","identifier_value");
+CREATE UNIQUE INDEX IF NOT EXISTS "organisations_issuer_value_unique" ON "organisations" USING btree ("identifier_issuer","identifier_value");

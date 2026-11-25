@@ -38,7 +38,7 @@ export async function listAccessibleOrganisations(userId: string) {
 export async function registerOrganisation(userId: string, input: RegisterOrganisationInput) {
   if (!await isPlatformAdministrator(userId)) throw new Error('Platform administrator access is required');
   const candidate = createOrganisation(input);
-  const id = crypto.randomUUID();
+  const id = candidate.id;
   // Neon HTTP's batch API executes these dependent writes as one database transaction.
   await db.batch([
     db.insert(organisations).values({

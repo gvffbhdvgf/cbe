@@ -6,6 +6,7 @@ import { connection } from 'next/server';
 import { BrandMark, SoftflixSignature } from '@/components/brand-mark';
 import { isPlatformAdministrator, listAccessibleOrganisations } from '@/application/organisation/organisation-service';
 import { OrganisationOnboardingForm } from './onboarding-form';
+import { SignOutButton } from '@/components/sign-out-button';
 
 export default function OrganisationsPage() {
   return <Suspense fallback={<main className="min-h-screen bg-[#F4F8FA] p-10 text-sm text-[#667D91]">Loading directory…</main>}><OrganisationsContent /></Suspense>;
@@ -21,7 +22,7 @@ async function OrganisationsContent() {
   ]);
 
   return <main className="min-h-screen bg-[#F4F8FA]">
-    <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><Link href="/workspace" className="text-[11px] font-semibold text-[#087F86]">← Workspace</Link></div></header>
+    <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><Link href="/workspace" className="text-[11px] font-semibold text-[#087F86]">← Workspace</Link><SignOutButton /></div></div></header>
     <div className="mx-auto max-w-[1440px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
       <div className="flex flex-wrap items-center gap-2 text-[10px] font-medium text-[#8A9CAB]"><Link href="/workspace" className="hover:text-[#087F86]">Workspace</Link><span>/</span><span className="text-[#4F6B7E]">Institutions & people</span></div>
       <div className="mt-8 max-w-[760px]"><p className="eyebrow">Organisation context</p><h1 className="mt-3 text-[38px] font-semibold tracking-[-.055em] text-[#102B45]">Institutions & organisations</h1><p className="mt-4 text-[13px] leading-7 text-[#718697]">A governed directory for institutions and the relationships that connect them. You see only organisations where you hold an active, time-valid membership.</p></div>

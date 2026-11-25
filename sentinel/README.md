@@ -57,7 +57,7 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 
 ## Current status
 
-Discovery, conceptual domain model, workflow, privacy/security threat model and dependency-aware release sequencing are documented on the sentinel/bootstrap branch. Application implementation and production schema have not started. The original external implementation brief, institutional workflow validation, data ownership, tenancy, detailed curriculum edition inventory and legal/DPIA approvals remain open.
+Discovery, conceptual domain model, workflow, privacy/security threat model and dependency-aware release sequencing are documented on the sentinel/bootstrap branch. The first application vertical slice is implemented in the isolated development environment: managed-auth sign-in entry point, organisation directory, administrator-gated organisation registration, membership-scoped listing, audit events and a health endpoint. The exact stable Preview alias has been browser-verified: sign-in page HTTP 200, health endpoint HTTP 200 and unauthenticated organisation API HTTP 401 JSON. Successful authenticated sign-in, administrator bootstrap, cross-tenant integration tests and PostgreSQL RLS remain outstanding. The original external implementation brief, institutional workflow validation, data ownership, detailed curriculum edition inventory and legal/DPIA approvals remain open. This is an active development project, not a finished production system.
 
 See the project handoff in Notion for continuity and cloud infrastructure status.
 
@@ -70,13 +70,14 @@ Use GitHub, Notion, Vercel, Neon, Cloudflare and other connected plugins directl
 Never commit .env files, API tokens, private keys, database passwords, email credentials or other secrets. Commit only a sanitised .env.example containing variable names and safe placeholders.
 
 - [Implementation Foundation & Cloud Resource Status](docs/IMPLEMENTATION_FOUNDATION.md)
+- [Database Migration Operations](docs/DATABASE_MIGRATIONS.md)
 - [Softflix Sentinel Brand & Design System](docs/BRAND_AND_DESIGN_SYSTEM.md)
 
 ## Application workspace
 
-The Next.js application lives in this directory. Run it with `npm install`, `npm run dev`; validate with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`.
+The Next.js application lives in this directory. Run it with `npm ci`, `npm run dev`; validate with `npm run lint`, `npm run typecheck`, `npm test`, and `npm run build`. Database schema changes are versioned under `src/infrastructure/database/migrations`; use `npm run db:check` and `SENTINEL_ENVIRONMENT=development npm run db:migrate`. The migration runner accepts only the approved `sentinel-development` Neon endpoint. Never point development migration commands at Production.
 
-The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, organisation directory empty state, domain-level organisation invariants, scoped authorisation policy, and a health endpoint.
+The current application foundation includes a public introduction, managed authentication entry point, protected workspace shell, membership-scoped organisation directory, platform-administrator-gated onboarding, domain-level organisation invariants, audit events, and a health endpoint.
 
 ## Cloud resources
 
