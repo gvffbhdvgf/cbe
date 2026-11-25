@@ -1,7 +1,7 @@
 # Sentinel Implementation Foundation
 
-**Checkpoint:** 25 November 2026
-**Status:** Initial application foundation and development cloud resources provisioned. Not production-ready.
+**Checkpoint:** 26 November 2026
+**Status:** Initial application foundation, source-linked curriculum structure browser and protected Vercel preview provisioned. Not production-ready.
 
 ## Product engineering direction
 
@@ -16,7 +16,7 @@ The first UX surface includes a public product introduction, managed sign-in, a 
 | Capability | Resource | Actual state |
 |---|---|---|
 | Source control | GitHub `gvffbhdvgf/cbe`, branch `sentinel/bootstrap` | Existing project branch; app source now lives under `sentinel/` |
-| Deployment | Vercel `sentinel-platform` | Project created; Next.js framework, root directory `sentinel`, preview deployments disabled, SSO protection inherited; no deployment created |
+| Deployment | Vercel `sentinel-platform` | Next.js project; root directory `sentinel`; SSO protection enabled. Preview deployment for `sentinel/bootstrap` is READY; production has not been promoted. |
 | Relational data | Neon `sentinel-platform` | PostgreSQL 17, Frankfurt (`aws-eu-central-1`), Free plan, 1 GB branch logical-size limit, compute 0.25–1 CU, six-hour history limit |
 | Database environments | Neon `main` and `sentinel-development` | Main branch reserved; organisation table applied only to development branch |
 | Identity | Neon Managed Auth / Better Auth | Enabled on main branch; email/password sign-in enabled, email verification configured, self-service sign-up disabled |
@@ -50,6 +50,8 @@ Before live data or production schema activation, Sentinel must resolve controll
 - `npm run typecheck` — passed.
 - `npm test` — passed, 9 tests across domain and authorization policy.
 - `npm run build` — passed with dynamic authenticated workspace routes.
+- Curriculum browser increment: `npm run lint`, `npm run typecheck`, `npm test` (56 tests across 11 files), and production build passed.
+- Vercel preview deployment `dpl_HwztYhBCAFGkidfH3hShFeV92wBo` — READY for commit `a4e6f6c4faf321f6b9f282bd6a3ea1a08ec4a937`; unauthenticated preview root and `/api/health` redirect to Vercel SSO, so no public health payload is exposed.
 - `npm audit` — 0 vulnerabilities after removing unused tooling that introduced moderate development-dependency advisories.
 - Cloud sandbox browser — public landing page and sign-in page loaded; unauthenticated `/workspace` redirected to `/auth/sign-in`; `/api/health` returned `{"status":"ok","service":"sentinel-platform"}`.
 
