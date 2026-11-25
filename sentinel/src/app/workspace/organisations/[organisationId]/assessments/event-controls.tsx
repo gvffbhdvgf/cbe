@@ -3,9 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-type Props = { organisationId: string; eventId: string; status: string; endsAt: string };
+type Props = { organisationId: string; eventId: string; status: string };
 
-export function AssessmentEventControls({ organisationId, eventId, status, endsAt }: Props) {
+export function AssessmentEventControls({ organisationId, eventId, status }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
