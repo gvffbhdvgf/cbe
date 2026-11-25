@@ -36,8 +36,7 @@ This directory is the isolated Sentinel project workspace within the cbe reposit
 - [KICD Curriculum Alignment Register](docs/CURRICULUM_ALIGNMENT_REGISTER.md)
 - [KICD Curriculum Catalogue Register](docs/CURRICULUM_CATALOGUE_REGISTER.md)
 - [Learner Data Model](docs/LEARNER_DATA_MODEL.md)
-- [KICD Curriculum Catalogue Register](docs/CURRICULUM_CATALOGUE_REGISTER.md)
-- [Learner Data Model](docs/LEARNER_DATA_MODEL.md)
+- [Engineering Continuation Checkpoint](docs/ENGINEERING_CONTINUATION_CHECKPOINT.md)
 
 ## Governance, data and implementation design
 
