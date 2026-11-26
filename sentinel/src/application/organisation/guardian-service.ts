@@ -94,7 +94,6 @@ export async function getGuardianManagementSummary(actorUserId: string, organisa
   }).from(people).where(and(eq(people.tenantOrganisationId, organisationId), inArray(people.id, personIds))) : [];
   const learnerById = new Map(learners.map(l => [l.id, l]));
   const personById = new Map(guardianPeople.map(p => [p.id, p]));
-  const profileByPerson = new Map(normalizedProfiles.map(p => [p.personId, p]));
   return {
     organisation, learners, personMatches,
     guardians: normalizedProfiles.map(profile => ({
