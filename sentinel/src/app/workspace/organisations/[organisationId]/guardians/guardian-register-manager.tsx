@@ -97,6 +97,12 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
       if (verification.error) throw new Error('The account was created, but the verification code could not be sent: ' + verification.error.message);
       const link = window.location.origin + '/auth/verify-email';
       setInvitationLinks(current => ({ ...current, [guardian.id]: link }));
+      const audit = await fetch('/api/organisations/'+organisationId+'/guardians', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'record-invitation', profileId: guardian.id, email: guardian.contactEmail }),
+      });
+      const auditPayload = await audit.json();
+      if (!audit.ok) throw new Error(auditPayload.error || 'The invitation was sent but its audit record could not be saved.');
       setMessage('Guardian account created and verification code sent. Share the setup page with the guardian; do not share the temporary password.');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not create the guardian account invitation.');
