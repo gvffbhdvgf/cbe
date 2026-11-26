@@ -103,3 +103,13 @@ export async function submitAcademicYearRollover(actorUserId:string,organisation
     return {batchId,progressionRequestsCreated:Number(result.rows[0].progression_requests_created)};
   });
 }
+
+export async function cancelAcademicYearRollover(actorUserId:string,organisationId:string,batchId:string){
+  await assertRolloverManager(actorUserId,organisationId);
+  if(!uuidPattern.test(batchId))throw new AcademicYearRolloverError('A valid rollover batch ID is required',400);
+  return withAuthenticatedLearnerDb(actorUserId,async(tx)=>{
+    const result=await tx.execute(sql`SELECT sentinel_private.cancel_academic_year_rollover(${batchId}::uuid) AS batch_id`);
+    if(!result.rows[0]?.batch_id)throw new AcademicYearRolloverError('The database did not confirm rollover cancellation');
+    return {batchId,status:'cancelled' as const};
+  });
+}
