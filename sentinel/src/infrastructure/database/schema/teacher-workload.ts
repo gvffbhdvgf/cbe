@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm';
 import { check, date, index, pgTable, timestamp, uuid, varchar, integer, text, unique } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
-import { teacherClassAssignments } from './learner';
 
 export const teacherWeeklyWorkloadAllocations = pgTable('teacher_weekly_workload_allocations', {
   id: uuid('id').defaultRandom().primaryKey(),
