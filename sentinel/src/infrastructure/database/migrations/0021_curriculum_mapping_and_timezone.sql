@@ -6,6 +6,9 @@ ALTER TABLE public.organisations
 ALTER TABLE public.assessment_events
   ADD COLUMN time_zone varchar(64) NOT NULL DEFAULT 'Africa/Nairobi';
 --> statement-breakpoint
+ALTER TABLE public.assessment_instrument_versions
+  ADD COLUMN curriculum_grade_offering_id uuid REFERENCES public.curriculum_grade_offerings(id) ON DELETE RESTRICT;
+--> statement-breakpoint
 
 CREATE FUNCTION sentinel_private.validate_organisation_time_zone()
 RETURNS trigger
@@ -33,6 +36,106 @@ BEFORE INSERT OR UPDATE OF time_zone ON public.assessment_events
 FOR EACH ROW EXECUTE FUNCTION sentinel_private.validate_organisation_time_zone();
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.validate_organisation_time_zone() FROM PUBLIC;
+--> statement-breakpoint
+
+
+CREATE FUNCTION sentinel_private.create_assessment_instrument_version_from_offering(
+  p_organisation_id uuid, p_curriculum_grade_offering_id uuid,
+  p_instrument_code text, p_title text, p_tasks jsonb
+) RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+AS $
+DECLARE
+  v_actor_id uuid;
+  v_version_id uuid;
+  v_version_number integer;
+  v_task jsonb;
+  v_task_count integer := 0;
+  v_task_code text;
+  v_response_type text;
+  v_maximum_score numeric;
+  v_grade integer;
+  v_learning_area_id uuid;
+  v_curriculum_grade_offering_id uuid;
+BEGIN
+  v_actor_id := sentinel_private.current_user_id();
+  IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501'; END IF;
+  IF NOT sentinel_private.can_access_assessment_data(p_organisation_id) THEN
+    RAISE EXCEPTION 'Assessment authoring authority is required' USING ERRCODE = '42501';
+  END IF;
+  IF length(trim(p_instrument_code)) NOT BETWEEN 2 AND 64 OR length(trim(p_title)) NOT BETWEEN 3 AND 180 THEN
+    RAISE EXCEPTION 'Instrument details are invalid' USING ERRCODE = '22023';
+  END IF;
+  SELECT offering.grade, offering.learning_area_id
+    INTO v_grade, v_learning_area_id
+  FROM public.curriculum_grade_offerings AS offering
+  WHERE offering.id = p_curriculum_grade_offering_id
+    AND offering.grade BETWEEN 1 AND 9
+    AND offering.availability_status IN ('document_listed','document_available');
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'A listed curriculum grade offering is required' USING ERRCODE = '23514';
+  END IF;
+  IF p_tasks IS NULL OR jsonb_typeof(p_tasks) IS DISTINCT FROM 'array'
+    OR jsonb_array_length(p_tasks) NOT BETWEEN 1 AND 100 THEN
+    RAISE EXCEPTION 'Instrument tasks must contain between one and one hundred definitions' USING ERRCODE = '22023';
+  END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(p_organisation_id::text || ':' || upper(trim(p_instrument_code)), 0));
+  SELECT COALESCE(max(instrument.version_number), 0) + 1 INTO v_version_number
+  FROM public.assessment_instrument_versions AS instrument
+  WHERE instrument.organisation_id = p_organisation_id
+    AND instrument.instrument_code = upper(trim(p_instrument_code));
+  INSERT INTO public.assessment_instrument_versions (
+    tenant_organisation_id, organisation_id, learning_area_id, grade,
+    curriculum_grade_offering_id, instrument_code, version_number, title, status, created_by
+  ) VALUES (
+    p_organisation_id, p_organisation_id, v_learning_area_id, v_grade,
+    p_curriculum_grade_offering_id, upper(trim(p_instrument_code)), v_version_number,
+    trim(p_title), 'draft', v_actor_id
+  ) RETURNING id INTO v_version_id;
+  FOR v_task IN SELECT value FROM jsonb_array_elements(p_tasks) LOOP
+    v_task_count := v_task_count + 1;
+    v_task_code := trim(v_task->>'taskCode');
+    v_response_type := v_task->>'responseType';
+    v_maximum_score := (v_task->>'maximumScore')::numeric;
+    IF length(v_task_code) NOT BETWEEN 1 AND 40
+      OR length(trim(v_task->>'title')) NOT BETWEEN 2 AND 200
+      OR v_response_type NOT IN ('text','numeric','boolean','choice','observation','evidence')
+      OR v_maximum_score IS NULL OR v_maximum_score <= 0 OR v_maximum_score > 100000
+      OR (v_task ? 'required' AND jsonb_typeof(v_task->'required') <> 'boolean') THEN
+      RAISE EXCEPTION 'Instrument task % is invalid', v_task_count USING ERRCODE = '22023';
+    END IF;
+    INSERT INTO public.assessment_tasks (
+      tenant_organisation_id, organisation_id, instrument_version_id, task_code,
+      title, response_type, maximum_score, required, display_order
+    ) VALUES (
+      p_organisation_id, p_organisation_id, v_version_id, v_task_code,
+      trim(v_task->>'title'), v_response_type, v_maximum_score,
+      COALESCE((v_task->>'required')::boolean, true),
+      COALESCE((v_task->>'displayOrder')::integer, v_task_count - 1)
+    );
+  END LOOP;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.assessment_tasks AS task
+    WHERE task.instrument_version_id = v_version_id AND task.required = true
+  ) THEN
+    RAISE EXCEPTION 'An instrument requires at least one required task' USING ERRCODE = '23514';
+  END IF;
+  INSERT INTO public.audit_events (actor_user_id, organisation_id, action, resource_type, resource_id, metadata)
+  VALUES (v_actor_id, p_organisation_id, 'assessment.instrument_version_created',
+    'assessment_instrument_version', v_version_id::text,
+    jsonb_build_object('instrumentCode', upper(trim(p_instrument_code)),
+      'versionNumber', v_version_number, 'grade', v_grade,
+      'learningAreaId', v_learning_area_id, 'curriculumGradeOfferingId', p_curriculum_grade_offering_id,
+      'taskCount', v_task_count));
+  RETURN v_version_id;
+END;
+$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.create_assessment_instrument_version(uuid,uuid,integer,text,text,jsonb) FROM sentinel_learner_runtime;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.create_assessment_instrument_version_from_offering(uuid,uuid,text,text,jsonb) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_instrument_version_from_offering(uuid,uuid,text,text,jsonb) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
 CREATE OR REPLACE FUNCTION sentinel_private.create_assessment_event(
@@ -240,8 +343,8 @@ BEGIN
   IF NOT sentinel_private.can_access_assessment_data(p_organisation_id) THEN
     RAISE EXCEPTION 'Assessment authoring authority is required' USING ERRCODE = '42501';
   END IF;
-  SELECT instrument.id, instrument.grade, instrument.learning_area_id
-    INTO v_instrument_id, v_grade, v_learning_area_id
+  SELECT instrument.id, instrument.grade, instrument.learning_area_id, instrument.curriculum_grade_offering_id
+    INTO v_instrument_id, v_grade, v_learning_area_id, v_curriculum_grade_offering_id
   FROM public.assessment_tasks AS task
   JOIN public.assessment_instrument_versions AS instrument
     ON instrument.id = task.instrument_version_id
@@ -264,6 +367,7 @@ BEGIN
       AND node.extraction_status = 'approved'
       AND document.review_status = 'approved'
       AND document.rights_status = 'confirmed'
+      AND offering.id = v_curriculum_grade_offering_id
       AND offering.grade = v_grade
       AND offering.learning_area_id = v_learning_area_id
   ) THEN
