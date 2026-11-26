@@ -9,7 +9,7 @@ export async function POST(request: Request, context: { params: Promise<{ organi
   let body: unknown; try { body = await request.json(); } catch { return Response.json({ error: 'A JSON request body is required' }, { status: 400 }); }
   if (!body || typeof body !== 'object') return Response.json({ error: 'Invalid instrument details' }, { status: 400 });
   const value = body as Record<string, unknown>;
-  if (typeof value.learningAreaId !== 'string' || !uuidPattern.test(value.learningAreaId) || !Number.isInteger(value.grade) || typeof value.instrumentCode !== 'string' || typeof value.title !== 'string' || !Array.isArray(value.tasks) || value.tasks.length < 1 || value.tasks.length > 100) return Response.json({ error: 'Instrument details and 1–100 tasks are required' }, { status: 400 });
+  if (typeof value.curriculumGradeOfferingId !== 'string' || !uuidPattern.test(value.curriculumGradeOfferingId) || typeof value.instrumentCode !== 'string' || typeof value.title !== 'string' || !Array.isArray(value.tasks) || value.tasks.length < 1 || value.tasks.length > 100) return Response.json({ error: 'Instrument details and 1–100 tasks are required' }, { status: 400 });
   const tasks = value.tasks.map((item, index) => {
     if (!item || typeof item !== 'object') return null;
     const task = item as Record<string, unknown>;
@@ -17,6 +17,6 @@ export async function POST(request: Request, context: { params: Promise<{ organi
     return { taskCode: task.taskCode, title: task.title, responseType: task.responseType as typeof responseTypes[number], maximumScore: task.maximumScore, required: task.required, displayOrder: index };
   });
   if (tasks.some(task => task === null) || !tasks.some(task => task?.required)) return Response.json({ error: 'Each task must be valid and at least one task must be required' }, { status: 400 });
-  try { const instrumentVersionId = await createAssessmentInstrumentVersion(data.user.id, organisationId, value.learningAreaId, Number(value.grade), value.instrumentCode, value.title, tasks as NonNullable<(typeof tasks)[number]>[]); return Response.json({ instrumentVersionId, status: 'draft' }, { status: 201 }); }
+  try { const instrumentVersionId = await createAssessmentInstrumentVersion(data.user.id, organisationId, value.curriculumGradeOfferingId, value.instrumentCode, value.title, tasks as NonNullable<(typeof tasks)[number]>[]); return Response.json({ instrumentVersionId, status: 'draft' }, { status: 201 }); }
   catch (error) { if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 }); if (error instanceof LearnerRlsUnavailableError) return Response.json({ error: 'Assessment data service is temporarily unavailable' }, { status: 503 }); if (error instanceof AssessmentAccessError) return Response.json({ error: error.message }, { status: 403 }); if (error instanceof AssessmentTransitionError) return Response.json({ error: error.message }, { status: error.status }); return Response.json({ error: 'Unable to create assessment instrument' }, { status: 500 }); }
 }
