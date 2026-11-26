@@ -262,75 +262,18 @@ export async function getAssessmentAuthoringOptions(actorUserId: string, organis
 
 export async function getAssessmentInstrumentOutcomeMappings(actorUserId: string, organisationId: string, instrumentVersionId: string) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
-    const result = await tx.execute(sql`
-      SELECT
-        task.id AS task_id,
-        task.task_code,
-        task.title AS task_title,
-        task.required,
-        mapping.id AS mapping_id,
-        mapping.curriculum_source_node_id,
-        mapping.status AS mapping_status,
-        mapping.created_by,
-        mapping.reviewed_by,
-        mapping.reviewed_at,
-        mapping.review_note,
-        node.node_code AS outcome_code,
-        node.title AS outcome_title,
-        document.document_code,
-        offering.grade,
-        area.name AS learning_area
-      FROM public.assessment_tasks AS task
-      JOIN public.assessment_instrument_versions AS instrument
-        ON instrument.id = task.instrument_version_id
-       AND instrument.tenant_organisation_id = task.tenant_organisation_id
-       AND instrument.organisation_id = task.organisation_id
-      LEFT JOIN public.assessment_task_outcome_mappings AS mapping
-        ON mapping.task_id = task.id
-       AND mapping.instrument_version_id = task.instrument_version_id
-       AND mapping.tenant_organisation_id = task.tenant_organisation_id
-       AND mapping.organisation_id = task.organisation_id
-      LEFT JOIN public.curriculum_source_nodes AS node
-        ON node.id = mapping.curriculum_source_node_id
-      LEFT JOIN public.curriculum_design_documents AS document
-        ON document.id = node.document_id
-      LEFT JOIN public.curriculum_grade_offerings AS offering
-        ON offering.id = document.grade_offering_id
-      LEFT JOIN public.curriculum_learning_areas AS area
-        ON area.id = offering.learning_area_id
-      WHERE task.organisation_id = ${organisationId}::uuid
-        AND instrument.id = ${instrumentVersionId}::uuid
-      ORDER BY task.display_order, task.task_code, node.node_code
-    `);
+    const result = await tx.execute(sql`SELECT * FROM sentinel_private.list_assessment_instrument_outcome_mappings(
+      ${organisationId}::uuid, ${instrumentVersionId}::uuid
+    )`);
     return result.rows;
   });
 }
 
-
 export async function getAssessmentInstrumentOutcomeOptions(actorUserId: string, organisationId: string, instrumentVersionId: string) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
-    const result = await tx.execute(sql`
-      SELECT node.id, node.node_code, node.title, document.document_code,
-        offering.grade, area.name AS learning_area
-      FROM public.assessment_instrument_versions AS instrument
-      JOIN public.curriculum_grade_offerings AS offering
-        ON offering.id = instrument.curriculum_grade_offering_id
-       AND offering.grade = instrument.grade
-       AND offering.learning_area_id = instrument.learning_area_id
-      JOIN public.curriculum_design_documents AS document
-        ON document.grade_offering_id = offering.id
-       AND document.review_status = 'approved'
-       AND document.rights_status = 'confirmed'
-      JOIN public.curriculum_source_nodes AS node
-        ON node.document_id = document.id
-       AND node.node_type = 'specific_outcome'
-       AND node.extraction_status = 'approved'
-      JOIN public.curriculum_learning_areas AS area
-        ON area.id = offering.learning_area_id
-      WHERE instrument.id = ${instrumentVersionId}::uuid
-        AND instrument.organisation_id = ${organisationId}::uuid
-      ORDER BY document.document_code, node.node_code
-    `);
+    const result = await tx.execute(sql`SELECT * FROM sentinel_private.list_assessment_instrument_outcome_options(
+      ${organisationId}::uuid, ${instrumentVersionId}::uuid
+    )`);
     return result.rows;
   });
 }
