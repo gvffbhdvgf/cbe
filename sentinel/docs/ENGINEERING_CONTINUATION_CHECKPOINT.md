@@ -193,3 +193,23 @@ Development database verification:
 Known limitation: event timestamps are stored as absolute UTC instants while roster eligibility currently uses the UTC calendar date. Organisation timezone support should be modelled before relying on local-calendar eligibility across timezones. Choice response options and richer curriculum-outcome mapping authoring also remain to be completed.
 
 **Next milestone:** instrument curriculum outcome mapping/review, organisation timezone-aware scheduling, learner/class allocation and teacher-scoped participation, then end-to-end synthetic assessment journeys.
+
+
+## 26 November 2026 — Synthetic end-to-end assessment journey verified
+
+A complete synthetic assessment journey was executed against a disposable Neon child branch created from the development database. Synthetic-only organisation, memberships, learner, class and enrolment data were created on that child branch, then the branch was deleted after verification.
+
+The journey completed:
+1. Create assessment programme.
+2. Create version 1 instrument with a required scored task.
+3. Verify the instrument author cannot approve their own instrument; the attempt was rejected with SQLSTATE 42501.
+4. Approve the instrument using a different authorised officer.
+5. Create and schedule an event; one eligible enrolment was frozen into the roster.
+6. Open the event and create an attempt from the frozen enrolment.
+7. Capture one response and submit the attempt.
+8. Close the event, record a mark of 8/10, and generate immutable result version 1.
+9. Record independent moderation approval, independent result approval, and publication.
+
+Final lifecycle projection reported `published`, latest decision `result_published`, result version 1 and 80.00%. Thirteen expected audit action groups were present, including programme/instrument creation, approval, event scheduling/opening/closing, attempt creation/submission, response capture, marking, result generation and three governance decisions. Response immutability triggers were enabled.
+
+The disposable child branch was deleted. No synthetic records were inserted into the development branch or production. This validates the SQL/database journey end-to-end; browser-driven UI automation remains a future test layer.
