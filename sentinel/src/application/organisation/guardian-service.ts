@@ -79,6 +79,14 @@ export async function getGuardianManagementSummary(actorUserId: string, organisa
       or(ilike(people.legalFirstName, `%${search}%`), ilike(people.legalLastName, `%${search}%`), ilike(people.preferredName, `%${search}%`))))
     .orderBy(asc(people.legalLastName), asc(people.legalFirstName)).limit(12);
 
+  const normalizedProfiles = profiles.map(profile => ({ ...profile, verifiedAt: profile.verifiedAt?.toISOString() ?? null }));
+  const normalizedRelationships = relationships.map(relationship => ({
+    ...relationship,
+    startsAt: relationship.startsAt.toISOString(),
+    endsAt: relationship.endsAt?.toISOString() ?? null,
+    verifiedAt: relationship.verifiedAt?.toISOString() ?? null,
+    revokedAt: relationship.revokedAt?.toISOString() ?? null,
+  }));
   const personIds = [...new Set([...profiles.map(p => p.personId), ...relationships.map(r => r.guardianPersonId)])];
   const guardianPeople = personIds.length ? await db.select({
     id: people.id, firstName: people.legalFirstName, middleName: people.legalMiddleName,
@@ -86,13 +94,13 @@ export async function getGuardianManagementSummary(actorUserId: string, organisa
   }).from(people).where(and(eq(people.tenantOrganisationId, organisationId), inArray(people.id, personIds))) : [];
   const learnerById = new Map(learners.map(l => [l.id, l]));
   const personById = new Map(guardianPeople.map(p => [p.id, p]));
-  const profileByPerson = new Map(profiles.map(p => [p.personId, p]));
+  const profileByPerson = new Map(normalizedProfiles.map(p => [p.personId, p]));
   return {
     organisation, learners, personMatches,
-    guardians: profiles.map(profile => ({
+    guardians: normalizedProfiles.map(profile => ({
       ...profile,
       person: personById.get(profile.personId) ?? null,
-      relationships: relationships.filter(r => r.guardianPersonId === profile.personId).map(r => ({
+      relationships: normalizedRelationships.filter(r => r.guardianPersonId === profile.personId).map(r => ({
         ...r, learner: learnerById.get(r.learnerId) ?? null,
       })),
     })),
