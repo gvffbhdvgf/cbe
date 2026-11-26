@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import { boolean, check, date, foreignKey, index, integer, pgTable, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
+import { curriculumLearningAreas } from './curriculum';
 
 export const people = pgTable('people', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -123,4 +124,33 @@ export const learnerProgressionEvents = pgTable('learner_progression_events', {
   check('learner_progression_from_grade_check', sql`${table.fromGrade} IS NULL OR ${table.fromGrade} BETWEEN 1 AND 9`),
   check('learner_progression_to_grade_check', sql`${table.toGrade} IS NULL OR ${table.toGrade} BETWEEN 1 AND 9`),
   index('learner_progression_tenant_learner_idx').on(table.tenantOrganisationId, table.learnerId, table.effectiveAt),
+]);
+
+
+export const teacherClassAssignments = pgTable('teacher_class_assignments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  teacherUserId: uuid('teacher_user_id').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  classId: uuid('class_id').notNull(),
+  learningAreaId: uuid('learning_area_id').notNull().references(() => curriculumLearningAreas.id, { onDelete: 'restrict' }),
+  grade: integer('grade').notNull(),
+  academicYear: integer('academic_year').notNull(),
+  startsOn: date('starts_on').notNull(),
+  endsOn: date('ends_on'),
+  status: varchar('status', { length: 16 }).notNull().default('active'),
+  assignedBy: uuid('assigned_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('teacher_class_assignments_scope_check', sql.raw('tenant_organisation_id = organisation_id')),
+  check('teacher_class_assignments_grade_check', sql.raw('grade BETWEEN 1 AND 9')),
+  check('teacher_class_assignments_year_check', sql.raw('academic_year BETWEEN 2000 AND 2100')),
+  check('teacher_class_assignments_status_check', sql.raw("status IN ('active','revoked','ended')")),
+  check('teacher_class_assignments_period_check', sql.raw('ends_on IS NULL OR ends_on > starts_on')),
+  check('teacher_class_assignments_revocation_check', sql.raw("status <> 'revoked' OR revoked_at IS NOT NULL")),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.classId, table.grade, table.academicYear], foreignColumns: [classes.tenantOrganisationId, classes.organisationId, classes.id, classes.grade, classes.academicYear], name: 'teacher_class_assignments_class_fk' }).onDelete('restrict'),
+  unique('teacher_class_assignments_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
+  index('teacher_class_assignments_class_area_idx').on(table.tenantOrganisationId, table.organisationId, table.classId, table.learningAreaId, table.status),
 ]);
