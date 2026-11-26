@@ -28,13 +28,16 @@ export async function POST(request: Request, context: { params: Promise<{ organi
   if (!body || typeof body !== 'object' || !('grade' in body) || typeof body.grade !== 'number' || !('academicYear' in body) || typeof body.academicYear !== 'number' || !('classCode' in body) || typeof body.classCode !== 'string' || !('displayName' in body) || typeof body.displayName !== 'string') {
     return Response.json({ error: 'Grade, academic year, class code and class name are required' }, { status: 400 });
   }
+  if ('capacity' in body && body.capacity !== null && (typeof body.capacity !== 'number' || !Number.isInteger(body.capacity))) {
+    return Response.json({ error: 'Capacity must be a whole number or null for unlimited' }, { status: 400 });
+  }
   try {
     const classRecord = await createClass(data.user.id, organisationId, {
       grade: body.grade,
       academicYear: body.academicYear,
       classCode: body.classCode,
       displayName: body.displayName,
-      capacity: 'capacity' in body && typeof body.capacity === 'number' ? body.capacity : null,
+      capacity: 'capacity' in body ? body.capacity as number | null : null,
     });
     return Response.json({ class: classRecord }, { status: 201 });
   } catch (error) {
