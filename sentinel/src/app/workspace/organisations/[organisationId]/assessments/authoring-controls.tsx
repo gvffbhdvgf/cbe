@@ -7,12 +7,12 @@ type Programme = { id: string; code: string; title: string; type: string };
 type Instrument = { id: string; code: string; version: number; title: string; grade: number; learningAreaId: string; status: string; createdBy: string };
 type LearningArea = { id: string; name: string };
 type TaskDraft = { taskCode: string; title: string; responseType: 'text'|'numeric'|'boolean'|'choice'|'observation'|'evidence'; maximumScore: string; required: boolean };
-type Props = { organisationId: string; actorUserId: string; programmes: Programme[]; instruments: Instrument[]; learningAreas: LearningArea[] };
+type Props = { organisationId: string; actorUserId: string; programmes: Programme[]; instruments: Instrument[]; learningAreas: LearningArea[]; timeZone: string };
 
 const inputClass = 'mt-1 w-full rounded-xl border border-[#DCE7EC] bg-white px-3 py-2.5 text-[12px] text-[#29465D] outline-none focus:border-[#73CFC2]';
 const labelClass = 'block text-[10px] font-semibold uppercase tracking-[.1em] text-[#7890A0]';
 
-export function AssessmentAuthoringControls({ organisationId, actorUserId, programmes, instruments, learningAreas }: Props) {
+export function AssessmentAuthoringControls({ organisationId, actorUserId, programmes, instruments, learningAreas, timeZone }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -63,8 +63,8 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
     event.preventDefault();
     if (!startsAt || !endsAt || new Date(startsAt).getTime() >= new Date(endsAt).getTime()) { setError('The event end must be after its start.'); return; }
     await send(`/api/organisations/${organisationId}/assessments/events`, {
-      programmeId, instrumentVersionId, title: eventTitle, startsAt: new Date(startsAt).toISOString(),
-      endsAt: new Date(endsAt).toISOString(), academicYear: Number(academicYear), moderationRequired,
+      programmeId, instrumentVersionId, title: eventTitle, startsAtLocal: startsAt,
+      endsAtLocal: endsAt, academicYear: Number(academicYear), moderationRequired,
     }, 'Event creation');
   }
   async function approve(instrument: Instrument) {
@@ -97,10 +97,10 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
       <h3 className="text-[13px] font-semibold text-[#29465D]">4. Create assessment event</h3>
       <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className={labelClass}>Programme<select required value={programmeId} onChange={event=>setProgrammeId(event.target.value)} className={inputClass}>{programmes.map(item=><option key={item.id} value={item.id}>{item.code} · {item.title}</option>)}</select></label><label className={labelClass}>Approved instrument<select required value={instrumentVersionId} onChange={event=>setInstrumentVersionId(event.target.value)} className={inputClass}>{instruments.filter(item=>item.status==='approved').map(item=><option key={item.id} value={item.id}>{item.code} v{item.version} · Grade {item.grade}</option>)}</select></label></div>
       <label className={labelClass + ' mt-3'}>Event title<input required value={eventTitle} onChange={event=>setEventTitle(event.target.value)} placeholder="Grade 6 Term 2 Mathematics" className={inputClass}/></label>
-      <div className="mt-3 grid gap-3 sm:grid-cols-3"><label className={labelClass}>Starts (your local time)<input required type="datetime-local" value={startsAt} onChange={event=>setStartsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Ends (your local time)<input required type="datetime-local" value={endsAt} onChange={event=>setEndsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Academic year<input required type="number" min="2000" max="2100" value={academicYear} onChange={event=>setAcademicYear(event.target.value)} className={inputClass}/></label></div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-3"><label className={labelClass}>Starts (institution time)<input required type="datetime-local" value={startsAt} onChange={event=>setStartsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Ends (institution time)<input required type="datetime-local" value={endsAt} onChange={event=>setEndsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Academic year<input required type="number" min="2000" max="2100" value={academicYear} onChange={event=>setAcademicYear(event.target.value)} className={inputClass}/></label></div>
       <label className="mt-4 flex items-center gap-2 text-[11px] text-[#647D8D]"><input type="checkbox" checked={moderationRequired} onChange={event=>setModerationRequired(event.target.checked)}/> Require independent moderation</label>
       <button disabled={busy!=='' || programmes.length===0 || instruments.every(item=>item.status!=='approved')} className="mt-4 rounded-full bg-[#087F86] px-5 py-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='Event creation'?'Creating…':'Create draft event'}</button>
-      <p className="mt-2 text-[10px] text-[#8A9CAB]">Date/time inputs use your browser timezone; saved timestamps are UTC. Roster eligibility currently uses the UTC calendar date.</p>
+      <p className="mt-2 text-[10px] text-[#8A9CAB]">Times are interpreted in the institution's ${timeZone} time zone and stored as UTC instants. Roster eligibility uses the institution-local calendar date.</p>
     </form>
     {error && <p role="alert" className="mt-4 text-[11px] text-[#A43D34]">{error}</p>}{message && <p role="status" className="mt-4 text-[11px] text-[#087F86]">{message}</p>}
   </section>;
