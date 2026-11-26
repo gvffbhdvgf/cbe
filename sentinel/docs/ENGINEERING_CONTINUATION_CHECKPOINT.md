@@ -312,3 +312,20 @@ Next: implement controlled teacher-to-class/learning-area assignments, class-tar
 - Preview deployment `dpl_EfDCUSyvuGM96zSBN97masaGrqb4` is READY from commit `1ec27c319280ffb1a53bdc15dbaf4e1914196f67`. Browser smoke test confirmed the class register loads with capacity and occupancy controls, and the curriculum intelligence page loads with adapted pathway choices. No class, learner or curriculum records were changed during the browser test.
 - CI passed on `1ec27c319280ffb1a53bdc15dbaf4e1914196f67`; an additional migration test now covers the adapted pathway grade-coverage source and evidence caveat.
 - Preview/development only. No production deployment or production database was changed.
+
+
+## 26 November 2026 — Staff profiles and workforce engagements
+
+- Added migration `0025_staff_profiles_and_engagements` to the development database branch `br-nameless-block-bhpsx0vq`. Source SHA-256: `87352a969fdc5411ff03c28d99df5b31845949bc28314ab610042a4378de3819`; canonical migration ledger row id 29 at timestamp `1795684200000`.
+- Added canonical `staff_profiles` linked to tenant-scoped Person records and separate effective-dated `staff_engagements` for employment/contract type, job title and start/end dates. The UI searches for an existing Person first; creating a new Person requires an explicit duplicate-check confirmation.
+- Added staff register workspace at `/workspace/organisations/[organisationId]/staff`, APIs for profile creation, verified Teacher-account linking and reason-preserving engagement end-dating. No credentials or unnecessary personal attributes are collected.
+- Teacher-account linking requires an active, email-verified, non-banned Teacher membership in the same organisation. The staff profile must be active and categorised as Teacher. A Teacher account can link to only one staff profile in that organisation.
+- Updated `create_teacher_class_assignment`: a verified Teacher membership alone is insufficient; the account must also be linked to an active Teacher staff profile with an engagement covering the assignment start date.
+- Security verification: both staff tables have forced RLS; runtime access is SELECT-only, with no direct INSERT/UPDATE/DELETE. Profile creation, account linking and engagement end-dating are narrow SECURITY DEFINER functions with PUBLIC execution revoked and explicit runtime EXECUTE grants. Staff engagement dates use the organisation's IANA timezone.
+- Development verification: both tables and all four relevant function definitions are present; runtime SELECT is allowed and direct writes are denied. Staff tables currently contain 0 profiles and 0 engagements; no live or synthetic staff records were created.
+- Added `staff-profile-migration.test.ts` for journal registration, canonical identity, duplicate confirmation, account verification, local-date handling, assignment preconditions and RLS/grant boundaries.
+- GitHub Actions [run 45788927242](https://github.com/gvffbhdvgf/cbe/actions/runs/45788927242) passed migration journal validation, lint, TypeScript, 27 test files / 149 tests and production build.
+- Preview deployment `dpl_8MDi7yRFjsfmMQQLFKqNEx3mWxWh` is building from commit `331383213867e96dc4f43784dc789d8ca40add13`. Stable Preview alias remains https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app.
+- Next: verify the staff register in Preview without creating real records; then implement privacy-preserving learner transfer requests with receiving-institution acceptance, followed by governed learner-record corrections and guardian relationship verification.
+- Preview/development only. No Production database or deployment was changed.
+
