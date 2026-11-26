@@ -103,6 +103,7 @@ export const assessmentEvents = pgTable('assessment_events', {
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
   timeZone: varchar('time_zone', { length: 64 }).notNull().default('Africa/Nairobi'),
+  classId: uuid('class_id'),
   status: varchar('status', { length: 16 }).notNull().default('draft'),
   moderationRequired: boolean('moderation_required').notNull().default(false),
   createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
@@ -116,6 +117,7 @@ export const assessmentEvents = pgTable('assessment_events', {
   check('assessment_events_status_check', sql`${table.status} IN ('draft','scheduled','open','closed','marking','moderated','approved','published','corrected','archived')`),
   foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.programmeId], foreignColumns: [assessmentProgrammes.tenantOrganisationId, assessmentProgrammes.organisationId, assessmentProgrammes.id], name: 'assessment_events_programme_fk' }).onDelete('restrict'),
   foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.instrumentVersionId, table.grade, table.learningAreaId], foreignColumns: [assessmentInstrumentVersions.tenantOrganisationId, assessmentInstrumentVersions.organisationId, assessmentInstrumentVersions.id, assessmentInstrumentVersions.grade, assessmentInstrumentVersions.learningAreaId], name: 'assessment_events_instrument_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.classId, table.grade, table.academicYear], foreignColumns: [classes.tenantOrganisationId, classes.organisationId, classes.id, classes.grade, classes.academicYear], name: 'assessment_events_class_scope_fk' }).onDelete('restrict'),
   unique('assessment_events_scope_unique').on(table.tenantOrganisationId, table.organisationId, table.id, table.instrumentVersionId, table.grade, table.learningAreaId, table.academicYear),
 ]);
 
