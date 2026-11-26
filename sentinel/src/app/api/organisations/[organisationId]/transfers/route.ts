@@ -12,6 +12,11 @@ function handleError(error: unknown) {
   if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 });
   if (error instanceof LearnerRlsUnavailableError) return Response.json({ error: 'Learner transfer service is temporarily unavailable' }, { status: 503 });
   if (error instanceof LearnerTransferError) return Response.json({ error: error.message }, { status: error.status });
+  const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+  if (code === '42501') return Response.json({ error: 'Institution transfer-management authority is required.' }, { status: 403 });
+  if (code === '23514') return Response.json({ error: error instanceof Error ? error.message : 'The receiving institution is not eligible for this transfer.' }, { status: 409 });
+  if (code === '22023') return Response.json({ error: error instanceof Error ? error.message : 'Transfer details are invalid.' }, { status: 400 });
+  if (code === 'P0002') return Response.json({ error: error instanceof Error ? error.message : 'Institution or transfer not found.' }, { status: 404 });
   return Response.json({ error: 'Unable to process learner transfer request' }, { status: 500 });
 }
 
