@@ -43,11 +43,12 @@ export async function POST(request: Request, context: { params: Promise<{ organi
     || typeof value.instrumentVersionId !== 'string' || !uuidPattern.test(value.instrumentVersionId)
     || typeof value.title !== 'string' || typeof value.startsAtLocal !== 'string' || !localDateTimePattern.test(value.startsAtLocal)
     || typeof value.endsAtLocal !== 'string' || !localDateTimePattern.test(value.endsAtLocal) || value.startsAtLocal >= value.endsAtLocal
-    || !Number.isInteger(value.academicYear) || typeof value.moderationRequired !== 'boolean') {
+    || !Number.isInteger(value.academicYear) || typeof value.moderationRequired !== 'boolean'
+    || (value.classId !== undefined && value.classId !== null && (typeof value.classId !== 'string' || !uuidPattern.test(value.classId)))) {
     return Response.json({ error: 'Valid programme, approved instrument, title, organisation-local date window, academic year and moderation setting are required' }, { status: 400 });
   }
   try {
-    const eventId = await createAssessmentEventLocal(data.user.id, organisationId, value.programmeId, value.instrumentVersionId, value.title, value.startsAtLocal, value.endsAtLocal, Number(value.academicYear), value.moderationRequired);
+    const eventId = await createAssessmentEventLocal(data.user.id, organisationId, value.programmeId, value.instrumentVersionId, value.title, value.startsAtLocal, value.endsAtLocal, Number(value.academicYear), value.moderationRequired, typeof value.classId === 'string' ? value.classId : null);
     return Response.json({ eventId, status: 'draft' }, { status: 201 });
   } catch (error) {
     if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 });
