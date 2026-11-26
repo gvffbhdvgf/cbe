@@ -1,10 +1,10 @@
 import { asc, count, desc, eq } from 'drizzle-orm';
 import { buildCurriculumOutline } from '@/domain/curriculum/outline';
 import { db } from '@/infrastructure/database/client';
-import { curriculumDesignDocuments, curriculumEditions, curriculumGradeOfferings, curriculumLearningAreas, curriculumPathways, curriculumSourceNodes, curriculumSources } from '@/infrastructure/database/schema/curriculum';
+import { curriculumDesignDocuments, curriculumEditions, curriculumGradeOfferings, curriculumLearningAreas, curriculumPathways, curriculumPathwayGradeLevels, curriculumSourceNodes, curriculumSources } from '@/infrastructure/database/schema/curriculum';
 
 export async function listCurriculumCatalogue() {
-  const [pathways, offerings, documents] = await Promise.all([
+  const [pathways, offerings, documents, pathwayGradeLevels] = await Promise.all([
     db.select({ code: curriculumPathways.pathwayCode, name: curriculumPathways.name, modality: curriculumPathways.modality, categoryCode: curriculumPathways.categoryCode, catalogueStatus: curriculumPathways.catalogueStatus, description: curriculumPathways.description, sourceTitle: curriculumSources.title, sourceUrl: curriculumSources.url })
       .from(curriculumPathways)
       .leftJoin(curriculumSources, eq(curriculumPathways.sourceId, curriculumSources.id))
@@ -52,8 +52,25 @@ export async function listCurriculumCatalogue() {
       .leftJoin(curriculumSourceNodes, eq(curriculumSourceNodes.documentId, curriculumDesignDocuments.id))
       .groupBy(curriculumDesignDocuments.id, curriculumDesignDocuments.createdAt, curriculumGradeOfferings.grade, curriculumLearningAreas.areaCode, curriculumSources.title, curriculumSources.url)
       .orderBy(asc(curriculumGradeOfferings.grade), asc(curriculumLearningAreas.name), desc(curriculumDesignDocuments.createdAt)),
+    db.select({
+      id: curriculumPathwayGradeLevels.id,
+      grade: curriculumPathwayGradeLevels.grade,
+      availabilityStatus: curriculumPathwayGradeLevels.availabilityStatus,
+      evidenceNote: curriculumPathwayGradeLevels.evidenceNote,
+      pathwayCode: curriculumPathways.pathwayCode,
+      pathwayName: curriculumPathways.name,
+      editionCode: curriculumEditions.editionCode,
+      editionTitle: curriculumEditions.title,
+      sourceTitle: curriculumSources.title,
+      sourceUrl: curriculumSources.url,
+      sourceAuthority: curriculumSources.authorityStatus,
+    }).from(curriculumPathwayGradeLevels)
+      .innerJoin(curriculumPathways, eq(curriculumPathwayGradeLevels.pathwayId, curriculumPathways.id))
+      .innerJoin(curriculumEditions, eq(curriculumPathwayGradeLevels.editionId, curriculumEditions.id))
+      .innerJoin(curriculumSources, eq(curriculumPathwayGradeLevels.sourceId, curriculumSources.id))
+      .orderBy(asc(curriculumPathwayGradeLevels.grade), asc(curriculumPathways.name)),
   ]);
-  return { pathways, offerings, documents };
+  return { pathways, offerings, documents, pathwayGradeLevels };
 }
 
 export async function getCurriculumDocument(documentCode: string) {
