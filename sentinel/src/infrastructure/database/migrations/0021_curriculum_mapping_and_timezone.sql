@@ -300,7 +300,7 @@ BEGIN
   IF NOT sentinel_private.can_access_assessment_data(p_organisation_id) THEN
     RAISE EXCEPTION 'Assessment authoring authority is required' USING ERRCODE = '42501';
   END IF;
-  IF p_decision NOT IN ('approved','rejected') OR length(trim(COALESCE(p_review_note,''))) < 5
+  IF p_decision IS NULL OR p_decision NOT IN ('approved','rejected') OR length(trim(COALESCE(p_review_note,''))) < 5
     OR length(trim(p_review_note)) > 1000 THEN
     RAISE EXCEPTION 'A valid decision and review note of 5–1000 characters are required' USING ERRCODE = '22023';
   END IF;
