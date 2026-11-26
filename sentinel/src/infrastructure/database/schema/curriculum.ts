@@ -78,6 +78,22 @@ export const curriculumGradeOfferings = pgTable('curriculum_grade_offerings', {
 ]);
 
 
+export const curriculumPathwayGradeLevels = pgTable('curriculum_pathway_grade_levels', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  editionId: uuid('edition_id').notNull().references(() => curriculumEditions.id, { onDelete: 'restrict' }),
+  pathwayId: uuid('pathway_id').notNull().references(() => curriculumPathways.id, { onDelete: 'restrict' }),
+  grade: integer('grade').notNull(),
+  sourceId: uuid('source_id').notNull().references(() => curriculumSources.id, { onDelete: 'restrict' }),
+  availabilityStatus: varchar('availability_status', { length: 32 }).notNull().default('document_listed'),
+  evidenceNote: text('evidence_note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  unique('curriculum_pathway_grade_levels_edition_pathway_grade_unique').on(table.editionId, table.pathwayId, table.grade),
+  check('curriculum_pathway_grade_levels_grade_check', sql`${table.grade} BETWEEN 1 AND 9`),
+  check('curriculum_pathway_grade_levels_availability_check', sql`${table.availabilityStatus} IN ('document_listed', 'document_available', 'awaiting_publication', 'catalogue_discrepancy', 'not_confirmed')`),
+  index('curriculum_pathway_grade_levels_pathway_grade_idx').on(table.pathwayId, table.grade),
+]);
+
 export const curriculumDesignDocuments = pgTable('curriculum_design_documents', {
   id: uuid('id').defaultRandom().primaryKey(),
   documentCode: varchar('document_code', { length: 120 }).notNull().unique(),
