@@ -33,7 +33,7 @@ export async function getTeacherAssignmentManagementSummary(actorUserId: string,
   if (!organisation) throw new TeacherAssignmentError('Organisation not found or inactive', 404);
 
   const [teachers, learningAreas, classList, assignmentResult] = await Promise.all([
-    db.selectDistinct({ userId: authUsers.id, name: authUsers.name, email: authUsers.email, staffReference: staffProfiles.staffReference })
+    db.select({ userId: authUsers.id, name: authUsers.name, email: authUsers.email, staffReference: staffProfiles.staffReference })
       .from(organisationMemberships)
       .innerJoin(authUsers, eq(organisationMemberships.userId, authUsers.id))
       .innerJoin(staffProfiles, and(eq(staffProfiles.userId, authUsers.id), eq(staffProfiles.organisationId, organisationId),
