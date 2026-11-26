@@ -177,9 +177,9 @@ export async function reviewGuardianRelationship(actorUserId: string, organisati
   });
 }
 
-export async function recordGuardianAccountInvitation(actorUserId: string, organisationId: string, profileId: string, email: string, authUserId: string) {
+export async function recordGuardianAccountInvitation(actorUserId: string, organisationId: string, profileId: string, email: string) {
   await assertGuardianManager(actorUserId, organisationId);
-  if (![organisationId, profileId, authUserId].every(v => uuidPattern.test(v)) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+  if (![organisationId, profileId].every(v => uuidPattern.test(v)) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
     throw new GuardianManagementError('Valid organisation, guardian profile, account and email are required', 400);
   }
   const normalizedEmail = email.trim().toLowerCase();
@@ -192,7 +192,7 @@ export async function recordGuardianAccountInvitation(actorUserId: string, organ
     throw new GuardianManagementError('Only an independently verified guardian profile with the matching, unlinked contact email can be invited', 409);
   }
   const [authUser] = await db.select({ id: authUsers.id, email: authUsers.email, emailVerified: authUsers.emailVerified, banned: authUsers.banned })
-    .from(authUsers).where(eq(authUsers.id, authUserId)).limit(1);
+    .from(authUsers).where(eq(sql`lower(${authUsers.email})`, normalizedEmail)).limit(1);
   if (!authUser || authUser.email.toLowerCase() !== normalizedEmail || authUser.emailVerified || authUser.banned) {
     throw new GuardianManagementError('The provisioned account does not match the pending guardian email verification', 409);
   }
@@ -200,7 +200,7 @@ export async function recordGuardianAccountInvitation(actorUserId: string, organ
     await tx.insert(auditEvents).values({
       actorUserId, organisationId, action: 'guardian.account_invitation_sent',
       resourceType: 'guardian_profile', resourceId: profileId,
-      metadata: { email: normalizedEmail, authUserId },
+      metadata: { email: normalizedEmail, authUserId: authUser.id },
     });
   });
   return { guardianProfileId: profileId, invitationRecorded: true };
