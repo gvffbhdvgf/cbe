@@ -218,7 +218,7 @@ GRANT EXECUTE ON FUNCTION sentinel_private.schedule_assessment_event(uuid) TO se
 --> statement-breakpoint
 
 CREATE FUNCTION sentinel_private.create_assessment_task_outcome_mapping(
-  p_organisation_id uuid, p_task_id uuid, p_curriculum_source_node_id uuid
+  p_organisation_id uuid, p_instrument_version_id uuid, p_task_id uuid, p_curriculum_source_node_id uuid
 ) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
@@ -280,7 +280,7 @@ BEGIN
 END;
 $$;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping(uuid,uuid,uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping(uuid,uuid,uuid,uuid) FROM PUBLIC;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping(uuid,uuid,uuid) TO sentinel_learner_runtime;
 --> statement-breakpoint
