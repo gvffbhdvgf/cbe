@@ -162,6 +162,13 @@
       "when": 1795680000000,
       "tag": "0022_teacher_class_assignments_and_scoped_assessment",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795681200000,
+      "tag": "0023_learner_lifecycle_transitions",
+      "breakpoints": true
     }
   ]
 }
