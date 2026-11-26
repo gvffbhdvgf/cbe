@@ -27,12 +27,13 @@ export async function POST(request: Request, context: { params: Promise<{ organi
   if (!body || typeof body !== 'object') return Response.json({ error: 'Invalid teacher assignment details' }, { status: 400 });
   const value = body as Record<string, unknown>;
   if (typeof value.teacherUserId !== 'string' || typeof value.classId !== 'string' || typeof value.learningAreaId !== 'string'
-    || typeof value.startsOn !== 'string' || (value.endsOn !== null && typeof value.endsOn !== 'string')) {
+    || typeof value.startsOn !== 'string' || (value.endsOn !== null && typeof value.endsOn !== 'string')
+    || !Number.isInteger(value.weeklyPeriods) || typeof value.workloadReason !== 'string') {
     return Response.json({ error: 'Teacher, class, learning area and effective start date are required' }, { status: 400 });
   }
   try {
     const result = await createTeacherClassAssignment(data.user.id, organisationId, value.teacherUserId, value.classId,
-      value.learningAreaId, value.startsOn, value.endsOn as string | null);
+      value.learningAreaId, value.startsOn, value.endsOn as string | null, value.weeklyPeriods as number, value.workloadReason as string);
     return Response.json(result, { status: 201 });
   } catch (error) {
     if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 });
