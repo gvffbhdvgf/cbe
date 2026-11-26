@@ -9,6 +9,7 @@ const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const reasonCodes = ['family_relocation','school_change','placement_change','other'] as const;
 const rejectionCodes = ['not_eligible','missing_documentation','capacity_unavailable','other'] as const;
+const dateOnly = (value: Date | string | null) => value === null ? null : value instanceof Date ? value.toISOString().slice(0,10) : value.slice(0,10);
 
 export class LearnerTransferError extends Error {
   readonly status: number;
@@ -77,7 +78,13 @@ export async function getTransferManagementSummary(actorUserId: string, organisa
       .orderBy(asc(learnerTransferRequests.requestedAt)),
   ]);
 
-  return { organisation, activeEnrolments, otherOrganisations, outgoing, incoming };
+  return {
+    organisation,
+    activeEnrolments: activeEnrolments.map(row => ({ ...row, startsAt: dateOnly(row.startsAt)!, endsAt: dateOnly(row.endsAt) })),
+    otherOrganisations,
+    outgoing: outgoing.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)! })),
+    incoming: incoming.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)! })),
+  };
 }
 
 async function callTransferFunction<T extends Record<string, unknown>>(
