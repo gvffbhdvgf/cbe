@@ -24,7 +24,7 @@ describe('weekly teacher workload migration', () => {
     expect(sql).toContain('CREATE FUNCTION sentinel_private.set_teacher_weekly_workload_allocation');
     expect(sql).toContain('CREATE FUNCTION sentinel_private.set_teacher_workload_policy');
     expect(sql).toContain('REVOKE ALL ON FUNCTION');
-    expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.set_teacher_weekly_workload_policy');
+    expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.set_teacher_workload_policy');
     expect(sql).not.toMatch(/GRANT\s+[^;]*\b(INSERT|UPDATE|DELETE|TRUNCATE)\b[^;]*TO\s+sentinel_learner_runtime/i);
     expect(sql).toContain("'teacher.weekly_workload_allocated'");
     expect(sql).toContain("'teacher.workload_policy_created'");
