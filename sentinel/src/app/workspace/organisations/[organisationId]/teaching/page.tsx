@@ -22,7 +22,7 @@ async function TeachingAssignmentsContent({ params }: { params: Promise<{ organi
   if (!data?.user) redirect('/auth/sign-in');
   let summary;
   try { summary = await getTeacherAssignmentManagementSummary(data.user.id, organisationId); }
-  catch { redirect('/workspace/organisations'); }
+  catch (error) { console.error('[Sentinel] Teaching workspace load failed:', error instanceof Error ? error.message : 'unknown error'); redirect('/workspace/organisations'); }
   return <main className="min-h-screen bg-[#F4F8FA]">
     <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><Link href={'/workspace/organisations/'+organisationId+'/classes'} className="text-[11px] font-semibold text-[#087F86]">Class register</Link><Link href={'/workspace/organisations/'+organisationId+'/staff'} className="text-[11px] font-semibold text-[#087F86]">Staff register</Link><Link href={'/workspace/organisations/'+organisationId+'/members'} className="text-[11px] font-semibold text-[#087F86]">Members</Link><SignOutButton/></div></div></header>
     <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
