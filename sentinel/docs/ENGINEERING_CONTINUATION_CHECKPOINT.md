@@ -301,3 +301,14 @@ Next: implement controlled teacher-to-class/learning-area assignments, class-tar
 - Preview deployment `dpl_47KWQXdFYniDZvKeHVk3EmEo3sCS` is queued/building from that commit. Stable preview alias remains `https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app`.
 - Remaining lifecycle work: transfer requests with receiving-institution acceptance, controlled learner-record corrections, guardian relationship verification, and end-to-end browser validation with real role-separated accounts. Progression execution still awaits an approved request's effective date.
 - Preview/development only. No production deployment or production database was changed.
+
+
+## 26 November 2026 — Adapted KICD pathway grade coverage
+
+- Added the source-backed `curriculum_pathway_grade_levels` catalogue for adapted hearing, physical and visual impairment pathways.
+- Recorded Grades 1–9 as `document_listed` for each of the three pathways (27 rows total). The evidence note explicitly states that grade-level learning areas and design content remain to be verified and that no regular-curriculum outcomes are inferred.
+- Updated the curriculum browser to show grade-level coverage for adapted pathways, retaining the source catalogue and the distinction between document listing and verified learning outcomes.
+- Development database verification: 9 rows per adapted pathway, Grades 1–9. Migration `0024_curriculum_pathway_grade_levels` is present in the development database; its ledger entry was reconciled after confirming the table and 27 source-backed rows. Hash: `752c600c43604e80cf41d4de51e782bde9c84c78b3bcec0b2c478eebbcb9bbbd`.
+- Preview deployment `dpl_EfDCUSyvuGM96zSBN97masaGrqb4` is READY from commit `1ec27c319280ffb1a53bdc15dbaf4e1914196f67`. Browser smoke test confirmed the class register loads with capacity and occupancy controls, and the curriculum intelligence page loads with adapted pathway choices. No class, learner or curriculum records were changed during the browser test.
+- CI passed on `1ec27c319280ffb1a53bdc15dbaf4e1914196f67`; an additional migration test now covers the adapted pathway grade-coverage source and evidence caveat.
+- Preview/development only. No production deployment or production database was changed.
