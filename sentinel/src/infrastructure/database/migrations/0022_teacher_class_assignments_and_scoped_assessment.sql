@@ -256,15 +256,14 @@ AS $$
       AND event_record.class_id IS NOT NULL
       AND event_record.status IN ('scheduled','open','closed','marking','moderated','approved','published','corrected')
       AND assignment.teacher_user_id = sentinel_private.current_user_id()
-      AND assignment.status IN ('active','revoked')
+      AND assignment.status = 'active'
       AND assignment.starts_on <= (event_record.starts_at AT TIME ZONE event_record.time_zone)::date
       AND (assignment.ends_on IS NULL OR assignment.ends_on > (event_record.starts_at AT TIME ZONE event_record.time_zone)::date)
-      AND (assignment.status <> 'revoked' OR assignment.revoked_at > event_record.starts_at)
       AND auth_user."emailVerified" = true AND COALESCE(auth_user.banned, false) = false
       AND membership.role = 'teacher'
-      AND membership.status IN ('active','revoked')
-      AND membership.starts_at <= event_record.starts_at
-      AND (membership.ends_at IS NULL OR membership.ends_at > event_record.starts_at)
+      AND membership.status = 'active'
+      AND membership.starts_at <= pg_catalog.now()
+      AND (membership.ends_at IS NULL OR membership.ends_at > pg_catalog.now())
       AND organisation.status = 'active'
   )
 $$;
