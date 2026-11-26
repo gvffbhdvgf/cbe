@@ -211,6 +211,20 @@
       "when": 1795689383990,
       "tag": "0029_organisation_transfer_eligibility",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795693632000,
+      "tag": "0030_platform_admin_organisation_read_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795693840977,
+      "tag": "0031_governed_learner_record_corrections",
+      "breakpoints": true
     }
   ]
 }
