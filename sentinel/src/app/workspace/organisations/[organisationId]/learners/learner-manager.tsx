@@ -17,6 +17,12 @@ export function LearnerManager({ organisationId, initialLearners, initialClasses
   const [academicYear, setAcademicYear] = useState(String(new Date().getFullYear()));
   const [selectedClasses, setSelectedClasses] = useState<Record<string, string>>({});
   const [placementDates, setPlacementDates] = useState<Record<string, string>>({});
+  const [reassignClasses, setReassignClasses] = useState<Record<string, string>>({});
+  const [reassignDates, setReassignDates] = useState<Record<string, string>>({});
+  const [reassignReasons, setReassignReasons] = useState<Record<string, string>>({});
+  const [withdrawalDates, setWithdrawalDates] = useState<Record<string, string>>({});
+  const [withdrawalReasons, setWithdrawalReasons] = useState<Record<string, string>>({});
+  const [transitioning, setTransitioning] = useState('');
   const [pending, setPending] = useState(false);
   const [assigning, setAssigning] = useState('');
   const [error, setError] = useState('');
@@ -59,6 +65,44 @@ export function LearnerManager({ organisationId, initialLearners, initialClasses
     finally { setAssigning(''); }
   }
 
+  async function reassignClass(learner: Learner) {
+    const classId = reassignClasses[learner.enrolmentId];
+    const reason = reassignReasons[learner.enrolmentId] || '';
+    if (!classId) { setError('Select a different target class before reassigning.'); return; }
+    if (reason.trim().length < 10) { setError('Provide a reason of at least 10 characters for class reassignment.'); return; }
+    setTransitioning(learner.enrolmentId); setError(''); setNotice('');
+    try {
+      const response = await fetch(`/api/organisations/${organisationId}/enrolments/${learner.enrolmentId}/class`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ classId, effectiveAt: reassignDates[learner.enrolmentId] || new Date().toISOString().slice(0,10), reason }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to reassign learner');
+      await refreshLearners();
+      setNotice(`Learner ${learner.learnerReference} was reassigned. The previous placement remains in the history.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to reassign learner'); }
+    finally { setTransitioning(''); }
+  }
+
+  async function withdrawLearner(learner: Learner) {
+    const reason = withdrawalReasons[learner.enrolmentId] || '';
+    const withdrawalDate = withdrawalDates[learner.enrolmentId] || new Date().toISOString().slice(0,10);
+    if (reason.trim().length < 10) { setError('Provide a withdrawal reason of at least 10 characters.'); return; }
+    if (!window.confirm(`Withdraw learner ${learner.learnerReference}? This will end the active enrolment and remove it from current rosters.`)) return;
+    setTransitioning(learner.enrolmentId); setError(''); setNotice('');
+    try {
+      const response = await fetch(`/api/organisations/${organisationId}/enrolments/${learner.enrolmentId}/withdrawal`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ withdrawalDate, reason }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to withdraw learner');
+      await refreshLearners();
+      setNotice(`Learner ${learner.learnerReference} was withdrawn. The enrolment and class history have been retained.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to withdraw learner'); }
+    finally { setTransitioning(''); }
+  }
+
   return <div className="mt-9 space-y-6">
     <section className="rounded-[20px] border border-[#DDEBEA] bg-white p-6 sm:p-8">
       <p className="eyebrow">Admissions</p><h2 className="mt-2 text-[18px] font-semibold text-[#18364E]">Register a learner</h2>
@@ -75,9 +119,10 @@ export function LearnerManager({ organisationId, initialLearners, initialClasses
     </section>
 
     <section className="overflow-hidden rounded-[20px] border border-[#E1EAF0] bg-white"><div className="flex items-center justify-between border-b border-[#EAF0F4] px-6 py-5"><div><h2 className="text-[13px] font-semibold text-[#29465D]">Current learner register</h2><p className="mt-1 text-[10px] text-[#91A3B0]">Current active enrolments only</p></div><span className="rounded-full bg-[#F3F7F9] px-3 py-1.5 text-[10px] font-semibold text-[#7B91A1]">{learners.length} learners</span></div>
-      {learners.length ? <div className="overflow-x-auto"><table className="w-full min-w-[860px] text-left"><thead className="bg-[#FAFCFD] text-[9px] uppercase tracking-[.12em] text-[#8A9CAB]"><tr><th className="px-6 py-3">Learner</th><th className="px-6 py-3">Reference</th><th className="px-6 py-3">Grade</th><th className="px-6 py-3">Year</th><th className="px-6 py-3">Class / placement</th></tr></thead><tbody className="divide-y divide-[#EDF2F5]">{learners.map(learner=>{
+      {learners.length ? <div className="overflow-x-auto"><table className="w-full min-w-[1120px] text-left"><thead className="bg-[#FAFCFD] text-[9px] uppercase tracking-[.12em] text-[#8A9CAB]"><tr><th className="px-6 py-3">Learner</th><th className="px-6 py-3">Reference</th><th className="px-6 py-3">Grade</th><th className="px-6 py-3">Year</th><th className="px-6 py-3">Class / placement</th></tr></thead><tbody className="divide-y divide-[#EDF2F5]">{learners.map(learner=>{
         const options=initialClasses.filter(item=>item.grade===learner.grade&&item.academicYear===learner.academicYear&&item.status==='active');
-        return <tr key={learner.id}><td className="px-6 py-4"><p className="text-[12px] font-semibold text-[#18364E]">{learner.preferredName || learner.firstName} {learner.lastName}</p><p className="mt-1 text-[10px] text-[#91A3B0]">{learner.enrolmentStatus}</p></td><td className="px-6 py-4 font-mono text-[10px] text-[#6D8495]">{learner.learnerReference}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{learner.grade}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{learner.academicYear}</td><td className="px-6 py-4">{learner.classId ? <p className="text-[11px] font-medium text-[#456176]">{learner.className || 'Class assigned'}</p> : options.length ? <div className="flex min-w-[300px] flex-wrap items-center gap-2"><select aria-label={`Class for ${learner.learnerReference}`} value={selectedClasses[learner.enrolmentId]||''} onChange={event=>setSelectedClasses(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="min-w-[150px] rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"><option value="">Select class</option>{options.map(item=><option key={item.id} value={item.id}>{item.displayName} ({item.classCode})</option>)}</select><input aria-label={`Placement effective date for ${learner.learnerReference}`} type="date" value={placementDates[learner.enrolmentId]||new Date().toISOString().slice(0,10)} onChange={event=>setPlacementDates(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><button type="button" disabled={assigning===learner.enrolmentId} onClick={()=>assignClass(learner)} className="rounded-lg bg-[#102B45] px-3 py-2 text-[10px] font-semibold text-white disabled:opacity-60">{assigning===learner.enrolmentId?'Placing…':'Place'}</button></div> : <Link href={`/workspace/organisations/${organisationId}/classes`} className="text-[10px] font-semibold text-[#087F86] hover:underline">Create matching class →</Link>}</td></tr>;
+        return <tr key={learner.id}><td className="px-6 py-4"><p className="text-[12px] font-semibold text-[#18364E]">{learner.preferredName || learner.firstName} {learner.lastName}</p><p className="mt-1 text-[10px] text-[#91A3B0]">{learner.enrolmentStatus}</p></td><td className="px-6 py-4 font-mono text-[10px] text-[#6D8495]">{learner.learnerReference}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{learner.grade}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{learner.academicYear}</td><td className="px-6 py-4">{learner.classId ? <div className="space-y-2"><p className="text-[11px] font-semibold text-[#456176]">{learner.className || 'Class assigned'}</p>{options.filter(item=>item.id!==learner.classId).length>0&&<div className="flex min-w-[320px] flex-wrap items-center gap-2"><select aria-label={`New class for ${learner.learnerReference}`} value={reassignClasses[learner.enrolmentId]||''} onChange={event=>setReassignClasses(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="min-w-[150px] rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"><option value="">Move to class…</option>{options.filter(item=>item.id!==learner.classId).map(item=><option key={item.id} value={item.id}>{item.displayName} ({item.classCode})</option>)}</select><input aria-label={`Reassignment date for ${learner.learnerReference}`} type="date" value={reassignDates[learner.enrolmentId]||new Date().toISOString().slice(0,10)} onChange={event=>setReassignDates(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><input aria-label={`Reassignment reason for ${learner.learnerReference}`} value={reassignReasons[learner.enrolmentId]||''} onChange={event=>setReassignReasons(current=>({...current,[learner.enrolmentId]:event.target.value}))} placeholder="Reason for move (10–500 chars)" className="min-w-[190px] rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><button type="button" disabled={transitioning===learner.enrolmentId} onClick={()=>void reassignClass(learner)} className="rounded-lg border border-[#DCE6EC] px-3 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-60">{transitioning===learner.enrolmentId?'Moving…':'Reassign'}</button></div>}</div> : options.length ? <div className="flex min-w-[300px] flex-wrap items-center gap-2"><select aria-label={`Class for ${learner.learnerReference}`} value={selectedClasses[learner.enrolmentId]||''} onChange={event=>setSelectedClasses(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="min-w-[150px] rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"><option value="">Select class</option>{options.map(item=><option key={item.id} value={item.id}>{item.displayName} ({item.classCode})</option>)}</select><input aria-label={`Placement effective date for ${learner.learnerReference}`} type="date" value={placementDates[learner.enrolmentId]||new Date().toISOString().slice(0,10)} onChange={event=>setPlacementDates(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><button type="button" disabled={assigning===learner.enrolmentId} onClick={()=>assignClass(learner)} className="rounded-lg bg-[#102B45] px-3 py-2 text-[10px] font-semibold text-white disabled:opacity-60">{assigning===learner.enrolmentId?'Placing…':'Place'}</button></div> : <Link href={`/workspace/organisations/${organisationId}/classes`} className="text-[10px] font-semibold text-[#087F86] hover:underline">Create matching class →</Link>}
+          <details className="mt-2"><summary className="cursor-pointer text-[10px] font-semibold text-[#A43D34]">Withdraw enrolment</summary><div className="mt-2 flex min-w-[300px] flex-wrap items-center gap-2"><input aria-label={`Last active date for ${learner.learnerReference}`} type="date" value={withdrawalDates[learner.enrolmentId]||new Date().toISOString().slice(0,10)} onChange={event=>setWithdrawalDates(current=>({...current,[learner.enrolmentId]:event.target.value}))} className="rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><input aria-label={`Withdrawal reason for ${learner.learnerReference}`} value={withdrawalReasons[learner.enrolmentId]||''} onChange={event=>setWithdrawalReasons(current=>({...current,[learner.enrolmentId]:event.target.value}))} placeholder="Reason (10–500 chars)" className="min-w-[190px] rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><button type="button" disabled={transitioning===learner.enrolmentId} onClick={()=>void withdrawLearner(learner)} className="rounded-lg border border-[#E7D4D0] px-3 py-2 text-[10px] font-semibold text-[#A43D34] disabled:opacity-60">{transitioning===learner.enrolmentId?'Withdrawing…':'Withdraw'}</button></div></details></td></tr>;
       })}</tbody></table></div> : <div className="px-6 py-12 text-center text-[12px] text-[#8195A4]">No learner records have been registered in this organisation.</div>}
     </section>
     {error && <p role="alert" className="rounded-xl border border-[#F6D6D2] bg-[#FFF5F3] p-3 text-[11px] text-[#B42318]">{error}</p>}
