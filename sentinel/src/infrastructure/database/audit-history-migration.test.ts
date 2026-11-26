@@ -7,7 +7,7 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('audit history immutability migration contract', () => {
   it('registers migration 0015 in sequence', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(20);
+    expect(journal.entries).toHaveLength(21);
     expect(journal.entries[15]).toMatchObject({ idx: 15, tag: '0015_audit_history_immutability' });
   });
 
