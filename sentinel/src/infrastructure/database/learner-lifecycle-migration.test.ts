@@ -7,7 +7,7 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('learner lifecycle transition migration', () => {
   it('registers migration 0023 after teacher allocation and scoped assessment', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(25);
+    expect(journal.entries).toHaveLength(26);
     expect(journal.entries[23]).toMatchObject({ idx: 23, tag: '0023_learner_lifecycle_transitions' });
   });
 
