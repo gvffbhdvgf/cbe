@@ -10,6 +10,39 @@ ALTER TABLE public.assessment_instrument_versions
   ADD COLUMN curriculum_grade_offering_id uuid REFERENCES public.curriculum_grade_offerings(id) ON DELETE RESTRICT;
 --> statement-breakpoint
 
+CREATE FUNCTION sentinel_private.validate_instrument_curriculum_offering()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = pg_catalog, pg_temp
+AS $offering$
+BEGIN
+  IF NEW.curriculum_grade_offering_id IS NULL OR NOT EXISTS (
+    SELECT 1
+    FROM public.curriculum_grade_offerings AS offering
+    WHERE offering.id = NEW.curriculum_grade_offering_id
+      AND offering.grade = NEW.grade
+      AND offering.learning_area_id = NEW.learning_area_id
+      AND offering.availability_status IN ('document_listed','document_available')
+  ) THEN
+    RAISE EXCEPTION 'Assessment instrument must reference a matching curriculum grade offering'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$offering$;
+--> statement-breakpoint
+CREATE TRIGGER assessment_instrument_curriculum_offering_validation
+BEFORE INSERT OR UPDATE OF curriculum_grade_offering_id, grade, learning_area_id
+ON public.assessment_instrument_versions
+FOR EACH ROW EXECUTE FUNCTION sentinel_private.validate_instrument_curriculum_offering();
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.validate_instrument_curriculum_offering() FROM PUBLIC;
+--> statement-breakpoint
+CREATE INDEX assessment_instruments_curriculum_offering_idx
+  ON public.assessment_instrument_versions (curriculum_grade_offering_id);
+--> statement-breakpoint
+
 CREATE FUNCTION sentinel_private.validate_organisation_time_zone()
 RETURNS trigger
 LANGUAGE plpgsql
