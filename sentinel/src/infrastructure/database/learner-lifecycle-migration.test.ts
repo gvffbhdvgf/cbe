@@ -30,6 +30,9 @@ describe('learner lifecycle transition migration', () => {
     expect(sql).toContain('learner_class_placements_one_active_idx');
     expect(sql).toContain('reassign_learner_to_class');
     expect(sql).toContain('learner.class_reassigned');
+    expect(sql).toContain('reason text CHECK');
+    expect(sql).toContain('reasonRecorded');
+    expect(sql).not.toContain("'reason',v_reason");
     expect(sql).toContain('fromClassId');
     expect(sql).toContain('toClassId');
     expect(sql).toContain('class_reassignment');
@@ -38,7 +41,8 @@ describe('learner lifecycle transition migration', () => {
   it('withdraws only active enrolments with a reason and retains progression/audit history', async () => {
     const sql = await readFile(migrationPath, 'utf8');
     expect(sql).toContain('withdraw_learner_enrolment');
-    expect(sql).toContain("SET status='withdrawn',ends_at=v_end_date");
+    expect(sql).toContain("SET status='withdrawn',ends_at=v_end_date,withdrawal_reason=v_reason");
+    expect(sql).toContain('learner_enrolments ADD COLUMN withdrawal_reason text');
     expect(sql).toContain("'withdrawn',v_enrolment.grade");
     expect(sql).toContain('learner.withdrawn');
     expect(sql).toContain('A reason of 10 to 500 characters is required for learner withdrawal');
