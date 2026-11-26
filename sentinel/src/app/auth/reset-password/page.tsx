@@ -1,11 +1,14 @@
 'use client';
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import { BrandMark, SoftflixSignature } from '@/components/brand-mark';
 
 export default function ResetPasswordPage() {
-  const router=useRouter(), search=useSearchParams(), token=search.get('token')||'';
+  const router=useRouter();
+  const [token,setToken]=useState('');
+  useEffect(()=>{setToken(new URLSearchParams(window.location.search).get('token')||'');},[]);
   const [password,setPassword]=useState(''), [confirm,setConfirm]=useState(''), [error,setError]=useState(''), [done,setDone]=useState(false), [pending,setPending]=useState(false);
   async function submit(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError('');
