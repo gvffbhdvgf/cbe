@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm';
 import { boolean, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid, varchar, type AnyPgColumn } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
-import { curriculumLearningAreas, curriculumSourceNodes } from './curriculum';
+import { curriculumGradeOfferings, curriculumLearningAreas, curriculumSourceNodes } from './curriculum';
 import { classes, learnerEnrolments, learnerProfiles } from './learner';
 
 export const assessmentProgrammes = pgTable('assessment_programmes', {
@@ -28,6 +28,7 @@ export const assessmentInstrumentVersions = pgTable('assessment_instrument_versi
   tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
   organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
   learningAreaId: uuid('learning_area_id').notNull().references(() => curriculumLearningAreas.id, { onDelete: 'restrict' }),
+  curriculumGradeOfferingId: uuid('curriculum_grade_offering_id').references(() => curriculumGradeOfferings.id, { onDelete: 'restrict' }),
   grade: integer('grade').notNull(),
   instrumentCode: varchar('instrument_code', { length: 64 }).notNull(),
   versionNumber: integer('version_number').notNull(),
