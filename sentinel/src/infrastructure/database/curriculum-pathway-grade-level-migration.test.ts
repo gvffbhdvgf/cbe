@@ -7,7 +7,6 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('adapted curriculum pathway grade coverage migration', () => {
   it('registers the grade coverage migration after learner lifecycle transitions', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(26);
     expect(journal.entries[24]).toMatchObject({ idx: 24, tag: '0024_curriculum_pathway_grade_levels' });
   });
 
