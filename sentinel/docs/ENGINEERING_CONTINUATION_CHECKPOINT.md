@@ -232,3 +232,8 @@ A Vercel Preview deployment for `sentinel/bootstrap` is READY:
 ## Administrator access gate
 
 The development Neon Auth branch currently has no active platform administrator. Sentinel's public sign-up remains disabled. Do not issue shared/default credentials or grant the first administrator based on account creation order. The first platform administrator must be a verified, owner-approved email identity; provision the account and grant `public.platform_administrators` only after the user supplies/confirms the exact email address. The Neon shared email sender is configured; actual verification/password-reset delivery should be tested before relying on it.
+
+
+### Preview environment-complete redeployment
+
+After adding the branch-scoped `NEXT_PUBLIC_APP_URL`, the Preview was redeployed so the deployment snapshot includes all six environment variables. Latest deployment is READY: `dpl_7FvYMmHimJgUQyCS3SjVKHNhDUPT`. Stable branch URL remains https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app. The deployment uses commit `5a0fc2adf86eb9d07841d49496fd06d87b223a90`. SSO protection remains enabled.
