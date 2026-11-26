@@ -6,6 +6,7 @@ export const organisations = pgTable('organisations', {
   status: varchar('status', { length: 24 }).notNull().default('active'),
   identifierIssuer: varchar('identifier_issuer', { length: 120 }),
   identifierValue: varchar('identifier_value', { length: 180 }),
+  timeZone: varchar('time_zone', { length: 64 }).notNull().default('Africa/Nairobi'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
