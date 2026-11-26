@@ -27,20 +27,14 @@ async function LearnersContent({ params }: { params: Promise<{ organisationId: s
   if (!uuidPattern.test(organisationId)) notFound();
   const { data } = await auth.getSession();
   if (!data?.user) redirect('/auth/sign-in');
-  let summary;
-  let classOptions;
-  let progressionRequests;
-  let correctionRequests;
-  let rolloverData: Awaited<ReturnType<typeof listAcademicYearRollovers>> = { batches: [], items: [] };
-  try {
-    [summary, classOptions, progressionRequests, correctionRequests] = await Promise.all([
-      getLearnerManagementSummary(data.user.id, organisationId),
-      listClasses(data.user.id, organisationId),
-      listLearnerProgressionRequests(data.user.id, organisationId),
-      listLearnerRecordCorrections(data.user.id, organisationId),
-      listAcademicYearRollovers(data.user.id, organisationId),
-    ]);
-  } catch { redirect('/workspace/organisations'); }
+  const loaded = await Promise.all([
+    getLearnerManagementSummary(data.user.id, organisationId),
+    listClasses(data.user.id, organisationId),
+    listLearnerProgressionRequests(data.user.id, organisationId),
+    listLearnerRecordCorrections(data.user.id, organisationId),
+    listAcademicYearRollovers(data.user.id, organisationId),
+  ]).catch(() => redirect('/workspace/organisations'));
+  const [summary, classOptions, progressionRequests, correctionRequests, rolloverData] = loaded;
   return <main className="min-h-screen bg-[#F4F8FA]">
     <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><div className="flex items-center gap-4"><Link href={`/workspace/organisations/${organisationId}/assessments`} className="text-[11px] font-semibold text-[#087F86]">Assessment evidence</Link><Link href={`/workspace/organisations/${organisationId}/classes`} className="text-[11px] font-semibold text-[#087F86]">Manage classes</Link><Link href={`/workspace/organisations/${organisationId}/guardians`} className="text-[11px] font-semibold text-[#087F86]">Guardians</Link><Link href={`/workspace/organisations/${organisationId}/transfers`} className="text-[11px] font-semibold text-[#087F86]">Transfers</Link><Link href="/workspace/organisations" className="text-[11px] font-semibold text-[#087F86]">← Institutions</Link></div><SignOutButton/></div></div></header>
     <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
