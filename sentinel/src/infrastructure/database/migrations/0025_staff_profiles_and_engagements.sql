@@ -111,11 +111,16 @@ DECLARE
   v_person_id uuid := p_person_id;
   v_profile_id uuid;
   v_engagement_status varchar(16);
+  v_time_zone text;
+  v_today date;
   v_staff_reference varchar(48) := upper(btrim(p_staff_reference));
 BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Staff profile management authority is required' USING ERRCODE = '42501';
   END IF;
+  SELECT time_zone INTO v_time_zone FROM public.organisations WHERE id = p_organisation_id AND status = 'active';
+  IF v_time_zone IS NULL THEN RAISE EXCEPTION 'Organisation not found or inactive' USING ERRCODE = 'P0002'; END IF;
+  v_today := (pg_catalog.now() AT TIME ZONE v_time_zone)::date;
   IF v_staff_reference IS NULL OR v_staff_reference !~ '^[A-Z0-9][A-Z0-9._/-]{1,47}$' THEN
     RAISE EXCEPTION 'A valid staff reference is required' USING ERRCODE = '22023';
   END IF;
@@ -154,8 +159,8 @@ BEGIN
   RETURNING id INTO v_profile_id;
 
   v_engagement_status := CASE
-    WHEN p_starts_on > CURRENT_DATE THEN 'planned'
-    WHEN p_ends_on IS NOT NULL AND p_ends_on <= CURRENT_DATE THEN 'ended'
+    WHEN p_starts_on > v_today THEN 'planned'
+    WHEN p_ends_on IS NOT NULL AND p_ends_on <= v_today THEN 'ended'
     ELSE 'active'
   END;
   INSERT INTO public.staff_engagements(tenant_organisation_id,organisation_id,staff_profile_id,engagement_type,job_title,starts_on,ends_on,status,created_by)
@@ -227,10 +232,15 @@ DECLARE
   v_actor_id uuid := sentinel_private.current_user_id();
   v_engagement public.staff_engagements%ROWTYPE;
   v_status varchar(16);
+  v_time_zone text;
+  v_today date;
 BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Staff engagement management authority is required' USING ERRCODE = '42501';
   END IF;
+  SELECT time_zone INTO v_time_zone FROM public.organisations WHERE id = p_organisation_id AND status = 'active';
+  IF v_time_zone IS NULL THEN RAISE EXCEPTION 'Organisation not found or inactive' USING ERRCODE = 'P0002'; END IF;
+  v_today := (pg_catalog.now() AT TIME ZONE v_time_zone)::date;
   SELECT * INTO v_engagement FROM public.staff_engagements
   WHERE id = p_engagement_id AND organisation_id = p_organisation_id
   FOR UPDATE;
@@ -240,8 +250,8 @@ BEGIN
     RAISE EXCEPTION 'Engagement end date must be after its start date' USING ERRCODE = '22023';
   END IF;
   v_status := CASE
-    WHEN p_ends_on <= CURRENT_DATE THEN 'ended'
-    WHEN v_engagement.starts_on > CURRENT_DATE THEN 'planned'
+    WHEN p_ends_on <= v_today THEN 'ended'
+    WHEN v_engagement.starts_on > v_today THEN 'planned'
     ELSE 'active'
   END;
   UPDATE public.staff_engagements SET ends_on = p_ends_on, status = v_status, updated_at = now() WHERE id = p_engagement_id;
