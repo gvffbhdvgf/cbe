@@ -255,7 +255,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp
-AS $\
+AS $$\
   SELECT roster.enrolment_id, roster.learner_id, learner.learner_reference, roster.class_id,
     attempt.id, attempt.status
   FROM public.assessment_event_eligible_enrolments roster
@@ -270,7 +270,7 @@ AS $\
   WHERE roster.event_id = p_event_id
     AND sentinel_private.can_access_assessment_data(roster.organisation_id)
   ORDER BY learner.learner_reference, roster.enrolment_id
-$;
+$$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.list_assessment_eligible_enrolments(uuid) FROM PUBLIC;
 --> statement-breakpoint
