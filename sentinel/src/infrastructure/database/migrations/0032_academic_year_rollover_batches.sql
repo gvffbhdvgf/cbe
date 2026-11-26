@@ -247,6 +247,27 @@ BEGIN
   IF EXISTS (SELECT 1 FROM public.academic_year_rollover_items item WHERE item.batch_id = p_batch_id AND item.status = 'unresolved') THEN
     RAISE EXCEPTION 'Every learner must have an explicit progression or not-progressing decision before submission' USING ERRCODE = '23514';
   END IF;
+  -- A count alone cannot prove cohort identity: one learner may leave while another joins.
+  -- Reject any newly active source enrolment that was not included in the original snapshot.
+  IF EXISTS (
+    SELECT 1
+    FROM public.learner_enrolments enrolment
+    WHERE enrolment.tenant_organisation_id = v_batch.tenant_organisation_id
+      AND enrolment.organisation_id = v_batch.organisation_id
+      AND enrolment.academic_year = v_batch.from_academic_year
+      AND enrolment.status = 'active'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.academic_year_rollover_items item
+        WHERE item.batch_id = p_batch_id
+          AND item.source_enrolment_id = enrolment.id
+          AND item.learner_id = enrolment.learner_id
+          AND item.from_grade = enrolment.grade
+      )
+  ) THEN
+    RAISE EXCEPTION 'The active source cohort contains a learner who was not in the rollover snapshot; create a fresh rollover plan' USING ERRCODE = '23514';
+  END IF;
+
   IF EXISTS (
     SELECT 1
     FROM public.academic_year_rollover_items item
