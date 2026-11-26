@@ -82,8 +82,8 @@ export async function getTransferManagementSummary(actorUserId: string, organisa
     organisation,
     activeEnrolments: activeEnrolments.map(row => ({ ...row, startsAt: dateOnly(row.startsAt)!, endsAt: dateOnly(row.endsAt) })),
     otherOrganisations,
-    outgoing: outgoing.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)! })),
-    incoming: incoming.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)! })),
+    outgoing: outgoing.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)!, requestedAt: row.requestedAt.toISOString() })),
+    incoming: incoming.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)!, requestedAt: row.requestedAt.toISOString() })),
   };
 }
 
