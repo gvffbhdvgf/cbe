@@ -1,9 +1,10 @@
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, isNull, or } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
 import { authUsers, organisationMemberships } from '@/infrastructure/database/schema/security';
 import { curriculumLearningAreas } from '@/infrastructure/database/schema/curriculum';
+import { classes, teacherClassAssignments } from '@/infrastructure/database/schema/learner';
 import { listClasses } from '@/application/learner/class-service';
 import { requireLearnerManager } from '@/application/learner/learner-service';
 import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
@@ -39,22 +40,30 @@ export async function getTeacherAssignmentManagementSummary(actorUserId: string,
     db.select({ id: curriculumLearningAreas.id, name: curriculumLearningAreas.name })
       .from(curriculumLearningAreas).orderBy(curriculumLearningAreas.name),
     listClasses(actorUserId, organisationId),
-    withAuthenticatedLearnerDb(actorUserId, async (tx) => tx.execute(sql`
-      SELECT assignment.id, assignment.teacher_user_id, auth_user.name AS teacher_name,
-        auth_user.email AS teacher_email, assignment.class_id, class_record.class_code,
-        class_record.display_name AS class_name, assignment.learning_area_id, area.name AS learning_area,
-        assignment.grade, assignment.academic_year, assignment.starts_on, assignment.ends_on,
-        assignment.status, assignment.created_at
-      FROM public.teacher_class_assignments assignment
-      INNER JOIN neon_auth."user" auth_user ON auth_user.id = assignment.teacher_user_id
-      INNER JOIN public.classes class_record ON class_record.id = assignment.class_id
-        AND class_record.organisation_id = assignment.organisation_id
-      INNER JOIN public.curriculum_learning_areas area ON area.id = assignment.learning_area_id
-      WHERE assignment.organisation_id = ${organisationId}::uuid
-      ORDER BY assignment.status, class_record.grade, class_record.class_code, area.name, auth_user.name
-    `)),
+    db.select({
+      id: teacherClassAssignments.id,
+      teacher_user_id: teacherClassAssignments.teacherUserId,
+      teacher_name: authUsers.name,
+      teacher_email: authUsers.email,
+      class_id: teacherClassAssignments.classId,
+      class_code: classes.classCode,
+      class_name: classes.displayName,
+      learning_area_id: teacherClassAssignments.learningAreaId,
+      learning_area: curriculumLearningAreas.name,
+      grade: teacherClassAssignments.grade,
+      academic_year: teacherClassAssignments.academicYear,
+      starts_on: teacherClassAssignments.startsOn,
+      ends_on: teacherClassAssignments.endsOn,
+      status: teacherClassAssignments.status,
+      created_at: teacherClassAssignments.createdAt,
+    }).from(teacherClassAssignments)
+      .innerJoin(authUsers, eq(teacherClassAssignments.teacherUserId, authUsers.id))
+      .innerJoin(classes, and(eq(teacherClassAssignments.classId, classes.id), eq(teacherClassAssignments.organisationId, classes.organisationId)))
+      .innerJoin(curriculumLearningAreas, eq(teacherClassAssignments.learningAreaId, curriculumLearningAreas.id))
+      .where(eq(teacherClassAssignments.organisationId, organisationId))
+      .orderBy(asc(teacherClassAssignments.status), asc(teacherClassAssignments.grade), asc(classes.classCode), asc(curriculumLearningAreas.name), asc(authUsers.name)),
   ]);
-  return { organisation, teachers, learningAreas, classes: classList, assignments: assignmentResult.rows };
+  return { organisation, teachers, learningAreas, classes: classList, assignments: assignmentResult };
 }
 
 export async function createTeacherClassAssignment(
