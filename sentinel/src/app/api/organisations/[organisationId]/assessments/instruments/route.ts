@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth/server';
 import { AssessmentAccessError, AssessmentTransitionError, createAssessmentInstrumentVersion } from '@/application/assessment/assessment-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const responseTypes = ['text','numeric','boolean','choice','observation','evidence'] as const;
 export async function POST(request: Request, context: { params: Promise<{ organisationId: string }> }) {
   const { data } = await auth.getSession(); if (!data?.user) return Response.json({ error: 'Authentication required' }, { status: 401 });
