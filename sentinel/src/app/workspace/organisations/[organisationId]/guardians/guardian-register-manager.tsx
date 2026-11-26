@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth/client';
 
 type PersonMatch = { id: string; legalFirstName: string; legalMiddleName: string | null; legalLastName: string; preferredName: string | null };
 type LearnerOption = { id: string; learnerReference: string; firstName: string; lastName: string; preferredName: string | null; grade: number; academicYear: number; enrolmentStatus: string };
@@ -47,6 +48,7 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
   const [progressPermissions,setProgressPermissions]=useState<Record<string,boolean>>({});
   const [messagePermissions,setMessagePermissions]=useState<Record<string,boolean>>({});
   const [revokeReasons,setRevokeReasons]=useState<Record<string,string>>({});
+  const [invitationLinks,setInvitationLinks]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState('');
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
@@ -74,6 +76,38 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
     try { await reload(personSearch);setSearchPerformed(true); }
     catch(cause) { setError(cause instanceof Error?cause.message:'Unable to search existing people.'); }
     finally { setBusy(''); }
+  }
+
+  async function inviteGuardianAccount(guardian: Guardian) {
+    if (!guardian.contactEmail || !guardian.person) return;
+    setBusy('invite:'+guardian.id);setError('');setMessage('');
+    try {
+      const temporaryPassword = crypto.randomUUID() + crypto.randomUUID();
+      const created = await authClient.admin.createUser({
+        email: guardian.contactEmail,
+        password: temporaryPassword,
+        name: personName(guardian),
+        role: 'user',
+      });
+      if (created.error) throw new Error(created.error.message || 'Could not provision the guardian account.');
+      const verification = await authClient.emailOtp.sendVerificationOtp({
+        email: guardian.contactEmail,
+        type: 'email-verification',
+      });
+      if (verification.error) throw new Error('The account was created, but the verification code could not be sent: ' + verification.error.message);
+      const link = window.location.origin + '/auth/verify-email';
+      setInvitationLinks(current => ({ ...current, [guardian.id]: link }));
+      setMessage('Guardian account created and verification code sent. Share the setup page with the guardian; do not share the temporary password.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not create the guardian account invitation.');
+    } finally { setBusy(''); }
+  }
+
+  async function copyInvitationLink(profileId: string) {
+    const link = invitationLinks[profileId];
+    if (!link) return;
+    try { await navigator.clipboard.writeText(link); setMessage('Guardian setup link copied.'); }
+    catch { setError('Clipboard access was unavailable. Copy this link manually: ' + link); }
   }
   async function create(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,7 +171,7 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
             <div className="flex flex-wrap gap-2 sm:col-span-2"><button disabled={busy!==''||evidenceFor(guardian.id).trim().length<3} onClick={()=>void runAction('profile:'+guardian.id,{action:'review-profile',profileId:guardian.id,decision:'verified',method:methodFor(guardian.id),evidenceReference:evidenceFor(guardian.id)},'Guardian identity verified independently.')} className="rounded-full bg-[#087F86] px-4 py-2 text-[10px] font-semibold text-white disabled:opacity-40">Verify identity</button><button disabled={busy!==''||evidenceFor(guardian.id).trim().length<3||!(rejectionReasons[guardian.id]||'').trim()} onClick={()=>void runAction('profile:'+guardian.id,{action:'review-profile',profileId:guardian.id,decision:'rejected',method:methodFor(guardian.id),evidenceReference:evidenceFor(guardian.id),rejectionReason:rejectionReasons[guardian.id]},'Guardian identity review recorded as rejected.')} className="rounded-full border border-[#E4C8C1] px-4 py-2 text-[10px] font-semibold text-[#9A4B3D] disabled:opacity-40">Reject identity</button></div>
             <p className="text-[10px] leading-5 text-[#8296A5] sm:col-span-2">The person who created this profile cannot review it. Keep sensitive document images outside audit metadata; record only the controlled evidence reference.</p>
           </div>}
-          {guardian.verificationStatus==='verified'&&guardian.userId===null&&guardian.contactEmail&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#F4F8FA] p-3"><p className="text-[10px] leading-5 text-[#718697]">Link is allowed only when this exact email belongs to an active, email-verified Sentinel account.</p><button disabled={busy!==''} onClick={()=>void runAction('link:'+guardian.id,{action:'link-account',profileId:guardian.id,email:guardian.contactEmail},'Verified guardian account linked.')} className="rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">Link verified account</button></div>}
+          {guardian.verificationStatus==='verified'&&guardian.userId===null&&guardian.contactEmail&&<div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F4F8FA] p-3"><p className="max-w-[520px] text-[10px] leading-5 text-[#718697]">Provision a new account and send an email verification code, or link an existing account after its owner verifies the same email address.</p><div className="flex flex-wrap gap-2"><button disabled={busy!==''||Boolean(invitationLinks[guardian.id])} onClick={()=>void inviteGuardianAccount(guardian)} className="rounded-full bg-[#087F86] px-4 py-2 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='invite:'+guardian.id?'Creating…':'Create account & send code'}</button><button disabled={busy!==''} onClick={()=>void runAction('link:'+guardian.id,{action:'link-account',profileId:guardian.id,email:guardian.contactEmail},'Verified guardian account linked.')} className="rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">Link existing verified account</button></div>{invitationLinks[guardian.id]&&<div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3"><p className="text-[10px] text-[#627B8E]">Share this setup page so the guardian can verify their email and choose a password.</p><button type="button" onClick={()=>void copyInvitationLink(guardian.id)} className="text-[10px] font-semibold text-[#087F86]">Copy setup link</button></div>}</div>}
           <div className="mt-4 space-y-3">{guardian.relationships.map(rel=><div key={rel.id} className="rounded-xl border border-[#EAF0F3] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[11px] font-semibold text-[#35556B]">{rel.learner?displayName({firstName:rel.learner.firstName,lastName:rel.learner.lastName,preferredName:rel.learner.preferredName}):'Learner record'} · {titleCase(rel.relationshipType)}</p><p className="mt-1 text-[10px] text-[#8296A5]">{rel.learner?.learnerReference||'—'} · {rel.learner?'Grade '+rel.learner.grade+' ('+rel.learner.academicYear+')':'No active enrolment'}</p></div><span className="rounded-full bg-[#F3F7F9] px-2.5 py-1 text-[9px] font-semibold text-[#718697]">{titleCase(rel.verificationStatus)} · {titleCase(rel.status)}</span></div>
             {rel.verificationStatus==='pending'&&guardian.verificationStatus==='verified'&&<div className="mt-3 grid gap-2 sm:grid-cols-2">
