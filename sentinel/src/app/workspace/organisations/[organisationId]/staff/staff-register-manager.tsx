@@ -119,7 +119,7 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
       });
       const auditPayload=await audit.json();
       if(!audit.ok) throw new Error(auditPayload.error||'The verification code was sent but its audit record could not be saved.');
-      setInvitationLinks(current=>({...current,[profile.id]:window.location.origin+'/auth/verify-email'}));
+      setInvitationLinks(current=>({...current,[profile.id]:window.location.origin+'/auth/verify-email?email='+encodeURIComponent(email)}));
       setMessage(createAccount
         ? 'Staff account created and verification code sent. Share the setup page with the staff member; never share the temporary password.'
         : 'Verification code sent to the existing account. Share the setup page with the staff member.');
