@@ -14,6 +14,9 @@ describe('academic-year rollover migration', () => {
     const sql = await readFile(migrationPath, 'utf8');
     expect(sql).toContain('CREATE TABLE public.academic_year_rollover_batches');
     expect(sql).toContain('CREATE TABLE public.academic_year_rollover_items');
+    expect(sql).toContain("WHERE status = 'draft'");
+    expect(sql).toContain('CREATE FUNCTION sentinel_private.cancel_academic_year_rollover');
+    expect(sql).toContain("'learner.academic_year_rollover_cancelled'");
     expect(sql).toContain("outcome IN ('unresolved','promote','repeat','not_progressing')");
     expect(sql).toContain('v_current_count <> v_snapshot_count');
     expect(sql).toContain("item.status = 'unresolved'");
