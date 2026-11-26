@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { OutcomeMappingControls } from './outcome-mapping-controls';
 
@@ -36,10 +36,6 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
   const [academicYear, setAcademicYear] = useState(String(new Date().getFullYear()));
   const [moderationRequired, setModerationRequired] = useState(true);
   const matchingGradeOfferings = gradeOfferings.filter(item => item.grade === Number(grade) && item.learning_area_id === learningAreaId);
-  useEffect(() => {
-    const matches = gradeOfferings.filter(item => item.grade === Number(grade) && item.learning_area_id === learningAreaId);
-    if (!matches.some(item => item.id === gradeOfferingId)) setGradeOfferingId(matches[0]?.id ?? '');
-  }, [grade, learningAreaId, gradeOfferings, gradeOfferingId]);
 
   async function send(path: string, body: unknown, label: string) {
     setBusy(label); setError(''); setMessage('');
@@ -92,7 +88,7 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
       </form>
       <form onSubmit={createInstrument} className="rounded-2xl border border-[#E5EDF1] bg-[#FBFDFD] p-4">
         <h3 className="text-[13px] font-semibold text-[#29465D]">2. Instrument version draft</h3>
-        <div className="mt-4 grid grid-cols-2 gap-3"><label className={labelClass}>Grade<select value={grade} onChange={event => setGrade(event.target.value)} className={inputClass}>{Array.from({length:9},(_,i)=><option key={i+1} value={i+1}>Grade {i+1}</option>)}</select></label><label className={labelClass}>Learning area<select required value={learningAreaId} onChange={event => setLearningAreaId(event.target.value)} className={inputClass}>{learningAreas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}</select></label></div>\n        <label className={labelClass + ' mt-3'}>Curriculum edition and pathway<select required value={gradeOfferingId} onChange={event => setGradeOfferingId(event.target.value)} className={inputClass}><option value="">Select a curriculum catalogue offering</option>{matchingGradeOfferings.map(item=><option key={item.id} value={item.id}>{item.edition_label} · {item.pathway_name} · {item.availability_status}</option>)}</select></label>
+        <div className="mt-4 grid grid-cols-2 gap-3"><label className={labelClass}>Grade<select value={grade} onChange={event => { const nextGrade = event.target.value; setGrade(nextGrade); const first = gradeOfferings.find(item => item.grade === Number(nextGrade) && item.learning_area_id === learningAreaId); setGradeOfferingId(first?.id ?? ''); }} className={inputClass}>{Array.from({length:9},(_,i)=><option key={i+1} value={i+1}>Grade {i+1}</option>)}</select></label><label className={labelClass}>Learning area<select required value={learningAreaId} onChange={event => { const nextArea = event.target.value; setLearningAreaId(nextArea); const first = gradeOfferings.find(item => item.grade === Number(grade) && item.learning_area_id === nextArea); setGradeOfferingId(first?.id ?? ''); }} className={inputClass}>{learningAreas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}</select></label></div>\n        <label className={labelClass + ' mt-3'}>Curriculum edition and pathway<select required value={gradeOfferingId} onChange={event => setGradeOfferingId(event.target.value)} className={inputClass}><option value="">Select a curriculum catalogue offering</option>{matchingGradeOfferings.map(item=><option key={item.id} value={item.id}>{item.edition_label} · {item.pathway_name} · {item.availability_status}</option>)}</select></label>
         <label className={labelClass + ' mt-3'}>Instrument code<input required value={instrumentCode} onChange={event => setInstrumentCode(event.target.value)} placeholder="e.g. G6-MATH-T2" className={inputClass}/></label>
         <label className={labelClass + ' mt-3'}>Instrument title<input required value={instrumentTitle} onChange={event => setInstrumentTitle(event.target.value)} placeholder="Grade 6 Mathematics assessment" className={inputClass}/></label>
         <div className="mt-4 flex items-center justify-between"><p className={labelClass}>Tasks</p><button type="button" onClick={() => setTasks(current => [...current, { taskCode: `TASK-${String(current.length+1).padStart(2,'0')}`, title: '', responseType: 'text', maximumScore: '10', required: true }])} className="text-[10px] font-semibold text-[#087F86]">+ Add task</button></div>
@@ -108,7 +104,7 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
       <div className="mt-3 grid gap-3 sm:grid-cols-3"><label className={labelClass}>Starts (institution time)<input required type="datetime-local" value={startsAt} onChange={event=>setStartsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Ends (institution time)<input required type="datetime-local" value={endsAt} onChange={event=>setEndsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Academic year<input required type="number" min="2000" max="2100" value={academicYear} onChange={event=>setAcademicYear(event.target.value)} className={inputClass}/></label></div>
       <label className="mt-4 flex items-center gap-2 text-[11px] text-[#647D8D]"><input type="checkbox" checked={moderationRequired} onChange={event=>setModerationRequired(event.target.checked)}/> Require independent moderation</label>
       <button disabled={busy!=='' || programmes.length===0 || instruments.every(item=>item.status!=='approved')} className="mt-4 rounded-full bg-[#087F86] px-5 py-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='Event creation'?'Creating…':'Create draft event'}</button>
-      <p className="mt-2 text-[10px] text-[#8A9CAB]">Times are interpreted in the institution's {timeZone} time zone and stored as UTC instants. Roster eligibility uses the institution-local calendar date.</p>
+      <p className="mt-2 text-[10px] text-[#8A9CAB]">Times are interpreted in the institution&apos;s {timeZone} time zone and stored as UTC instants. Roster eligibility uses the institution-local calendar date.</p>
     </form>
     {error && <p role="alert" className="mt-4 text-[11px] text-[#A43D34]">{error}</p>}{message && <p role="status" className="mt-4 text-[11px] text-[#087F86]">{message}</p>}
   </section>;
