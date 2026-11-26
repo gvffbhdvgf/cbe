@@ -196,6 +196,20 @@ export async function approveAssessmentInstrumentVersion(actorUserId: string, or
   });
 }
 
+export async function createAssessmentEventLocal(
+  actorUserId: string, organisationId: string, programmeId: string, instrumentVersionId: string,
+  title: string, startsAtLocal: string, endsAtLocal: string, academicYear: number, moderationRequired: boolean,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_event_local(
+      ${organisationId}::uuid, ${programmeId}::uuid, ${instrumentVersionId}::uuid,
+      ${title}::text, ${startsAtLocal}::timestamp, ${endsAtLocal}::timestamp,
+      ${academicYear}::integer, ${moderationRequired}::boolean
+    ) AS event_id`);
+    return result.rows[0]?.event_id;
+  });
+}
+
 export async function createAssessmentEvent(
   actorUserId: string, organisationId: string, programmeId: string, instrumentVersionId: string,
   title: string, startsAt: string, endsAt: string, academicYear: number, moderationRequired: boolean,
@@ -218,7 +232,7 @@ export async function scheduleAssessmentEvent(actorUserId: string, organisationI
 }
 
 export async function getAssessmentAuthoringOptions(actorUserId: string, organisationId: string) {
-  const [organisation] = await db.select({ id: organisations.id })
+  const [organisation] = await db.select({ id: organisations.id, timeZone: organisations.timeZone })
     .from(organisations).where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active'))).limit(1);
   if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
   const role = await getOrganisationActorRole(actorUserId, organisationId);
@@ -231,7 +245,76 @@ export async function getAssessmentAuthoringOptions(actorUserId: string, organis
         .from(assessmentInstrumentVersions).where(eq(assessmentInstrumentVersions.organisationId, organisationId)).orderBy(desc(assessmentInstrumentVersions.createdAt)),
       tx.select({ id: curriculumLearningAreas.id, name: curriculumLearningAreas.name }).from(curriculumLearningAreas).orderBy(curriculumLearningAreas.name),
     ]);
-    return { programmes, instruments, learningAreas };
+    return { programmes, instruments, learningAreas, timeZone: organisation.timeZone };
+  });
+}
+
+
+export async function getAssessmentInstrumentOutcomeMappings(actorUserId: string, organisationId: string, instrumentVersionId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`
+      SELECT
+        task.id AS task_id,
+        task.task_code,
+        task.title AS task_title,
+        task.required,
+        mapping.id AS mapping_id,
+        mapping.curriculum_source_node_id,
+        mapping.status AS mapping_status,
+        mapping.created_by,
+        mapping.reviewed_by,
+        mapping.reviewed_at,
+        mapping.review_note,
+        node.node_code AS outcome_code,
+        node.title AS outcome_title,
+        document.document_code,
+        offering.grade,
+        area.name AS learning_area
+      FROM public.assessment_tasks AS task
+      JOIN public.assessment_instrument_versions AS instrument
+        ON instrument.id = task.instrument_version_id
+       AND instrument.tenant_organisation_id = task.tenant_organisation_id
+       AND instrument.organisation_id = task.organisation_id
+      LEFT JOIN public.assessment_task_outcome_mappings AS mapping
+        ON mapping.task_id = task.id
+       AND mapping.instrument_version_id = task.instrument_version_id
+       AND mapping.tenant_organisation_id = task.tenant_organisation_id
+       AND mapping.organisation_id = task.organisation_id
+      LEFT JOIN public.curriculum_source_nodes AS node
+        ON node.id = mapping.curriculum_source_node_id
+      LEFT JOIN public.curriculum_design_documents AS document
+        ON document.id = node.document_id
+      LEFT JOIN public.curriculum_grade_offerings AS offering
+        ON offering.id = document.grade_offering_id
+      LEFT JOIN public.curriculum_learning_areas AS area
+        ON area.id = offering.learning_area_id
+      WHERE task.organisation_id = ${organisationId}::uuid
+        AND instrument.id = ${instrumentVersionId}::uuid
+      ORDER BY task.display_order, task.task_code, node.node_code
+    `);
+    return result.rows;
+  });
+}
+
+export async function createAssessmentTaskOutcomeMapping(
+  actorUserId: string, organisationId: string, taskId: string, curriculumSourceNodeId: string,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_task_outcome_mapping(
+      ${organisationId}::uuid, ${taskId}::uuid, ${curriculumSourceNodeId}::uuid
+    ) AS mapping_id`);
+    return result.rows[0]?.mapping_id;
+  });
+}
+
+export async function reviewAssessmentTaskOutcomeMapping(
+  actorUserId: string, organisationId: string, mappingId: string, decision: 'approved' | 'rejected', reviewNote: string,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.review_assessment_task_outcome_mapping(
+      ${organisationId}::uuid, ${mappingId}::uuid, ${decision}::text, ${reviewNote}::text
+    ) AS reviewed_at`);
+    return result.rows[0]?.reviewed_at;
   });
 }
 
@@ -268,6 +351,7 @@ export async function listAssessmentEvents(actorUserId: string, organisationId: 
     moderationRequired: assessmentEvents.moderationRequired,
     startsAt: assessmentEvents.startsAt,
     endsAt: assessmentEvents.endsAt,
+    timeZone: assessmentEvents.timeZone,
     createdAt: assessmentEvents.createdAt,
   })
     .from(assessmentEvents)
