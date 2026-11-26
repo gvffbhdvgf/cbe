@@ -80,7 +80,11 @@ CREATE POLICY staff_engagements_select
 --> statement-breakpoint
 REVOKE ALL ON TABLE public.staff_profiles FROM PUBLIC;
 --> statement-breakpoint
+REVOKE ALL ON TABLE public.staff_profiles FROM sentinel_learner_runtime;
+--> statement-breakpoint
 REVOKE ALL ON TABLE public.staff_engagements FROM PUBLIC;
+--> statement-breakpoint
+REVOKE ALL ON TABLE public.staff_engagements FROM sentinel_learner_runtime;
 --> statement-breakpoint
 GRANT SELECT ON TABLE public.staff_profiles TO sentinel_learner_runtime;
 --> statement-breakpoint
@@ -115,13 +119,13 @@ BEGIN
   IF v_staff_reference IS NULL OR v_staff_reference !~ '^[A-Z0-9][A-Z0-9._/-]{1,47}$' THEN
     RAISE EXCEPTION 'A valid staff reference is required' USING ERRCODE = '22023';
   END IF;
-  IF p_staff_category NOT IN ('teacher','school_leader','administrator','support_staff','specialist','other') THEN
+  IF p_staff_category IS NULL OR p_staff_category NOT IN ('teacher','school_leader','administrator','support_staff','specialist','other') THEN
     RAISE EXCEPTION 'A valid staff category is required' USING ERRCODE = '22023';
   END IF;
   IF p_job_title IS NULL OR length(btrim(p_job_title)) NOT BETWEEN 2 AND 120 THEN
     RAISE EXCEPTION 'Job title must be between 2 and 120 characters' USING ERRCODE = '22023';
   END IF;
-  IF p_engagement_type NOT IN ('permanent','contract','casual','volunteer','internship','other') THEN
+  IF p_engagement_type IS NULL OR p_engagement_type NOT IN ('permanent','contract','casual','volunteer','internship','other') THEN
     RAISE EXCEPTION 'A valid engagement type is required' USING ERRCODE = '22023';
   END IF;
   IF p_starts_on IS NULL OR (p_ends_on IS NOT NULL AND p_ends_on <= p_starts_on) THEN
