@@ -18,8 +18,10 @@ type Incoming = {
   destinationGrade: number; destinationAcademicYear: number; effectiveAt: string; reasonCode: string;
   status: string; rejectionCode: string | null; requestedAt: string;
 };
+type Eligibility = { organisationId: string; registryIssuer: string; registryIdentifier: string; status: string; submittedEvidenceReference: string; requestedAt: string; verificationMethod: string | null; reviewEvidenceReference: string | null; reviewedAt: string | null; validUntil: string | null; rejectionReason: string | null; suspensionReason: string | null } | null;
 type Summary = {
   organisation: { id: string; name: string; timeZone: string };
+  eligibility: Eligibility;
   activeEnrolments: Enrolment[];
   otherOrganisations: { id: string; name: string }[];
   outgoing: Outgoing[];
@@ -29,6 +31,7 @@ type Summary = {
 const field = 'mt-1 w-full rounded-xl border border-[#DCE7EC] bg-white px-3 py-2.5 text-[12px] text-[#29465D] outline-none focus:border-[#73CFC2]';
 const label = 'block text-[10px] font-semibold uppercase tracking-[.1em] text-[#7890A0]';
 const todayInKenya = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
+const todayInZone = (zone:string) => new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date());
 const titleCase = (value: string) => value.replaceAll('_',' ').replace(/\b\w/g, c => c.toUpperCase());
 const nameOf = (row: Enrolment | Outgoing) => [row.preferredName || row.firstName, row.lastName].filter(Boolean).join(' ');
 
@@ -41,6 +44,9 @@ export function LearnerTransferManager({ organisationId, initialSummary }: { org
   const [destinationAcademicYear,setDestinationAcademicYear]=useState(String(new Date().getFullYear()+1));
   const [effectiveAt,setEffectiveAt]=useState(todayInKenya());
   const [reasonCode,setReasonCode]=useState('family_relocation');
+  const [registryIssuer,setRegistryIssuer]=useState('moe_registration_number');
+  const [registryIdentifier,setRegistryIdentifier]=useState('');
+  const [registryEvidenceReference,setRegistryEvidenceReference]=useState('');
   const [rejectionCodes,setRejectionCodes]=useState<Record<string,string>>({});
   const [destinationSelections,setDestinationSelections]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState('');
@@ -63,27 +69,58 @@ export function LearnerTransferManager({ organisationId, initialSummary }: { org
     } catch(cause) { setError(cause instanceof Error?cause.message:'The transfer action could not be completed.'); }
     finally { setBusy(''); }
   }
+  async function requestEligibility(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();setBusy('eligibility');setError('');setMessage('');
+    try {
+      const response=await fetch('/api/organisations/'+organisationId+'/transfer-eligibility',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({registryIssuer,registryIdentifier,submittedEvidenceReference:registryEvidenceReference})});
+      const payload=await response.json();
+      if(!response.ok) throw new Error(payload.error||'Unable to submit institution eligibility.');
+      await reload();setRegistryIdentifier('');setRegistryEvidenceReference('');
+      setMessage('Institution transfer-eligibility request submitted for independent platform verification. This institution cannot receive transfers until approved.');router.refresh();
+    } catch(cause) { setError(cause instanceof Error?cause.message:'Unable to submit institution eligibility.'); }
+    finally { setBusy(''); }
+  }
+
   async function request(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();
     await act('request',{action:'request',sourceEnrolmentId,receivingOrganisationId,destinationGrade:Number(destinationGrade),destinationAcademicYear:Number(destinationAcademicYear),effectiveAt,reasonCode},'Transfer request sent. The receiving institution sees a reference and grade-level details, not the learner identity.');
     setSourceEnrolmentId('');setReceivingOrganisationId('');setDestinationGrade('1');setEffectiveAt(todayInKenya());
   }
+  const eligibilityExpired=Boolean(summary.eligibility?.status==='verified'&&summary.eligibility.validUntil&&summary.eligibility.validUntil<todayInZone(summary.organisation.timeZone));
   const eligibleDestination=(transfer:Incoming)=>summary.activeEnrolments.filter(e=>
     e.grade===transfer.destinationGrade && e.academicYear===transfer.destinationAcademicYear && e.startsAt===transfer.effectiveAt && !e.endsAt
   );
   return <div className="mt-8 space-y-6">
     <section className="rounded-[20px] border border-[#DCE8EC] bg-white p-5 sm:p-7">
+      <p className="eyebrow">Institution trust registry</p><h2 className="mt-2 text-[20px] font-semibold tracking-[-.03em] text-[#102B45]">Eligibility to receive learner transfers</h2>
+      <p className="mt-2 max-w-[820px] text-[11px] leading-6 text-[#718697]">A receiving institution must have an independently verified official identity. Submission does not grant eligibility; an active Sentinel platform administrator checks the identifier and evidence reference against an authoritative source.</p>
+      {summary.eligibility?.status==='verified'&&!eligibilityExpired&&<div className="mt-4 rounded-xl border border-[#CFE8E2] bg-[#F1FAF7] p-4"><p className="text-[11px] font-semibold text-[#28675D]">Verified and eligible to receive transfers</p><p className="mt-1 text-[10px] text-[#557D75]">{titleCase(summary.eligibility.registryIssuer)} · {summary.eligibility.registryIdentifier} · {summary.eligibility.validUntil?'Valid through '+summary.eligibility.validUntil:'No expiry date recorded'}</p><p className="mt-1 text-[10px] text-[#557D75]">Verified using {summary.eligibility.verificationMethod?.replaceAll('_',' ')}.</p></div>}
+      {eligibilityExpired&&<div className="mt-4 rounded-xl border border-[#F0E3C5] bg-[#FFFAEF] p-4"><p className="text-[11px] font-semibold text-[#8A641D]">Institution verification expired</p><p className="mt-1 text-[10px] text-[#8A754F]">This institution is no longer eligible to receive new transfers. Submit a renewal request for independent review.</p></div>}
+      {summary.eligibility?.status==='pending'&&<div className="mt-4 rounded-xl border border-[#F0E3C5] bg-[#FFFAEF] p-4"><p className="text-[11px] font-semibold text-[#8A641D]">Verification pending</p><p className="mt-1 text-[10px] text-[#8A754F]">{titleCase(summary.eligibility.registryIssuer)} · {summary.eligibility.registryIdentifier}. This institution is not yet available as a receiving destination.</p></div>}
+      {summary.eligibility?.status==='rejected'&&<div className="mt-4 rounded-xl border border-[#F1D2CC] bg-[#FFF7F5] p-4"><p className="text-[11px] font-semibold text-[#9A4B3D]">Eligibility request rejected</p><p className="mt-1 text-[10px] text-[#9A655B]">{summary.eligibility.rejectionReason}</p></div>}
+      {summary.eligibility?.status==='suspended'&&<div className="mt-4 rounded-xl border border-[#F1D2CC] bg-[#FFF7F5] p-4"><p className="text-[11px] font-semibold text-[#9A4B3D]">Receiving eligibility suspended</p><p className="mt-1 text-[10px] text-[#9A655B]">{summary.eligibility.suspensionReason}</p></div>}
+      {(!summary.eligibility||['rejected','suspended'].includes(summary.eligibility.status)||eligibilityExpired)&&<form onSubmit={requestEligibility} className="mt-5 grid gap-3 sm:grid-cols-2">
+        <label className={label}>Primary official identifier<select value={registryIssuer} onChange={e=>setRegistryIssuer(e.target.value)} className={field}><option value="moe_registration_number">Ministry of Education registration number</option><option value="nemis_uic">NEMIS Unique Institutional Code (UIC)</option><option value="kemis_institution_id">KEMIS institution ID</option><option value="tveta_registration_number">TVETA registration number</option><option value="other_authority">Other official authority (manual review)</option></select></label>
+        <label className={label}>Institution identifier<input required value={registryIdentifier} onChange={e=>setRegistryIdentifier(e.target.value)} className={field} maxLength={180} placeholder="Official institution code or number"/></label>
+        <label className="sm:col-span-2 block text-[10px] font-semibold uppercase tracking-[.1em] text-[#7890A0]">Secure evidence reference<input required value={registryEvidenceReference} onChange={e=>setRegistryEvidenceReference(e.target.value)} className={field} maxLength={180} placeholder="Registry lookup reference or registration certificate reference"/></label>
+        <p className="sm:col-span-2 text-[10px] leading-5 text-[#8296A5]">Do not upload certificates or personal documents here. Keep the evidence in the institution&apos;s approved secure records and provide only its reference. A KNEC examination-centre code is secondary context and cannot qualify a school on its own.</p>
+        <div className="sm:col-span-2"><button disabled={busy!==''} className="rounded-full bg-[#102B45] px-5 py-3 text-[11px] font-semibold text-white disabled:opacity-40">{busy==='eligibility'?'Submitting…':'Submit for platform verification'}</button></div>
+      </form>}
+    </section>
+
+    <section className="rounded-[20px] border border-[#DCE8EC] bg-white p-5 sm:p-7">
       <p className="eyebrow">Learner mobility</p><h2 className="mt-2 text-[20px] font-semibold tracking-[-.03em] text-[#102B45]">Request a learner transfer</h2>
-      <p className="mt-2 max-w-[820px] text-[11px] leading-6 text-[#718697]">The sending institution initiates the request. The receiving institution must accept before the sending institution releases the learner. Only after release does the receiving institution link the transfer to a locally verified learner record.</p>
+      <p className="mt-2 max-w-[820px] text-[11px] leading-6 text-[#718697]">The sending institution initiates the request. Only verified, active and non-expired institutions appear as destinations. The receiving institution must accept before the sending institution releases the learner. Only after release does the receiving institution link the transfer to a locally verified learner record.</p>
       <form onSubmit={request} className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="sm:col-span-2"><label className={label}>Active source learner enrolment</label><select required value={sourceEnrolmentId} onChange={e=>{setSourceEnrolmentId(e.target.value);const selected=summary.activeEnrolments.find(x=>x.enrolmentId===e.target.value);if(selected)setDestinationGrade(String(selected.grade));}} className={field}><option value="">Choose learner and current enrolment</option>{summary.activeEnrolments.map(e=><option key={e.enrolmentId} value={e.enrolmentId}>{e.learnerReference} · {nameOf(e)} · Grade {e.grade} ({e.academicYear})</option>)}</select></div>
-        <div><label className={label}>Receiving institution</label><select required value={receivingOrganisationId} onChange={e=>setReceivingOrganisationId(e.target.value)} className={field}><option value="">Choose receiving institution</option>{summary.otherOrganisations.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
+        <div><label className={label}>Receiving institution</label><select required value={receivingOrganisationId} onChange={e=>setReceivingOrganisationId(e.target.value)} className={field}><option value="">Choose verified receiving institution</option>{summary.otherOrganisations.map(o=><option key={o.id} value={o.id}>{o.name}</option>)}</select></div>
         <div><label className={label}>Reason</label><select value={reasonCode} onChange={e=>setReasonCode(e.target.value)} className={field}><option value="family_relocation">Family relocation</option><option value="school_change">School change</option><option value="placement_change">Placement change</option><option value="other">Other</option></select></div>
         <div><label className={label}>Destination grade</label><select value={destinationGrade} onChange={e=>setDestinationGrade(e.target.value)} className={field}>{Array.from({length:9},(_,i)=>i+1).map(n=><option key={n} value={n}>Grade {n}</option>)}</select></div>
         <div><label className={label}>Destination academic year</label><input type="number" min="2000" max="2100" value={destinationAcademicYear} onChange={e=>setDestinationAcademicYear(e.target.value)} className={field}/></div>
         <div><label className={label}>Transfer effective date</label><input type="date" min={todayInKenya()} value={effectiveAt} onChange={e=>setEffectiveAt(e.target.value)} className={field}/></div>
-        <div className="flex items-end"><button disabled={busy!==''||!sourceEnrolmentId||!receivingOrganisationId} className="rounded-full bg-[#087F86] px-5 py-3 text-[11px] font-semibold text-white disabled:opacity-40">{busy==='request'?'Sending…':'Send transfer request'}</button></div>
+        <div className="flex items-end"><button disabled={busy!==''||!sourceEnrolmentId||!receivingOrganisationId||summary.otherOrganisations.length===0} className="rounded-full bg-[#087F86] px-5 py-3 text-[11px] font-semibold text-white disabled:opacity-40">{busy==='request'?'Sending…':'Send transfer request'}</button></div>
       </form>
+      {summary.otherOrganisations.length===0&&<p className="mt-3 text-[10px] text-[#9A6B35]">No verified receiving institutions are currently available. Ask a platform administrator to complete an institution verification first.</p>}
     </section>
 
     {error&&<div role="alert" className="rounded-xl border border-[#F1D2CC] bg-[#FFF7F5] px-4 py-3 text-[11px] text-[#9A4B3D]">{error}</div>}
