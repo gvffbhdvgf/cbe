@@ -133,3 +133,16 @@ export async function setTeacherWorkloadPolicy(actorUserId: string, organisation
     return { policyId };
   });
 }
+
+export async function reviseTeacherWeeklyWorkloadAllocation(actorUserId: string, organisationId: string, assignmentId: string, weeklyPeriods: number, effectiveFrom: string, reason: string) {
+  await assertTeacherAssignmentManager(actorUserId, organisationId);
+  if (!uuidPattern.test(assignmentId) || !Number.isInteger(weeklyPeriods) || weeklyPeriods < 1 || weeklyPeriods > 60 || !datePattern.test(effectiveFrom) || reason.trim().length < 10 || reason.trim().length > 500) {
+    throw new TeacherAssignmentError('A valid assignment, weekly period count, effective date and reason are required', 400);
+  }
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.set_teacher_weekly_workload_allocation(${organisationId}::uuid, ${assignmentId}::uuid, ${weeklyPeriods}::integer, ${effectiveFrom}::date, NULL::date, ${reason}) AS allocation_id`);
+    const allocationId = result.rows[0]?.allocation_id;
+    if (!allocationId) throw new TeacherAssignmentError('The database did not confirm the workload revision');
+    return { allocationId };
+  });
+}
