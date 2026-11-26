@@ -241,21 +241,27 @@ GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_event(uuid,uuid,uui
 --> statement-breakpoint
 
 CREATE FUNCTION sentinel_private.list_assessment_eligible_enrolments(p_event_id uuid)
-RETURNS TABLE(enrolment_id uuid, learner_id uuid, learner_reference text, class_id uuid)
+RETURNS TABLE(enrolment_id uuid, learner_id uuid, learner_reference text, class_id uuid, attempt_id uuid, attempt_status text)
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp
-AS $$
-  SELECT roster.enrolment_id, roster.learner_id, learner.learner_reference, roster.class_id
+AS $
+  SELECT roster.enrolment_id, roster.learner_id, learner.learner_reference, roster.class_id,
+    attempt.id, attempt.status
   FROM public.assessment_event_eligible_enrolments roster
   INNER JOIN public.learner_profiles learner
     ON learner.id = roster.learner_id
    AND learner.tenant_organisation_id = roster.tenant_organisation_id
+  LEFT JOIN public.assessment_attempts attempt
+    ON attempt.tenant_organisation_id = roster.tenant_organisation_id
+   AND attempt.organisation_id = roster.organisation_id
+   AND attempt.event_id = roster.event_id
+   AND attempt.enrolment_id = roster.enrolment_id
   WHERE roster.event_id = p_event_id
     AND sentinel_private.can_access_assessment_data(roster.organisation_id)
   ORDER BY learner.learner_reference, roster.enrolment_id
-$$;
+$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.list_assessment_eligible_enrolments(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION sentinel_private.list_assessment_eligible_enrolments(uuid) TO sentinel_learner_runtime;
