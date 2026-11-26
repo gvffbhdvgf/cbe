@@ -22,7 +22,10 @@ async function ClassesContent({ params }: { params: Promise<{ organisationId: st
   if (!data?.user) redirect('/auth/sign-in');
   let summary;
   try { summary = await getClassManagementSummary(data.user.id, organisationId); }
-  catch { redirect('/workspace/organisations'); }
+  catch (error) {
+    console.error('[sentinel] class management summary failed:', error instanceof Error ? error.message : 'unknown error');
+    redirect('/workspace/organisations');
+  }
   return <main className="min-h-screen bg-[#F4F8FA]">
     <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><Link href={`/workspace/organisations/${organisationId}/assessments`} className="text-[11px] font-semibold text-[#087F86]">Assessment evidence</Link><Link href={`/workspace/organisations/${organisationId}/teaching`} className="text-[11px] font-semibold text-[#087F86]">Teaching assignments</Link><Link href="/workspace/organisations" className="text-[11px] font-semibold text-[#087F86]">← Institutions</Link><SignOutButton/></div></div></header>
     <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
