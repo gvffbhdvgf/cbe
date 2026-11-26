@@ -37,7 +37,7 @@ describe('assessment authoring migration contract', () => {
     expect(sql).toContain('v_instrument.created_by = v_actor_id');
     expect(sql).toContain('Instrument approval requires a different authorised officer');
     expect(sql).toContain("instrument.status = 'approved'");
-    expect(sql).toContain('schedule_assessment_event');
+    expect(sql).toContain('create_assessment_event');
     expect(sql).toContain('assessment_event_eligible_enrolments');
   });
 
