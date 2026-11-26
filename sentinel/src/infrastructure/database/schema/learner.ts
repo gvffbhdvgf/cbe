@@ -95,18 +95,18 @@ export const learnerClassPlacements = pgTable('learner_class_placements', {
   classId: uuid('class_id').notNull(),
   grade: integer('grade').notNull(),
   academicYear: integer('academic_year').notNull(),
-  startsOn: date('starts_on').notNull(),
-  endsOn: date('ends_on'),
+  startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
+  endsAt: timestamp('ends_at', { withTimezone: true }),
   status: varchar('status', { length: 16 }).notNull().default('active'),
   createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   check('learner_class_placements_scope_check', sql.raw('tenant_organisation_id = organisation_id')),
-  check('learner_class_placements_period_check', sql.raw('ends_on IS NULL OR ends_on > starts_on')),
+  check('learner_class_placements_period_check', sql.raw('ends_at IS NULL OR ends_at > starts_at')),
   check('learner_class_placements_status_check', sql.raw("status IN ('active','ended')")),
   foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.classId, table.grade, table.academicYear], foreignColumns: [classes.tenantOrganisationId, classes.organisationId, classes.id, classes.grade, classes.academicYear], name: 'learner_class_placements_class_fk' }).onDelete('restrict'),
   uniqueIndex('learner_class_placements_one_active_idx').on(table.tenantOrganisationId, table.enrolmentId).where(sql`${table.status} = 'active'`),
-  index('learner_class_placements_history_idx').on(table.tenantOrganisationId, table.learnerId, table.startsOn),
+  index('learner_class_placements_history_idx').on(table.tenantOrganisationId, table.learnerId, table.startsAt),
 ]);
 
 export const guardianRelationships = pgTable('guardian_relationships', {
