@@ -112,7 +112,7 @@ BEGIN
   INSERT INTO public.audit_events(actor_user_id, organisation_id, action, resource_type, resource_id, metadata)
   SELECT v_actor_id, learner.tenant_organisation_id, 'learner.record_correction_requested',
     'learner_record_correction_request', v_request_id::text,
-    jsonb_build_object('field',p_field_key,'reason',btrim(p_reason),'evidenceReferenceProvided',p_evidence_reference IS NOT NULL)
+    jsonb_build_object('field',p_field_key,'evidenceReferenceProvided',p_evidence_reference IS NOT NULL)
   FROM public.learner_profiles learner WHERE learner.id = p_learner_id;
   RETURN v_request_id;
 END;
@@ -185,7 +185,7 @@ BEGIN
   VALUES (v_actor_id, v_request.tenant_organisation_id,
     CASE WHEN p_decision = 'approved' THEN 'learner.record_correction_approved' ELSE 'learner.record_correction_rejected' END,
     'learner_record_correction_request', p_request_id::text,
-    jsonb_build_object('field',v_request.field_key,'requesterId',v_request.requested_by,'reason',btrim(p_review_reason)));
+    jsonb_build_object('field',v_request.field_key,'requesterId',v_request.requested_by));
   RETURN p_request_id;
 END;
 $$;
