@@ -40,7 +40,10 @@ describe('curriculum mapping and timezone migration contract', () => {
     expect(sql).toContain('offering.grade = v_grade');
     expect(sql).toContain('offering.learning_area_id = v_learning_area_id');
     expect(sql).toContain('offering.id = v_curriculum_grade_offering_id');
+    expect(sql).toContain('instrument.id = p_instrument_version_id');
     expect(sql).toContain('create_assessment_instrument_version_from_offering');
+    expect(sql).toContain('assessment_instrument_curriculum_offering_validation');
+    expect(sql).toContain('validate_instrument_curriculum_offering');
     expect(sql).toContain('curriculum_grade_offering_id, instrument_code');
   });
 
