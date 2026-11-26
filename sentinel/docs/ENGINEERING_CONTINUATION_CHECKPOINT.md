@@ -389,3 +389,11 @@ Next: implement controlled teacher-to-class/learning-area assignments, class-tar
 - Verified in development: table exists, RLS enabled, runtime SELECT allowed, direct INSERT/UPDATE/DELETE denied, both controlled functions executable by runtime, and exactly two correction functions registered. No learner records were created or changed.
 - Remaining validation: signed-in Preview UI/API smoke test and request/review lifecycle E2E using synthetic accounts/data on a disposable Neon branch. Do not use real learner data before privacy, safeguarding and DPIA gates.
 - Preview/development only. No Production database or deployment was changed.
+
+
+## 26 November 2026 — Preview smoke test for learner corrections
+
+- Preview deployment `dpl_FnBWbk41KdrchrNFQnQMLvH1UFHv` reached READY from branch commit `b72d880b5ba3166daf67493890bba2150b176f3d`. The stable branch alias remains https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app.
+- Reused the existing signed-in development administrator browser session. The learner workspace loaded and displayed the correction manager, supported field choices, proposed-value/evidence/reason inputs, submit action and empty correction history. This confirms the page's initial request-list read path renders successfully.
+- No correction was submitted; no learner data was changed. Browser smoke testing does not replace full submission/review lifecycle E2E.
+- Remaining: exercise submit, independent approval and rejection, stale-value conflict and audit assertions using synthetic identities/data on a disposable Neon branch only.
