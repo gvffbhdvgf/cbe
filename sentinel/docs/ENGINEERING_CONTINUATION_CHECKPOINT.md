@@ -213,3 +213,22 @@ The journey completed:
 Final lifecycle projection reported `published`, latest decision `result_published`, result version 1 and 80.00%. Thirteen expected audit action groups were present, including programme/instrument creation, approval, event scheduling/opening/closing, attempt creation/submission, response capture, marking, result generation and three governance decisions. Response immutability triggers were enabled.
 
 The disposable child branch was deleted. No synthetic records were inserted into the development branch or production. This validates the SQL/database journey end-to-end; browser-driven UI automation remains a future test layer.
+
+
+## 26 November 2026 — Sentinel Preview deployment
+
+A Vercel Preview deployment for `sentinel/bootstrap` is READY:
+
+- Preview URL: https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app
+- Deployment: `dpl_J1ZRxdHPAuuoY3tgGxwB95A1VuDA`
+- Source commit: [5a0fc2adf86eb9d07841d49496fd06d87b223a90](https://github.com/gvffbhdvgf/cbe/commit/5a0fc2adf86eb9d07841d49496fd06d87b223a90)
+- Project: Vercel `sentinel`, linked to `gvffbhdvgf/cbe`, root directory `sentinel`.
+- Build completed: Next.js compilation, TypeScript, static generation and deployment all passed.
+- Preview environment variables are branch-scoped to `sentinel/bootstrap` and Preview only. `DATABASE_URL` uses the isolated Neon `sentinel-development` branch with the application owner role; `DATABASE_AUTHENTICATED_URL` uses the restricted `sentinel_learner_login` role. Neon Auth issuer/JWKS and a fresh cookie secret are configured for Preview.
+- The Neon Auth trusted-origin allowlist includes the stable Preview branch URL.
+- Vercel deployment SSO protection remains enabled. Browser-driven smoke testing is still outstanding; the browser automation service was unavailable due to insufficient credits. The build being READY does not by itself prove interactive sign-in or database-backed workflows.
+- No production environment variables, production deployment, or production database were changed. An initial request classified as production was cancelled before a separate Preview deployment was created.
+
+## Administrator access gate
+
+The development Neon Auth branch currently has no active platform administrator. Sentinel's public sign-up remains disabled. Do not issue shared/default credentials or grant the first administrator based on account creation order. The first platform administrator must be a verified, owner-approved email identity; provision the account and grant `public.platform_administrators` only after the user supplies/confirms the exact email address. The Neon shared email sender is configured; actual verification/password-reset delivery should be tested before relying on it.
