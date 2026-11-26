@@ -62,7 +62,7 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
   }
   async function createEvent(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!startsAt || !endsAt || new Date(startsAt).getTime() >= new Date(endsAt).getTime()) { setError('The event end must be after its start.'); return; }
+    if (!startsAt || !endsAt || startsAt >= endsAt) { setError('The event end must be after its start.'); return; }
     await send(`/api/organisations/${organisationId}/assessments/events`, {
       programmeId, instrumentVersionId, title: eventTitle, startsAtLocal: startsAt,
       endsAtLocal: endsAt, academicYear: Number(academicYear), moderationRequired,
