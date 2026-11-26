@@ -15,7 +15,7 @@ export default function VerifyEmailPage() {
   const [pending,setPending]=useState(false);
 
   useEffect(() => {
-    const invitedEmail = new URLSearchParams(window.location.search).get('email')?.trim().toLowerCase() ?? '';
+    const invitedEmail = new URLSearchParams(window.location.hash.slice(1)).get('email')?.trim().toLowerCase() ?? '';
     if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invitedEmail)) {
       setEmail(invitedEmail);
       setStage('verify');
