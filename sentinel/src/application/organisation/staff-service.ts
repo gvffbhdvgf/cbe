@@ -106,8 +106,8 @@ export async function getStaffManagementSummary(actorUserId: string, organisatio
         eq(staffProfiles.personId, people.id),
       ))),
     ))
-    .limit(12)
-    .orderBy(asc(people.legalLastName), asc(people.legalFirstName));
+    .orderBy(asc(people.legalLastName), asc(people.legalFirstName))
+    .limit(12);
 
   const staff = staffRows.map(profile => ({
     ...profile,
@@ -151,17 +151,7 @@ export async function createStaffProfile(
   if (input.personId === null) {
     if (!input.confirmDistinctPerson) throw new StaffProfileError('Confirm that you checked for an existing person record before creating a new person', 400);
     if (!input.firstName?.trim() || !input.lastName?.trim()) throw new StaffProfileError('Legal first and last names are required for a new person', 400);
-    const matches = await db.select({ id: people.id, legalFirstName: people.legalFirstName, legalLastName: people.legalLastName })
-      .from(people)
-      .where(and(
-        eq(people.tenantOrganisationId, organisationId),
-        sql`lower(btrim(${people.legalFirstName})) = lower(btrim(${input.firstName.trim()}))`,
-        sql`lower(btrim(${people.legalLastName})) = lower(btrim(${input.lastName.trim()}))`,
-      ))
-      .limit(5);
-    if (matches.length > 0 && !input.confirmDistinctPerson) {
-      throw new StaffProfileError('A person with these legal names already exists. Select the existing person or confirm this is a different person.', 409);
-    }
+
   }
 
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
@@ -169,7 +159,7 @@ export async function createStaffProfile(
       ${organisationId}::uuid, ${input.personId}::uuid, ${input.firstName}::text,
       ${input.middleName}::text, ${input.lastName}::text, ${input.preferredName}::text,
       ${staffReference}::text, ${input.staffCategory}::text, ${input.jobTitle.trim()}::text,
-      ${input.engagementType}::text, ${input.startsOn}::date, ${input.endsOn}::date
+      ${input.engagementType}::text, ${input.startsOn}::date, ${input.endsOn}::date, ${input.confirmDistinctPerson}::boolean
     ) AS staff_profile_id`);
     const staffProfileId = result.rows[0]?.staff_profile_id;
     if (!staffProfileId) throw new StaffProfileError('The database did not confirm the staff profile');
