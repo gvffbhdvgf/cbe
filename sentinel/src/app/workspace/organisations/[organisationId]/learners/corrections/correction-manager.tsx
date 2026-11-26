@@ -61,15 +61,20 @@ export function LearnerCorrectionManager({
     setTargets(initialTargets);
     setRequests(initialRequests);
     setHistory(initialHistory);
-    const selected = initialTargets.find(item => item.learnerId === selectedLearnerId) ?? initialTargets[0];
+  }, [initialTargets, initialRequests, initialHistory]);
+
+  useEffect(() => {
+    const selected = targets.find(item => item.learnerId === selectedLearnerId);
     if (selected) {
-      setSelectedLearnerId(selected.learnerId);
       setForm(formFor(selected));
+    } else if (targets[0]) {
+      setSelectedLearnerId(targets[0].learnerId);
+      setForm(formFor(targets[0]));
     } else {
       setSelectedLearnerId('');
       setForm(formFor());
     }
-  }, [initialTargets, initialRequests, initialHistory]);
+  }, [targets, selectedLearnerId]);
 
   const selected = targets.find(item => item.learnerId === selectedLearnerId);
   const filteredTargets = targets.filter(item => {

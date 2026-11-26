@@ -36,6 +36,9 @@ describe('governed learner record correction migration', () => {
     expect(sql).toContain('v_request.original_values');
     expect(sql).toContain("v_request.status <> 'pending'");
     expect(sql).toContain('FOR UPDATE');
+    expect(sql).toContain('LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp');
+    const reviewFunction = sql.slice(sql.indexOf('CREATE FUNCTION sentinel_private.review_learner_record_correction'));
+    expect(reviewFunction.indexOf('SELECT learner.* INTO v_learner')).toBeLessThan(reviewFunction.indexOf('FOR UPDATE'));
   });
 
   it('restricts correction data to authorised learner managers and prevents direct runtime writes', async () => {
@@ -43,19 +46,23 @@ describe('governed learner record correction migration', () => {
     expect(sql).toContain('ENABLE ROW LEVEL SECURITY');
     expect(sql).toContain('FORCE ROW LEVEL SECURITY');
     expect(sql).toContain('sentinel_private.can_manage_learner_records(organisation_id)');
+    expect(sql).toContain('REVOKE ALL ON TABLE public.learner_record_correction_requests FROM PUBLIC, sentinel_learner_runtime');
+    expect(sql).toContain('REVOKE ALL ON TABLE public.learner_record_correction_history FROM PUBLIC, sentinel_learner_runtime');
     expect(sql).toContain('GRANT SELECT ON TABLE public.learner_record_correction_requests TO sentinel_learner_runtime');
     expect(sql).toContain('GRANT SELECT ON TABLE public.learner_record_correction_history TO sentinel_learner_runtime');
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.create_learner_record_correction_request');
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.review_learner_record_correction');
-    const auditStatements = [...sql.matchAll(/INSERT INTO public\.audit_events[\s\S]*?;/g)].map(match => match[0]);
-    expect(auditStatements.length).toBeGreaterThan(0);
-    for (const statement of auditStatements) expect(statement).not.toMatch(/'firstName'|'lastName'|'dateOfBirth'/);
+    expect(sql).not.toMatch(/GRANT\s+(?:INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\.(?:learner_record_correction_requests|learner_record_correction_history)/i);
   });
 
   it('keeps audit metadata free of learner identity values', async () => {
     const sql = await readFile(migrationPath, 'utf8');
-    expect(sql).toContain("'changedFields'");
-    expect(sql).toContain("'correctionRequestId'");
-    expect(sql).not.toMatch(/jsonb_build_object\([^;]*(?:'firstName'|'lastName'|'dateOfBirth')/s);
+    const auditStatements = [...sql.matchAll(/INSERT INTO public\.audit_events[\s\S]*?;/g)].map(match => match[0]);
+    expect(auditStatements.length).toBeGreaterThan(0);
+    for (const statement of auditStatements) {
+      expect(statement).toContain("'correctionRequestId'");
+      expect(statement).toContain("'changedFields'");
+      expect(statement).not.toMatch(/'firstName'|'lastName'|'dateOfBirth'/);
+    }
   });
 });
