@@ -2,7 +2,7 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Learner = { enrolmentId:string; learnerId:string; learnerReference:string; grade:number; academicYear:number; classId:string|null };
+type Learner = { enrolmentId:string; learnerReference:string; grade:number; academicYear:number; classId:string|null };
 type ClassOption = { id:string; classCode:string; displayName:string; grade:number; academicYear:number };
 type ProgressionRequest = { id:string; enrolment_id:string; learner_id:string; learner_reference:string; from_grade:number; from_academic_year:number; to_grade:number; to_academic_year:number; target_class_id:string|null; target_class_code:string|null; effective_at:string; reason:string; status:string; requested_by:string; decided_by:string|null; decision_note:string|null; new_enrolment_id:string|null };
 type Props = { organisationId:string; actorUserId:string; learners:Learner[]; classes:ClassOption[]; requests:ProgressionRequest[] };
