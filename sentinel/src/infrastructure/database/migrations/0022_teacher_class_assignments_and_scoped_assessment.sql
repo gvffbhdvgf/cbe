@@ -204,6 +204,7 @@ AS $$
     SELECT 1
     FROM public.teacher_class_assignments assignment
     INNER JOIN public.organisations organisation ON organisation.id = assignment.organisation_id
+    INNER JOIN neon_auth."user" auth_user ON auth_user.id = assignment.teacher_user_id
     INNER JOIN public.organisation_memberships membership
       ON membership.organisation_id = assignment.organisation_id
      AND membership.user_id = assignment.teacher_user_id
@@ -213,6 +214,7 @@ AS $$
       AND assignment.status = 'active'
       AND assignment.starts_on <= (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date
       AND (assignment.ends_on IS NULL OR assignment.ends_on > (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date)
+      AND auth_user."emailVerified" = true AND COALESCE(auth_user.banned, false) = false
       AND membership.role = 'teacher' AND membership.status = 'active'
       AND membership.starts_at <= pg_catalog.now()
       AND (membership.ends_at IS NULL OR membership.ends_at > pg_catalog.now())
@@ -248,6 +250,7 @@ AS $$
     INNER JOIN public.organisation_memberships membership
       ON membership.organisation_id = event_record.organisation_id
      AND membership.user_id = assignment.teacher_user_id
+    INNER JOIN neon_auth."user" auth_user ON auth_user.id = assignment.teacher_user_id
     INNER JOIN public.organisations organisation ON organisation.id = event_record.organisation_id
     WHERE event_record.id = p_event_id
       AND event_record.class_id IS NOT NULL
@@ -257,6 +260,7 @@ AS $$
       AND assignment.starts_on <= (event_record.starts_at AT TIME ZONE event_record.time_zone)::date
       AND (assignment.ends_on IS NULL OR assignment.ends_on > (event_record.starts_at AT TIME ZONE event_record.time_zone)::date)
       AND (assignment.status <> 'revoked' OR assignment.revoked_at > event_record.starts_at)
+      AND auth_user."emailVerified" = true AND COALESCE(auth_user.banned, false) = false
       AND membership.role = 'teacher'
       AND membership.status IN ('active','revoked')
       AND membership.starts_at <= event_record.starts_at
