@@ -7,7 +7,7 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('assessment correction guard migration contract', () => {
   it('registers migration 0019 in sequence', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(21);
+    expect(journal.entries).toHaveLength(22);
     expect(journal.entries[19]).toMatchObject({ idx: 19, tag: '0019_assessment_correction_guard' });
   });
 
