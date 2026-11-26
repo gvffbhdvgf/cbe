@@ -7,14 +7,15 @@ import { OutcomeMappingControls } from './outcome-mapping-controls';
 type Programme = { id: string; code: string; title: string; type: string };
 type Instrument = { id: string; code: string; version: number; title: string; grade: number; learningAreaId: string; status: string; createdBy: string };
 type LearningArea = { id: string; name: string };
+type ClassOption = { id: string; classCode: string; displayName: string; grade: number; academicYear: number };
 type GradeOffering = { id: string; grade: number; learning_area_id: string; learning_area: string; edition_label: string; pathway_name: string; availability_status: string };
 type TaskDraft = { taskCode: string; title: string; responseType: 'text'|'numeric'|'boolean'|'choice'|'observation'|'evidence'; maximumScore: string; required: boolean };
-type Props = { organisationId: string; actorUserId: string; programmes: Programme[]; instruments: Instrument[]; learningAreas: LearningArea[]; gradeOfferings: GradeOffering[]; timeZone: string };
+type Props = { organisationId: string; actorUserId: string; programmes: Programme[]; instruments: Instrument[]; learningAreas: LearningArea[]; gradeOfferings: GradeOffering[]; classes: ClassOption[]; timeZone: string };
 
 const inputClass = 'mt-1 w-full rounded-xl border border-[#DCE7EC] bg-white px-3 py-2.5 text-[12px] text-[#29465D] outline-none focus:border-[#73CFC2]';
 const labelClass = 'block text-[10px] font-semibold uppercase tracking-[.1em] text-[#7890A0]';
 
-export function AssessmentAuthoringControls({ organisationId, actorUserId, programmes, instruments, learningAreas, gradeOfferings, timeZone }: Props) {
+export function AssessmentAuthoringControls({ organisationId, actorUserId, programmes, instruments, learningAreas, gradeOfferings, classes, timeZone }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -35,6 +36,9 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
   const [endsAt, setEndsAt] = useState('');
   const [academicYear, setAcademicYear] = useState(String(new Date().getFullYear()));
   const [moderationRequired, setModerationRequired] = useState(true);
+  const [targetClassId, setTargetClassId] = useState('');
+  const selectedInstrument = instruments.find(item => item.id === instrumentVersionId);
+  const matchingTargetClasses = classes.filter(item => item.grade === selectedInstrument?.grade && item.academicYear === Number(academicYear));
   const matchingGradeOfferings = gradeOfferings.filter(item => item.grade === Number(grade) && item.learning_area_id === learningAreaId);
 
   async function send(path: string, body: unknown, label: string) {
@@ -68,7 +72,7 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
     if (!startsAt || !endsAt || startsAt >= endsAt) { setError('The event end must be after its start.'); return; }
     await send(`/api/organisations/${organisationId}/assessments/events`, {
       programmeId, instrumentVersionId, title: eventTitle, startsAtLocal: startsAt,
-      endsAtLocal: endsAt, academicYear: Number(academicYear), moderationRequired,
+      endsAtLocal: endsAt, academicYear: Number(academicYear), moderationRequired, classId: targetClassId || null,
     }, 'Event creation');
   }
   async function approve(instrument: Instrument) {
@@ -99,12 +103,13 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
     <div className="mt-5 rounded-2xl border border-[#E5EDF1] p-4"><h3 className="text-[13px] font-semibold text-[#29465D]">3. Independent instrument approval</h3><p className="mt-1 text-[10px] text-[#8498A7]">The author cannot approve their own instrument version.</p>{instruments.length===0 ? <p className="mt-3 text-[11px] text-[#8A9CAB]">No instrument versions yet.</p> : <div className="mt-3 divide-y divide-[#EDF1F3]">{instruments.map(instrument=><div key={instrument.id} className="border-b border-[#EDF1F3] py-3 last:border-0"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[11px] font-semibold text-[#29465D]">{instrument.code} v{instrument.version} · {instrument.title}</p><p className="mt-1 text-[10px] text-[#8A9CAB]">Grade {instrument.grade} · {instrument.status}</p></div>{instrument.status==='draft' && instrument.createdBy!==actorUserId ? <button type="button" disabled={busy!==''} onClick={()=>void approve(instrument)} className="rounded-full border border-[#CFE1E6] px-3 py-2 text-[10px] font-semibold text-[#087F86]">Approve version</button> : instrument.status==='draft' ? <span className="text-[10px] text-[#9AABB7]">Awaiting a different approver</span> : null}</div><OutcomeMappingControls organisationId={organisationId} instrumentVersionId={instrument.id} actorUserId={actorUserId} instrumentStatus={instrument.status}/></div>)}</div>}</div>
     <form onSubmit={createEvent} className="mt-5 rounded-2xl border border-[#E5EDF1] bg-[#FBFDFD] p-4">
       <h3 className="text-[13px] font-semibold text-[#29465D]">4. Create assessment event</h3>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className={labelClass}>Programme<select required value={programmeId} onChange={event=>setProgrammeId(event.target.value)} className={inputClass}>{programmes.map(item=><option key={item.id} value={item.id}>{item.code} · {item.title}</option>)}</select></label><label className={labelClass}>Approved instrument<select required value={instrumentVersionId} onChange={event=>setInstrumentVersionId(event.target.value)} className={inputClass}>{instruments.filter(item=>item.status==='approved').map(item=><option key={item.id} value={item.id}>{item.code} v{item.version} · Grade {item.grade}</option>)}</select></label></div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2"><label className={labelClass}>Programme<select required value={programmeId} onChange={event=>setProgrammeId(event.target.value)} className={inputClass}>{programmes.map(item=><option key={item.id} value={item.id}>{item.code} · {item.title}</option>)}</select></label><label className={labelClass}>Approved instrument<select required value={instrumentVersionId} onChange={event=>{setInstrumentVersionId(event.target.value);setTargetClassId('');}} className={inputClass}>{instruments.filter(item=>item.status==='approved').map(item=><option key={item.id} value={item.id}>{item.code} v{item.version} · Grade {item.grade}</option>)}</select></label></div>
+      <label className={labelClass + ' mt-3'}>Target class<select value={targetClassId} onChange={event=>setTargetClassId(event.target.value)} className={inputClass}><option value="">All eligible classes in this institution</option>{matchingTargetClasses.map(item=><option key={item.id} value={item.id}>{item.classCode} · {item.displayName} · Grade {item.grade} · {item.academicYear}</option>)}</select></label>
       <label className={labelClass + ' mt-3'}>Event title<input required value={eventTitle} onChange={event=>setEventTitle(event.target.value)} placeholder="Grade 6 Term 2 Mathematics" className={inputClass}/></label>
       <div className="mt-3 grid gap-3 sm:grid-cols-3"><label className={labelClass}>Starts (institution time)<input required type="datetime-local" value={startsAt} onChange={event=>setStartsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Ends (institution time)<input required type="datetime-local" value={endsAt} onChange={event=>setEndsAt(event.target.value)} className={inputClass}/></label><label className={labelClass}>Academic year<input required type="number" min="2000" max="2100" value={academicYear} onChange={event=>setAcademicYear(event.target.value)} className={inputClass}/></label></div>
       <label className="mt-4 flex items-center gap-2 text-[11px] text-[#647D8D]"><input type="checkbox" checked={moderationRequired} onChange={event=>setModerationRequired(event.target.checked)}/> Require independent moderation</label>
       <button disabled={busy!=='' || programmes.length===0 || instruments.every(item=>item.status!=='approved')} className="mt-4 rounded-full bg-[#087F86] px-5 py-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='Event creation'?'Creating…':'Create draft event'}</button>
-      <p className="mt-2 text-[10px] text-[#8A9CAB]">Times are interpreted in the institution&apos;s {timeZone} time zone and stored as UTC instants. Roster eligibility uses the institution-local calendar date.</p>
+      <p className="mt-2 text-[10px] text-[#8A9CAB]">Times use the institution&apos;s {timeZone} time zone. A selected class freezes only that class&apos;s roster; teachers can participate only when assigned to that class and learning area for the event date.</p>
     </form>
     {error && <p role="alert" className="mt-4 text-[11px] text-[#A43D34]">{error}</p>}{message && <p role="status" className="mt-4 text-[11px] text-[#087F86]">{message}</p>}
   </section>;
