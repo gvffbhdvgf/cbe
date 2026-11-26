@@ -39,6 +39,9 @@ describe('curriculum mapping and timezone migration contract', () => {
     expect(sql).toContain("document.rights_status = 'confirmed'");
     expect(sql).toContain('offering.grade = v_grade');
     expect(sql).toContain('offering.learning_area_id = v_learning_area_id');
+    expect(sql).toContain('offering.id = v_curriculum_grade_offering_id');
+    expect(sql).toContain('create_assessment_instrument_version_from_offering');
+    expect(sql).toContain('curriculum_grade_offering_id, instrument_code');
   });
 
   it('requires independent, reasoned mapping review and narrow database grants', async () => {
@@ -51,6 +54,6 @@ describe('curriculum mapping and timezone migration contract', () => {
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping');
     expect(sql).toContain('REVOKE ALL ON FUNCTION sentinel_private.review_assessment_task_outcome_mapping');
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.review_assessment_task_outcome_mapping');
-    expect(sql).not.toMatch(/GRANT\\s+(INSERT|UPDATE|DELETE|ALL)\\s+ON\\s+TABLE\\s+public\\.assessment_/i);
+    expect(sql).not.toMatch(/GRANT\s+(INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\.assessment_/i);
   });
 });
