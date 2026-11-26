@@ -213,7 +213,7 @@ REVOKE ALL ON FUNCTION sentinel_private.set_academic_year_rollover_item_decision
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.set_academic_year_rollover_item_decision(uuid,uuid,text,uuid,text) TO sentinel_learner_runtime;
 --> statement-breakpoint
-CREATE FUNCTION sentinel_private.submit_academic_year_rollover(p_batch_id uuid)
+CREATE OR REPLACE FUNCTION sentinel_private.submit_academic_year_rollover(p_batch_id uuid)
 RETURNS integer
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
@@ -246,6 +246,17 @@ BEGIN
   END IF;
   IF EXISTS (SELECT 1 FROM public.academic_year_rollover_items item WHERE item.batch_id = p_batch_id AND item.status = 'unresolved') THEN
     RAISE EXCEPTION 'Every learner must have an explicit progression or not-progressing decision before submission' USING ERRCODE = '23514';
+  END IF;
+  IF EXISTS (
+    SELECT 1
+    FROM public.academic_year_rollover_items item
+    INNER JOIN public.learner_progression_requests request
+      ON request.enrolment_id = item.source_enrolment_id
+     AND request.organisation_id = v_batch.organisation_id
+     AND request.status IN ('pending','approved')
+    WHERE item.batch_id = p_batch_id
+  ) THEN
+    RAISE EXCEPTION 'Resolve existing pending or approved progression requests before submitting this cohort rollover' USING ERRCODE = '23514';
   END IF;
   IF EXISTS (
     SELECT 1 FROM public.academic_year_rollover_items item
