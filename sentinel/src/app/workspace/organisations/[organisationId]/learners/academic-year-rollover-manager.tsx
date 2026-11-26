@@ -4,7 +4,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Learner = { academicYear:number };
-type ClassOption = { id:string; classCode:string; displayName:string; grade:number; academicYear:number };
+type ClassOption = { id:string; classCode:string; displayName:string; grade:number; academicYear:number; status:string };
 type Batch = { id:string; from_academic_year:number; to_academic_year:number; effective_at:string; status:string; learner_count:number; unresolved_count:number; planned_count:number; submitted_count:number; excluded_count:number; approved_count:number; executed_count:number; rejected_count:number };
 type Item = { id:string; batch_id:string; learner_id:string; learner_reference:string; source_enrolment_id:string; from_grade:number; outcome:string; to_grade:number|null; target_class_id:string|null; reason:string|null; status:string; progression_request_id:string|null; progression_status:string|null; target_class_code:string|null };
 type Draft = { outcome:string; targetClassId:string; reason:string };
