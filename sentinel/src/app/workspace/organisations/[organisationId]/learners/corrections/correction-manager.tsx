@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 type Target = {
@@ -43,9 +43,9 @@ export function LearnerCorrectionManager({
   initialRequests: RequestRow[]; initialHistory: HistoryRow[];
 }) {
   const router = useRouter();
-  const [targets, setTargets] = useState(initialTargets);
-  const [requests, setRequests] = useState(initialRequests);
-  const [history, setHistory] = useState(initialHistory);
+  const targets = initialTargets;
+  const requests = initialRequests;
+  const history = initialHistory;
   const [selectedLearnerId, setSelectedLearnerId] = useState(initialTargets[0]?.learnerId ?? '');
   const [form, setForm] = useState<FormState>(() => formFor(initialTargets[0]));
   const [reason, setReason] = useState('');
@@ -57,26 +57,7 @@ export function LearnerCorrectionManager({
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
 
-  useEffect(() => {
-    setTargets(initialTargets);
-    setRequests(initialRequests);
-    setHistory(initialHistory);
-  }, [initialTargets, initialRequests, initialHistory]);
-
-  useEffect(() => {
-    const selected = targets.find(item => item.learnerId === selectedLearnerId);
-    if (selected) {
-      setForm(formFor(selected));
-    } else if (targets[0]) {
-      setSelectedLearnerId(targets[0].learnerId);
-      setForm(formFor(targets[0]));
-    } else {
-      setSelectedLearnerId('');
-      setForm(formFor());
-    }
-  }, [targets, selectedLearnerId]);
-
-  const selected = targets.find(item => item.learnerId === selectedLearnerId);
+  const selected = targets.find(item => item.learnerId === selectedLearnerId) ?? targets[0];
   const filteredTargets = targets.filter(item => {
     const query = search.trim().toLowerCase();
     return !query || [item.learnerReference, item.firstName, item.middleName ?? '', item.lastName].join(' ').toLowerCase().includes(query);
