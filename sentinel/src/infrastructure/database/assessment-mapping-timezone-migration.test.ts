@@ -20,6 +20,9 @@ describe('curriculum mapping and timezone migration contract', () => {
     expect(sql).toContain('list_assessment_instrument_outcome_options');
     expect(sql).toContain('list_assessment_instrument_outcome_mappings');
     expect(sql).not.toContain('GRANT SELECT ON TABLE public.curriculum_source_nodes');
+    expect(sql).not.toContain('GRANT SELECT ON TABLE public.curriculum_design_documents');
+    expect(sql).toContain("document.rights_status = 'confirmed'");
+    expect(sql).toContain('CASE WHEN document.id IS NOT NULL AND offering.id IS NOT NULL');
     expect(sql).toContain('assessment_events_time_zone_validation');
     expect(sql).toContain('time_zone,');
     expect(sql).toContain("'timeZone', v_time_zone");
