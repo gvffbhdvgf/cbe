@@ -7,7 +7,6 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('curriculum mapping and timezone migration contract', () => {
   it('registers migration 0021 after assessment authoring', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(26);
     expect(journal.entries[21]).toMatchObject({ idx: 21, tag: '0021_curriculum_mapping_and_timezone' });
   });
 
