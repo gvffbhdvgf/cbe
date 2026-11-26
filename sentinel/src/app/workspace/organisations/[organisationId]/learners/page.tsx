@@ -31,7 +31,7 @@ async function LearnersContent({ params }: { params: Promise<{ organisationId: s
   let classOptions;
   let progressionRequests;
   let correctionRequests;
-  let rolloverData;
+  let rolloverData: Awaited<ReturnType<typeof listAcademicYearRollovers>>;
   try {
     [summary, classOptions, progressionRequests, correctionRequests] = await Promise.all([
       getLearnerManagementSummary(data.user.id, organisationId),
