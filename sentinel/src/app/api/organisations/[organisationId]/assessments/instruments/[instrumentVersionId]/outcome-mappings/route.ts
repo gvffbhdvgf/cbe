@@ -47,7 +47,7 @@ export async function POST(request: Request, context: { params: Promise<{ organi
     return Response.json({ error: 'A valid task and approved curriculum outcome are required' }, { status: 400 });
   }
   try {
-    const mappingId = await createAssessmentTaskOutcomeMapping(data.user.id, organisationId, value.taskId, value.curriculumSourceNodeId);
+    const mappingId = await createAssessmentTaskOutcomeMapping(data.user.id, organisationId, instrumentVersionId, value.taskId, value.curriculumSourceNodeId);
     return Response.json({ mappingId, status: 'pending' }, { status: 201 });
   } catch (error) {
     if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 });
