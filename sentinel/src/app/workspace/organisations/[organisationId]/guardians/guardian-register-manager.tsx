@@ -23,7 +23,7 @@ const label = 'block text-[10px] font-semibold uppercase tracking-[.1em] text-[#
 const todayInKenya = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Nairobi' }).format(new Date());
 const displayName = (p: { firstName?: string; lastName?: string; middleName?: string | null; preferredName?: string | null; legalFirstName?: string; legalLastName?: string; legalMiddleName?: string | null }) =>
   [p.preferredName || p.firstName || p.legalFirstName, p.middleName || p.legalMiddleName, p.lastName || p.legalLastName].filter(Boolean).join(' ');
-const titleCase = (value: string) => value.replaceAll('_',' ').replace(/\\b\\w/g, c => c.toUpperCase());
+const titleCase = (value: string) => value.replaceAll('_',' ').replace(/\b\w/g, c => c.toUpperCase());
 
 export function GuardianRegisterManager({ organisationId, initialSummary }: { organisationId: string; initialSummary: Summary }) {
   const router = useRouter();
