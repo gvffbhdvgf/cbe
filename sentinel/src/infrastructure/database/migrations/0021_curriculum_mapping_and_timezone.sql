@@ -335,7 +335,7 @@ DECLARE
   v_actor_id uuid;
   v_instrument_id uuid;
   v_grade integer;
-  v_learning_area_id uuid;
+  v_learning_area_id uuid;\n  v_curriculum_grade_offering_id uuid;
   v_mapping_id uuid;
 BEGIN
   v_actor_id := sentinel_private.current_user_id();
@@ -392,7 +392,7 @@ $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping(uuid,uuid,uuid,uuid) FROM PUBLIC;
 --> statement-breakpoint
-GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping(uuid,uuid,uuid) TO sentinel_learner_runtime;
+GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_task_outcome_mapping(uuid,uuid,uuid,uuid) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
 CREATE FUNCTION sentinel_private.review_assessment_task_outcome_mapping(
