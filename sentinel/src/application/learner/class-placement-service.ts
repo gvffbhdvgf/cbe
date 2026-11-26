@@ -49,7 +49,7 @@ export async function withdrawLearnerEnrolment(
 ) {
   await requireLearnerManager(actorUserId, organisationId);
   if (!uuidPattern.test(enrolmentId)) throw new Error('A valid enrolment ID is required');
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(withdrawalDate)) throw new Error('Withdrawal date must use YYYY-MM-DD');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(withdrawalDate)) throw new Error('Withdrawal date must use YYYY-MM-DD');
   const parsed = new Date(`${withdrawalDate}T00:00:00.000Z`);
   if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0,10)!==withdrawalDate) throw new Error('Withdrawal date must be a real calendar date');
   const cleanReason = reason.trim();
