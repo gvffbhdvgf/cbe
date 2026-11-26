@@ -225,6 +225,13 @@
       "when": 1795697100000,
       "tag": "0031_governed_learner_record_corrections",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1795699000000,
+      "tag": "0032_academic_year_rollover_batches",
+      "breakpoints": true
     }
   ]
 }
