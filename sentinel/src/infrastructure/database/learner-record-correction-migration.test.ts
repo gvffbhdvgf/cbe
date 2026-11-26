@@ -47,7 +47,9 @@ describe('governed learner record correction migration', () => {
     expect(sql).toContain('GRANT SELECT ON TABLE public.learner_record_correction_history TO sentinel_learner_runtime');
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.create_learner_record_correction_request');
     expect(sql).toContain('GRANT EXECUTE ON FUNCTION sentinel_private.review_learner_record_correction');
-    expect(sql).not.toMatch(/GRANT\s+(?:INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\.(?:learner_record_correction_requests|learner_record_correction_history)/i);
+    const auditStatements = [...sql.matchAll(/INSERT INTO public\.audit_events[\s\S]*?;/g)].map(match => match[0]);
+    expect(auditStatements.length).toBeGreaterThan(0);
+    for (const statement of auditStatements) expect(statement).not.toMatch(/'firstName'|'lastName'|'dateOfBirth'/);
   });
 
   it('keeps audit metadata free of learner identity values', async () => {

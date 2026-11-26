@@ -121,6 +121,8 @@ CREATE POLICY learner_record_correction_requests_select
   FOR SELECT TO sentinel_learner_runtime
   USING (sentinel_private.can_manage_learner_records(organisation_id));
 --> statement-breakpoint
+REVOKE ALL ON TABLE public.learner_record_correction_requests FROM PUBLIC, sentinel_learner_runtime;
+--> statement-breakpoint
 GRANT SELECT ON TABLE public.learner_record_correction_requests TO sentinel_learner_runtime;
 --> statement-breakpoint
 
@@ -132,6 +134,8 @@ CREATE POLICY learner_record_correction_history_select
   ON public.learner_record_correction_history
   FOR SELECT TO sentinel_learner_runtime
   USING (sentinel_private.can_manage_learner_records(organisation_id));
+--> statement-breakpoint
+REVOKE ALL ON TABLE public.learner_record_correction_history FROM PUBLIC, sentinel_learner_runtime;
 --> statement-breakpoint
 GRANT SELECT ON TABLE public.learner_record_correction_history TO sentinel_learner_runtime;
 --> statement-breakpoint
@@ -152,6 +156,7 @@ DECLARE
   v_person public.people%ROWTYPE;
   v_current_values jsonb;
   v_original_values jsonb;
+  v_proposed_values jsonb;
   v_request_id uuid;
   v_date_of_birth date;
   v_time_zone text;
@@ -192,7 +197,12 @@ BEGIN
     jsonb_typeof(p_proposed_values->'preferredName') <> 'string'
     OR length(btrim(p_proposed_values->>'preferredName')) NOT BETWEEN 1 AND 120
   ) THEN RAISE EXCEPTION 'Preferred name must contain 1 to 120 characters or be cleared' USING ERRCODE = '22023'; END IF;
-  IF p_proposed_values ? 'dateOfBirth' AND p_proposed_values->'dateOfBirth' <> 'null'::jsonb THEN
+  v_proposed_values := p_proposed_values;
+  IF v_proposed_values ? 'firstName' THEN v_proposed_values := jsonb_set(v_proposed_values, '{firstName}', to_jsonb(btrim(v_proposed_values->>'firstName'))); END IF;
+  IF v_proposed_values ? 'middleName' AND v_proposed_values->'middleName' <> 'null'::jsonb THEN v_proposed_values := jsonb_set(v_proposed_values, '{middleName}', to_jsonb(btrim(v_proposed_values->>'middleName'))); END IF;
+  IF v_proposed_values ? 'lastName' THEN v_proposed_values := jsonb_set(v_proposed_values, '{lastName}', to_jsonb(btrim(v_proposed_values->>'lastName'))); END IF;
+  IF v_proposed_values ? 'preferredName' AND v_proposed_values->'preferredName' <> 'null'::jsonb THEN v_proposed_values := jsonb_set(v_proposed_values, '{preferredName}', to_jsonb(btrim(v_proposed_values->>'preferredName'))); END IF;
+  IF v_proposed_values ? 'dateOfBirth' AND v_proposed_values->'dateOfBirth' <> 'null'::jsonb THEN
     IF jsonb_typeof(p_proposed_values->'dateOfBirth') <> 'string'
       OR p_proposed_values->>'dateOfBirth' !~ '^\d{4}-\d{2}-\d{2}$' THEN
       RAISE EXCEPTION 'Date of birth must be a valid YYYY-MM-DD date' USING ERRCODE = '22023';
@@ -230,10 +240,10 @@ BEGIN
   SELECT jsonb_object_agg(current_value.key, current_value.value)
     INTO v_original_values
   FROM jsonb_each(v_current_values) AS current_value(key, value)
-  WHERE p_proposed_values ? current_value.key;
+  WHERE v_proposed_values ? current_value.key;
 
   IF NOT EXISTS (
-    SELECT 1 FROM jsonb_each(p_proposed_values) AS proposed(key, value)
+    SELECT 1 FROM jsonb_each(v_proposed_values) AS proposed(key, value)
     WHERE (v_current_values->proposed.key) IS DISTINCT FROM proposed.value
   ) THEN
     RAISE EXCEPTION 'The proposed values do not change the current learner identity' USING ERRCODE = '22023';
@@ -252,7 +262,7 @@ BEGIN
     original_values, proposed_values, reason, evidence_reference, requested_by
   ) VALUES (
     p_organisation_id, p_organisation_id, p_learner_id, v_person_id,
-    v_original_values, p_proposed_values, btrim(p_reason), NULLIF(btrim(p_evidence_reference), ''), v_actor_id
+    v_original_values, v_proposed_values, btrim(p_reason), NULLIF(btrim(p_evidence_reference), ''), v_actor_id
   ) RETURNING id INTO v_request_id;
 
   INSERT INTO public.audit_events(actor_user_id, organisation_id, action, resource_type, resource_id, metadata)
@@ -305,6 +315,19 @@ BEGIN
 
   SELECT request.* INTO v_request
   FROM public.learner_record_correction_requests request
+  WHERE request.id = p_request_id AND request.organisation_id = p_organisation_id;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Learner correction request not found' USING ERRCODE = 'P0002'; END IF;
+
+  SELECT learner.* INTO v_learner
+  FROM public.learner_profiles learner
+  WHERE learner.id = v_request.learner_id
+    AND learner.tenant_organisation_id = p_organisation_id
+    AND learner.person_id = v_request.person_id
+  FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Learner identity record no longer matches this correction request' USING ERRCODE = 'P0002'; END IF;
+
+  SELECT request.* INTO v_request
+  FROM public.learner_record_correction_requests request
   WHERE request.id = p_request_id AND request.organisation_id = p_organisation_id
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Learner correction request not found' USING ERRCODE = 'P0002'; END IF;
@@ -327,14 +350,6 @@ BEGIN
         (SELECT jsonb_agg(field.key ORDER BY field.key) FROM jsonb_object_keys(v_request.proposed_values) AS field(key))));
     RETURN 'rejected';
   END IF;
-
-  SELECT learner.* INTO v_learner
-  FROM public.learner_profiles learner
-  WHERE learner.id = v_request.learner_id
-    AND learner.tenant_organisation_id = p_organisation_id
-    AND learner.person_id = v_request.person_id
-  FOR UPDATE;
-  IF NOT FOUND THEN RAISE EXCEPTION 'Learner identity record no longer matches this correction request' USING ERRCODE = 'P0002'; END IF;
 
   SELECT person.* INTO v_person
   FROM public.people person
