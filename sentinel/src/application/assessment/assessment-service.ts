@@ -255,7 +255,7 @@ export async function getAssessmentAuthoringOptions(actorUserId: string, organis
         ORDER BY offering.grade, area.name, edition.edition_label, pathway.name
       `),
     ]);
-    return { programmes, instruments, learningAreas, gradeOfferings: gradeOfferingResult.rows, timeZone: organisation.timeZone };
+    return { programmes, instruments, learningAreas, gradeOfferings: gradeOfferingResult.rows as unknown as Array<{ id: string; grade: number; learning_area_id: string; learning_area: string; edition_label: string; pathway_name: string; availability_status: string }>, timeZone: organisation.timeZone };
   });
 }
 
