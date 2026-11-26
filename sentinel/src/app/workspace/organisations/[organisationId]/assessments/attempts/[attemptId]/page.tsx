@@ -6,6 +6,8 @@ import { auth } from '@/lib/auth/server';
 import { BrandMark, SoftflixSignature } from '@/components/brand-mark';
 import { SignOutButton } from '@/components/sign-out-button';
 import { getAssessmentAttemptMarkingSheet } from '@/application/assessment/assessment-service';
+import { getOrganisationActorRole } from '@/application/organisation/membership-service';
+import { canReadAssessmentData } from '@/application/assessment/assessment-policy';
 import { AssessmentMarkingControls, type MarkingTask } from './marking-controls';
 import { AssessmentResponseCaptureControls } from './response-capture-controls';
 
@@ -24,18 +26,22 @@ async function AssessmentAttemptContent({ params }: { params: Promise<{ organisa
   const { data } = await auth.getSession();
   if (!data?.user) redirect('/auth/sign-in');
   let tasks: MarkingSheetRow[];
-  try { tasks = await getAssessmentAttemptMarkingSheet(data.user.id, organisationId, attemptId) as MarkingSheetRow[]; }
-  catch { redirect('/workspace/organisations'); }
+  let actorRole: string | null = null;
+  try {
+    actorRole = await getOrganisationActorRole(data.user.id, organisationId);
+    tasks = await getAssessmentAttemptMarkingSheet(data.user.id, organisationId, attemptId) as MarkingSheetRow[];
+  } catch { redirect('/workspace/organisations'); }
   if (tasks.length===0) notFound();
   const first=tasks[0];
+  const canMark = canReadAssessmentData(actorRole as never);
 
   return <main className="min-h-screen bg-[#F4F8FA]">
-    <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><Link href={`/workspace/organisations/${organisationId}/assessments/events/${first.event_id}`} className="text-[11px] font-semibold text-[#087F86]">← Event results</Link><SignOutButton/></div></div></header>
+    <header className="border-b border-[#E3EBF0] bg-white"><div className="mx-auto flex max-w-[1440px] items-center justify-between px-6 py-4 sm:px-10 lg:px-14"><Link href="/workspace"><BrandMark size={38}/></Link><div className="flex items-center gap-4"><Link href={`/workspace/organisations/${organisationId}/assessments/events/${first.event_id}`} className="text-[11px] font-semibold text-[#087F86]">← Assessment event</Link><SignOutButton/></div></div></header>
     <div className="mx-auto max-w-[1000px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
-      <p className="eyebrow">Assessment marking sheet</p><h1 className="mt-3 text-[32px] font-semibold tracking-[-.05em] text-[#102B45]">{first.event_title}</h1><p className="mt-2 text-[11px] text-[#718697]">Attempt {attemptId} · {first.attempt_status} · Enrolment {first.enrolment_id}</p>
+      <p className="eyebrow">{canMark ? 'Assessment marking sheet' : 'Teacher response capture'}</p><h1 className="mt-3 text-[32px] font-semibold tracking-[-.05em] text-[#102B45]">{first.event_title}</h1><p className="mt-2 text-[11px] text-[#718697]">Attempt {attemptId} · {first.attempt_status} · Enrolment {first.enrolment_id}</p>
       <div className="mt-8 space-y-3">{tasks.map(task=><article key={task.task_id} className="rounded-[18px] border border-[#E1EAF0] bg-white p-5"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[.13em] text-[#8A9CAB]">{task.task_code} · {task.response_type} {task.required?'· Required':'· Optional'}</p><h2 className="mt-2 text-[15px] font-semibold text-[#29465D]">{task.task_title}</h2></div><p className="text-[11px] font-semibold text-[#087F86]">Maximum {task.maximum_score}</p></div><div className="mt-4 rounded-xl bg-[#F6F9FA] p-4"><p className="text-[9px] font-bold uppercase tracking-[.12em] text-[#8A9CAB]">Captured response</p><pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words text-[11px] leading-6 text-[#456175]">{JSON.stringify(task.response_payload??null,null,2)}</pre></div><div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[10px] text-[#8A9CAB]"><span>{task.response_id ? (task.captured_at ? 'Captured ' + new Date(task.captured_at).toLocaleString() : 'Captured') : 'No response captured'}</span>{task.mark_id ? <span>Latest mark v{task.mark_version}: {task.awarded_score} · {task.marker_note}</span> : <span>Not marked</span>}</div></article>)}</div>
       <AssessmentResponseCaptureControls organisationId={organisationId} attemptId={attemptId} eventStatus={first.event_status} attemptStatus={first.attempt_status} tasks={tasks.map(task => ({ task_id: task.task_id, task_title: task.task_title, response_type: task.response_type, required: task.required, response_id: task.response_id }))}/>
-      <AssessmentMarkingControls organisationId={organisationId} attemptId={attemptId} attemptStatus={first.attempt_status} latestDecisionType={first.latest_decision_type ?? null} latestDecisionAt={first.latest_decision_at ?? null} tasks={tasks}/>
+      {canMark && <AssessmentMarkingControls organisationId={organisationId} attemptId={attemptId} attemptStatus={first.attempt_status} latestDecisionType={first.latest_decision_type ?? null} latestDecisionAt={first.latest_decision_at ?? null} tasks={tasks}/ >}
       <footer className="mt-12 flex items-center justify-between border-t border-[#E1EAF0] pt-5"><SoftflixSignature/><span className="text-[10px] text-[#9AABB7]">Immutable response evidence · Versioned marks</span></footer>
     </div>
   </main>;
