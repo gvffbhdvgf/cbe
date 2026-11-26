@@ -9,7 +9,7 @@ import { getAssessmentAuthoringOptions, listAssessmentEvents } from '@/applicati
 import { AssessmentEventControls } from './event-controls';
 import { AssessmentAuthoringControls } from './authoring-controls';
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export default function AssessmentEventsPage({ params }: { params: Promise<{ organisationId: string }> }) {
   return <Suspense fallback={<main className="min-h-screen bg-[#F4F8FA] p-10 text-sm text-[#667D91]">Loading assessment workspace…</main>}><AssessmentEventsContent params={params}/></Suspense>;
