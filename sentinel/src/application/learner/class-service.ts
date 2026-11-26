@@ -69,3 +69,21 @@ export async function getClassManagementSummary(actorUserId: string, organisatio
   const classList = await listClasses(actorUserId, organisationId);
   return { organisation, classes: classList };
 }
+
+
+export async function updateClassCapacity(actorUserId: string, organisationId: string, classId: string, capacity: number | null) {
+  await requireLearnerManager(actorUserId, organisationId);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(classId)) {
+    throw new Error('A valid class ID is required');
+  }
+  if (capacity !== null && (!Number.isInteger(capacity) || capacity < 1 || capacity > 500)) {
+    throw new Error('Class capacity must be between 1 and 500, or unlimited');
+  }
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.set_class_capacity(
+      ${organisationId}::uuid, ${classId}::uuid, ${capacity}::integer
+    ) AS capacity`);
+    if (result.rows.length === 0) throw new Error('The database did not confirm the class capacity change');
+    return { classId, capacity: result.rows[0].capacity as number | null };
+  });
+}
