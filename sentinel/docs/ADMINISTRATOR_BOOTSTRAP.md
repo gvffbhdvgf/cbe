@@ -1,6 +1,13 @@
 # Initial Platform Administrator Bootstrap
 
-Status: operational runbook; not yet executed. Applies to the isolated Neon branch `sentinel-development` only.
+Status: first administrator bootstrap completed successfully on the isolated Neon development branch. This runbook remains the controlled procedure for future administrator provisioning and revocation.
+
+## Current execution record
+
+- The initial platform administrator completed Neon Auth email verification and password setup.
+- The verified identity is active and has an active row in `public.platform_administrators` on the development branch.
+- Public self-service sign-up remains disabled. Passwords, OTPs and reset tokens are not recorded in this document.
+- Migration 0021 is applied to the development branch; the preview deployment remains separate from production.
 
 ## Preconditions
 
@@ -59,4 +66,4 @@ Use `status = 'active'` only after an authorised review. For permanent revocatio
 - Do not copy learner or guardian data into this development environment.
 - The first platform administrator should be a named, accountable person authorised by the product owner/institutional governance process.
 - Record the approval and execution evidence in the restricted operational record, not in public project documentation.
-- The Neon Auth email provider is not configured yet. Until it is configured and tested, use the approved secure administrative account-provisioning process; do not promise email invitations or password-reset delivery.
+- The development Neon Auth shared email provider is configured for one-time verification and password-reset codes. The owner completed the initial verification/password setup flow. Do not promise invitation or delivery behaviour beyond the configured OTP flow.
