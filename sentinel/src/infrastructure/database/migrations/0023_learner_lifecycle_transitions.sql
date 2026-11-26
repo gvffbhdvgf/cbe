@@ -18,13 +18,13 @@ CREATE TABLE public.learner_class_placements (
   class_id uuid NOT NULL,
   grade integer NOT NULL CHECK (grade BETWEEN 1 AND 9),
   academic_year integer NOT NULL CHECK (academic_year BETWEEN 2000 AND 2100),
-  starts_on date NOT NULL,
-  ends_on date,
+  starts_at timestamptz NOT NULL,
+  ends_at timestamptz,
   status varchar(16) NOT NULL DEFAULT 'active' CHECK (status IN ('active','ended')),
   created_by uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT learner_class_placements_scope_check CHECK (tenant_organisation_id = organisation_id),
-  CONSTRAINT learner_class_placements_period_check CHECK (ends_on IS NULL OR ends_on > starts_on),
+  CONSTRAINT learner_class_placements_period_check CHECK (ends_at IS NULL OR ends_at > starts_at),
   CONSTRAINT learner_class_placements_class_fk FOREIGN KEY
     (tenant_organisation_id, organisation_id, class_id, grade, academic_year)
     REFERENCES public.classes (tenant_organisation_id, organisation_id, id, grade, academic_year) ON DELETE RESTRICT
@@ -34,16 +34,19 @@ CREATE UNIQUE INDEX learner_class_placements_one_active_idx
   ON public.learner_class_placements (tenant_organisation_id, enrolment_id) WHERE status = 'active';
 --> statement-breakpoint
 CREATE INDEX learner_class_placements_history_idx
-  ON public.learner_class_placements (tenant_organisation_id, learner_id, starts_on DESC);
+  ON public.learner_class_placements (tenant_organisation_id, learner_id, starts_at DESC);
 --> statement-breakpoint
 INSERT INTO public.learner_class_placements (
   tenant_organisation_id, organisation_id, enrolment_id, learner_id, class_id, grade, academic_year,
-  starts_on, ends_on, status, created_by
+  starts_at, ends_at, status, created_by
 )
 SELECT enrolment.tenant_organisation_id, enrolment.organisation_id, enrolment.id, enrolment.learner_id,
-  enrolment.class_id, enrolment.grade, enrolment.academic_year, enrolment.starts_at, enrolment.ends_at,
+  enrolment.class_id, enrolment.grade, enrolment.academic_year,
+  enrolment.starts_at::timestamp AT TIME ZONE organisation.time_zone,
+  CASE WHEN enrolment.ends_at IS NULL THEN NULL ELSE enrolment.ends_at::timestamp AT TIME ZONE organisation.time_zone END,
   CASE WHEN enrolment.status = 'active' THEN 'active' ELSE 'ended' END, enrolment.created_by
 FROM public.learner_enrolments enrolment
+INNER JOIN public.organisations organisation ON organisation.id = enrolment.organisation_id
 WHERE enrolment.class_id IS NOT NULL;
 --> statement-breakpoint
 ALTER TABLE public.learner_class_placements ENABLE ROW LEVEL SECURITY;
@@ -139,9 +142,9 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Selected class does not match the active enrolment grade, academic year and organisation' USING ERRCODE='23514'; END IF;
   PERFORM sentinel_private.assert_class_capacity_available(p_class_id,NULL);
   UPDATE public.learner_enrolments SET class_id=p_class_id,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
-  INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_on,created_by)
+  INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_at,created_by)
   VALUES(v_enrolment.tenant_organisation_id,v_enrolment.organisation_id,v_enrolment.id,v_enrolment.learner_id,p_class_id,
-    v_enrolment.grade,v_enrolment.academic_year,p_effective_at,v_actor_id);
+    v_enrolment.grade,v_enrolment.academic_year,p_effective_at::timestamp AT TIME ZONE (SELECT time_zone FROM public.organisations WHERE id=v_enrolment.organisation_id),v_actor_id);
   INSERT INTO public.learner_progression_events(tenant_organisation_id,learner_id,event_type,from_grade,to_grade,effective_at,actor_user_id,reason_code)
   VALUES(v_enrolment.tenant_organisation_id,v_enrolment.learner_id,'class_assigned',v_enrolment.grade,v_enrolment.grade,p_effective_at,v_actor_id,'class_assignment');
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
@@ -156,23 +159,18 @@ REVOKE ALL ON FUNCTION sentinel_private.assign_learner_to_class(uuid,uuid,date) 
 GRANT EXECUTE ON FUNCTION sentinel_private.assign_learner_to_class(uuid,uuid,date) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
-CREATE FUNCTION sentinel_private.reassign_learner_to_class(p_organisation_id uuid,p_enrolment_id uuid,p_class_id uuid,p_effective_at date,p_reason text)
+CREATE FUNCTION sentinel_private.reassign_learner_to_class(p_organisation_id uuid,p_enrolment_id uuid,p_class_id uuid,p_reason text)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE v_actor_id uuid:=sentinel_private.current_user_id(); v_enrolment public.learner_enrolments%ROWTYPE;
   v_target public.classes%ROWTYPE; v_current public.learner_class_placements%ROWTYPE; v_reason text:=pg_catalog.btrim(p_reason);
-  v_today date;
+  v_now timestamptz:=pg_catalog.now();
 BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Learner class reassignment authority is required' USING ERRCODE='42501';
   END IF;
   IF v_reason IS NULL OR pg_catalog.length(v_reason)<10 OR pg_catalog.length(v_reason)>500 THEN
     RAISE EXCEPTION 'A reason of 10 to 500 characters is required for class reassignment' USING ERRCODE='22023';
-  END IF;
-  SELECT (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date INTO v_today
-  FROM public.organisations organisation WHERE organisation.id=p_organisation_id AND organisation.status='active';
-  IF v_today IS NULL OR p_effective_at<>v_today THEN
-    RAISE EXCEPTION 'Class reassignment must take effect on the institution-local current date' USING ERRCODE='23514';
   END IF;
   SELECT enrolment.* INTO v_enrolment FROM public.learner_enrolments enrolment
   WHERE enrolment.id=p_enrolment_id AND enrolment.organisation_id=p_organisation_id
@@ -181,9 +179,6 @@ BEGIN
     RAISE EXCEPTION 'Only an actively enrolled, already placed learner can be reassigned' USING ERRCODE='23514';
   END IF;
   IF v_enrolment.class_id=p_class_id THEN RAISE EXCEPTION 'Select a different target class' USING ERRCODE='22023'; END IF;
-  IF p_effective_at<v_enrolment.starts_at OR (v_enrolment.ends_at IS NOT NULL AND p_effective_at>=v_enrolment.ends_at) THEN
-    RAISE EXCEPTION 'Reassignment date must fall within the active enrolment period' USING ERRCODE='23514';
-  END IF;
   SELECT class_record.* INTO v_target FROM public.classes class_record
   WHERE class_record.id=p_class_id AND class_record.tenant_organisation_id=v_enrolment.tenant_organisation_id
     AND class_record.organisation_id=p_organisation_id AND class_record.grade=v_enrolment.grade
@@ -191,35 +186,35 @@ BEGIN
   IF NOT FOUND THEN RAISE EXCEPTION 'Target class must match the learner grade, academic year and organisation' USING ERRCODE='23514'; END IF;
   SELECT placement.* INTO v_current FROM public.learner_class_placements placement
   WHERE placement.enrolment_id=v_enrolment.id AND placement.status='active' FOR UPDATE;
-  IF NOT FOUND OR p_effective_at<=v_current.starts_on THEN
-    RAISE EXCEPTION 'The active class placement history is missing or reassignment date is not after its start' USING ERRCODE='23514';
+  IF NOT FOUND OR v_now<=v_current.starts_at THEN
+    RAISE EXCEPTION 'The active class placement history is missing or invalid' USING ERRCODE='23514';
   END IF;
   PERFORM sentinel_private.assert_class_capacity_available(p_class_id,NULL);
-  UPDATE public.learner_class_placements SET ends_on=p_effective_at,status='ended'
+  UPDATE public.learner_class_placements SET ends_at=v_now,status='ended'
   WHERE id=v_current.id;
-  INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_on,created_by)
+  INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_at,created_by)
   VALUES(v_enrolment.tenant_organisation_id,p_organisation_id,v_enrolment.id,v_enrolment.learner_id,p_class_id,
-    v_enrolment.grade,v_enrolment.academic_year,p_effective_at,v_actor_id);
+    v_enrolment.grade,v_enrolment.academic_year,v_now,v_actor_id);
   UPDATE public.learner_enrolments SET class_id=p_class_id,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
   INSERT INTO public.learner_progression_events(tenant_organisation_id,learner_id,event_type,from_grade,to_grade,effective_at,actor_user_id,reason_code)
-  VALUES(v_enrolment.tenant_organisation_id,v_enrolment.learner_id,'class_assigned',v_enrolment.grade,v_enrolment.grade,p_effective_at,v_actor_id,'class_reassignment');
+  VALUES(v_enrolment.tenant_organisation_id,v_enrolment.learner_id,'class_assigned',v_enrolment.grade,v_enrolment.grade,(v_now AT TIME ZONE (SELECT time_zone FROM public.organisations WHERE id=p_organisation_id))::date,v_actor_id,'class_reassignment');
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'learner.class_reassigned','learner_enrolment',v_enrolment.id::text,
-    jsonb_build_object('fromClassId',v_enrolment.class_id,'toClassId',p_class_id,'effectiveAt',p_effective_at,'reason',v_reason));
+    jsonb_build_object('fromClassId',v_enrolment.class_id,'toClassId',p_class_id,'effectiveAt',v_now,'reason',v_reason));
   RETURN v_enrolment.id;
 END;
 $$;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION sentinel_private.reassign_learner_to_class(uuid,uuid,uuid,date,text) FROM PUBLIC;
+REVOKE ALL ON FUNCTION sentinel_private.reassign_learner_to_class(uuid,uuid,uuid,text) FROM PUBLIC;
 --> statement-breakpoint
-GRANT EXECUTE ON FUNCTION sentinel_private.reassign_learner_to_class(uuid,uuid,uuid,date,text) TO sentinel_learner_runtime;
+GRANT EXECUTE ON FUNCTION sentinel_private.reassign_learner_to_class(uuid,uuid,uuid,text) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
 CREATE FUNCTION sentinel_private.withdraw_learner_enrolment(p_organisation_id uuid,p_enrolment_id uuid,p_withdrawal_date date,p_reason text)
 RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE v_actor_id uuid:=sentinel_private.current_user_id(); v_enrolment public.learner_enrolments%ROWTYPE;
-  v_today date; v_end_date date; v_placement public.learner_class_placements%ROWTYPE; v_reason text:=pg_catalog.btrim(p_reason);
+  v_today date; v_end_date date; v_end_at timestamptz; v_time_zone text; v_placement public.learner_class_placements%ROWTYPE; v_reason text:=pg_catalog.btrim(p_reason);
 BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Learner withdrawal authority is required' USING ERRCODE='42501';
@@ -227,7 +222,7 @@ BEGIN
   IF v_reason IS NULL OR pg_catalog.length(v_reason)<10 OR pg_catalog.length(v_reason)>500 THEN
     RAISE EXCEPTION 'A reason of 10 to 500 characters is required for learner withdrawal' USING ERRCODE='22023';
   END IF;
-  SELECT (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date INTO v_today
+  SELECT (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date, organisation.time_zone INTO v_today,v_time_zone
   FROM public.organisations organisation WHERE organisation.id=p_organisation_id AND organisation.status='active';
   IF v_today IS NULL OR p_withdrawal_date>v_today THEN
     RAISE EXCEPTION 'Withdrawal date cannot be in the future' USING ERRCODE='23514';
@@ -239,6 +234,7 @@ BEGIN
     RAISE EXCEPTION 'Only an active learner enrolment can be withdrawn' USING ERRCODE='23514';
   END IF;
   v_end_date:=p_withdrawal_date+1;
+  v_end_at:=v_end_date::timestamp AT TIME ZONE v_time_zone;
   IF p_withdrawal_date<v_enrolment.starts_at OR (v_enrolment.ends_at IS NOT NULL AND v_end_date>v_enrolment.ends_at) THEN
     RAISE EXCEPTION 'Withdrawal date must fall within the active enrolment period' USING ERRCODE='23514';
   END IF;
@@ -246,8 +242,8 @@ BEGIN
     SELECT placement.* INTO v_placement FROM public.learner_class_placements placement
     WHERE placement.enrolment_id=v_enrolment.id AND placement.status='active' FOR UPDATE;
     IF FOUND THEN
-      IF v_end_date<=v_placement.starts_on THEN RAISE EXCEPTION 'Withdrawal date precedes the current class placement' USING ERRCODE='23514'; END IF;
-      UPDATE public.learner_class_placements SET ends_on=v_end_date,status='ended' WHERE id=v_placement.id;
+      IF v_end_at<=v_placement.starts_at THEN RAISE EXCEPTION 'Withdrawal date precedes the current class placement' USING ERRCODE='23514'; END IF;
+      UPDATE public.learner_class_placements SET ends_at=v_end_at,status='ended' WHERE id=v_placement.id;
     END IF;
   END IF;
   UPDATE public.learner_enrolments SET status='withdrawn',ends_at=v_end_date,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
@@ -425,12 +421,12 @@ RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE v_actor_id uuid:=sentinel_private.current_user_id(); v_request public.learner_progression_requests%ROWTYPE;
-  v_enrolment public.learner_enrolments%ROWTYPE; v_today date; v_new_enrolment_id uuid;
+  v_enrolment public.learner_enrolments%ROWTYPE; v_today date; v_time_zone text; v_effective_at_ts timestamptz; v_new_enrolment_id uuid;
 BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Progression execution authority is required' USING ERRCODE='42501';
   END IF;
-  SELECT (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date INTO v_today
+  SELECT (pg_catalog.now() AT TIME ZONE organisation.time_zone)::date, organisation.time_zone INTO v_today,v_time_zone
   FROM public.organisations organisation WHERE organisation.id=p_organisation_id AND organisation.status='active';
   SELECT request.* INTO v_request FROM public.learner_progression_requests request
   WHERE request.id=p_request_id AND request.organisation_id=p_organisation_id AND request.status='approved' FOR UPDATE;
@@ -442,6 +438,7 @@ BEGIN
   IF v_request.effective_at<=v_enrolment.starts_at OR (v_enrolment.ends_at IS NOT NULL AND v_request.effective_at>=v_enrolment.ends_at) THEN
     RAISE EXCEPTION 'Progression effective date is outside the source enrolment period' USING ERRCODE='23514';
   END IF;
+  v_effective_at_ts:=v_request.effective_at::timestamp AT TIME ZONE v_time_zone;
   IF v_request.target_class_id IS NOT NULL THEN
     IF NOT EXISTS (SELECT 1 FROM public.classes class_record WHERE class_record.id=v_request.target_class_id
       AND class_record.organisation_id=p_organisation_id AND class_record.status='active'
@@ -451,8 +448,11 @@ BEGIN
     PERFORM sentinel_private.assert_class_capacity_available(v_request.target_class_id,NULL);
   END IF;
   UPDATE public.learner_enrolments SET status='ended',ends_at=v_request.effective_at,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
-  UPDATE public.learner_class_placements SET status='ended',ends_on=v_request.effective_at
-    WHERE enrolment_id=v_enrolment.id AND status='active' AND v_request.effective_at>starts_on;
+  IF EXISTS (SELECT 1 FROM public.learner_class_placements placement WHERE placement.enrolment_id=v_enrolment.id AND placement.status='active' AND v_effective_at_ts<=placement.starts_at) THEN
+    RAISE EXCEPTION 'Progression effective date precedes the active class placement start' USING ERRCODE='23514';
+  END IF;
+  UPDATE public.learner_class_placements SET status='ended',ends_at=v_effective_at_ts
+    WHERE enrolment_id=v_enrolment.id AND status='active';
   INSERT INTO public.learner_enrolments(
     tenant_organisation_id,learner_id,organisation_id,grade,academic_year,class_id,status,starts_at,created_by
   ) VALUES (
@@ -460,9 +460,9 @@ BEGIN
     v_request.to_academic_year,v_request.target_class_id,'active',v_request.effective_at,v_actor_id
   ) RETURNING id INTO v_new_enrolment_id;
   IF v_request.target_class_id IS NOT NULL THEN
-    INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_on,created_by)
+    INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_at,created_by)
     VALUES(v_enrolment.tenant_organisation_id,p_organisation_id,v_new_enrolment_id,v_enrolment.learner_id,
-      v_request.target_class_id,v_request.to_grade,v_request.to_academic_year,v_request.effective_at,v_actor_id);
+      v_request.target_class_id,v_request.to_grade,v_request.to_academic_year,v_effective_at_ts,v_actor_id);
   END IF;
   INSERT INTO public.learner_progression_events(tenant_organisation_id,learner_id,event_type,from_grade,to_grade,effective_at,actor_user_id,reason_code)
   VALUES(v_enrolment.tenant_organisation_id,v_enrolment.learner_id,
