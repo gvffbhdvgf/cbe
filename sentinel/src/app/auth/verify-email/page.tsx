@@ -23,7 +23,7 @@ export default function VerifyEmailPage() {
   const [pending,setPending]=useState(false);
   const invitedEmailIsValid = useInvitedEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(invitedEmail);
   const effectiveEmail = invitedEmailIsValid ? invitedEmail : email;
-  const displayStage = displayStage==='email' && invitedEmailIsValid ? 'verify' : stage;
+  const displayStage = stage==='email' && invitedEmailIsValid ? 'verify' : stage;
 
   async function sendCode(event:FormEvent<HTMLFormElement>) {
     event.preventDefault();setError('');setPending(true);
