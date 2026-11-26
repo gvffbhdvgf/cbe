@@ -72,8 +72,7 @@ export function OutcomeMappingControls({ organisationId, instrumentVersionId, ac
       <span className="text-[9px] text-[#8A9CAB]">{outcomes.length} verified source outcome(s)</span>
     </div>
     {loading ? <p className="mt-2 text-[10px] text-[#8A9CAB]">Loading mapping evidence…</p> :
-      outcomes.length === 0 ? <p className="mt-2 text-[10px] leading-5 text-[#8A9CAB]">No approved, rights-cleared specific outcomes are available for this instrument’s grade and learning area. Curriculum extraction and source review must be completed before mapping.</p> :
-      tasks.map(task => {
+      <>\n      {outcomes.length === 0 && <p className="mt-2 text-[10px] leading-5 text-[#8A9CAB]">No approved, rights-cleared specific outcomes are available for this exact curriculum edition and pathway. Curriculum extraction and source review must be completed before mapping.</p>}\n      {tasks.map(task => {
         const taskMappings = rows.filter(row => row.task_id === task.task_id && row.mapping_id);
         const mappedIds = new Set(taskMappings.map(row => row.curriculum_source_node_id).filter((id): id is string => Boolean(id)));
         const available = outcomes.filter(outcome => !mappedIds.has(outcome.id));
@@ -100,7 +99,6 @@ export function OutcomeMappingControls({ organisationId, instrumentVersionId, ac
             <button type="button" disabled={busy !== '' || !selections[task.task_id]} onClick={() => void submit(`/api/organisations/${organisationId}/assessments/instruments/${instrumentVersionId}/outcome-mappings`, { taskId: task.task_id, curriculumSourceNodeId: selections[task.task_id] }, 'propose')} className="rounded-full border border-[#CFE1E6] px-3 py-2 text-[9px] font-semibold text-[#087F86] disabled:opacity-40">Propose mapping</button>
           </div>}
         </div>;
-      })}
-    {error && <p role="alert" className="mt-2 text-[10px] text-[#A43D34]">{error}</p>}
+      })}\n      </>}\n    {error && <p role="alert" className="mt-2 text-[10px] text-[#A43D34]">{error}</p>}
   </div>;
 }
