@@ -19,6 +19,9 @@ describe('academic-year rollover migration', () => {
     expect(sql).toContain("'learner.academic_year_rollover_cancelled'");
     expect(sql).toContain("outcome IN ('unresolved','promote','repeat','not_progressing')");
     expect(sql).toContain('v_current_count <> v_snapshot_count');
+    expect(sql).toContain('A count alone cannot prove cohort identity');
+    expect(sql).toContain('NOT EXISTS (');
+    expect(sql).toContain('item.source_enrolment_id = enrolment.id');
     expect(sql).toContain("item.status = 'unresolved'");
     expect(sql).toContain("request.status IN ('pending','approved')");
     expect(sql).toContain('Resolve existing pending or approved progression requests');
