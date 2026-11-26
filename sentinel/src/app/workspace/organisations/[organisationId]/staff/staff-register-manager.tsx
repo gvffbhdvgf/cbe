@@ -23,6 +23,7 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
   const router = useRouter();
   const [summary,setSummary]=useState(initialSummary);
   const [personSearch,setPersonSearch]=useState('');
+  const [personSearchPerformed,setPersonSearchPerformed]=useState(false);
   const [selectedPerson,setSelectedPerson]=useState<PersonMatch|null>(null);
   const [firstName,setFirstName]=useState('');
   const [middleName,setMiddleName]=useState('');
@@ -50,7 +51,7 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
 
   async function searchPeople() {
     setBusy('search'); setError(''); setMessage('');
-    try { await reload(personSearch); }
+    try { await reload(personSearch); setPersonSearchPerformed(true); }
     catch(cause) { setError(cause instanceof Error?cause.message:'Unable to search existing people.'); }
     finally { setBusy(''); }
   }
@@ -71,7 +72,7 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
       if(!response.ok) throw new Error(payload.error||'Unable to create staff profile.');
       setSelectedPerson(null); setFirstName(''); setMiddleName(''); setLastName(''); setPreferredName('');
       setStaffReference(''); setStaffCategory('teacher'); setJobTitle('Teacher'); setEngagementType('permanent');
-      setStartsOn(todayInKenya()); setEndsOn(''); setConfirmDistinctPerson(false); setPersonSearch('');
+      setStartsOn(todayInKenya()); setEndsOn(''); setConfirmDistinctPerson(false); setPersonSearch(''); setPersonSearchPerformed(false);
       await reload('');
       setMessage('Staff profile and initial engagement created. Link a verified Teacher account when it is available.');
       router.refresh();
@@ -117,10 +118,10 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
 
       <div className="mt-6 rounded-2xl border border-[#E5EDF1] bg-[#FBFDFD] p-4">
         <label className={label}>Find an existing person before creating a new record</label>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row"><input value={personSearch} onChange={e=>setPersonSearch(e.target.value)} placeholder="Search legal or preferred name" className={field}/><button type="button" disabled={busy!==''||personSearch.trim().length<2} onClick={()=>void searchPeople()} className="shrink-0 rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">{busy==='search'?'Searching…':'Search people'}</button></div>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row"><input value={personSearch} onChange={e=>{setPersonSearch(e.target.value);setPersonSearchPerformed(false);}} placeholder="Search legal or preferred name" className={field}/><button type="button" disabled={busy!==''||personSearch.trim().length<2} onClick={()=>void searchPeople()} className="shrink-0 rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">{busy==='search'?'Searching…':'Search people'}</button></div>
         {selectedPerson&&<div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#EAF7F5] p-3"><p className="text-[11px] font-semibold text-[#245A5B]">Using existing person: {personName(selectedPerson)}</p><button type="button" onClick={()=>setSelectedPerson(null)} className="text-[10px] font-semibold text-[#087F86]">Clear selection</button></div>}
         {!selectedPerson&&summary.personMatches.length>0&&<div className="mt-3 space-y-2">{summary.personMatches.map(person=><button key={person.id} type="button" onClick={()=>setSelectedPerson(person)} className="flex w-full items-center justify-between rounded-xl border border-[#E5EDF1] bg-white px-3 py-2 text-left hover:border-[#8CCFC7]"><span className="text-[11px] font-medium text-[#29465D]">{personName(person)}</span><span className="text-[10px] font-semibold text-[#087F86]">Use this person</span></button>)}</div>}
-        {!selectedPerson&&personSearch.trim().length>=2&&summary.personMatches.length===0&&<p className="mt-3 text-[10px] text-[#718697]">No matching unlinked person records found. If this is a new person, complete the details below and confirm that you checked for duplicates.</p>}
+        {!selectedPerson&&personSearchPerformed&&personSearch.trim().length>=2&&summary.personMatches.length===0&&<p className="mt-3 text-[10px] text-[#718697]">No matching unlinked person records found. If this is a new person, complete the details below and confirm that you checked for duplicates.</p>}
       </div>
 
       <form onSubmit={create} className="mt-5 grid gap-4 sm:grid-cols-2">
