@@ -81,7 +81,8 @@ export async function getTeacherAssignmentManagementSummary(actorUserId: string,
     const active = workloadAllocations.filter(allocation => allocation.teacherAssignmentId === assignment.id && allocation.status === 'active' && allocation.startsOn <= today && (allocation.endsOn === null || allocation.endsOn > today)).sort((a,b) => b.startsOn.localeCompare(a.startsOn))[0];
     return { ...assignment, weekly_periods: active?.weeklyPeriods ?? null, workload_allocation_id: active?.id ?? null };
   });
-  return { organisation, teachers, learningAreas, classes: classList, assignments, workloadPolicies, asOfDate: today };
+  const uniqueTeachers = Array.from(new Map(teachers.map(teacher => [teacher.userId, teacher])).values());
+  return { organisation, teachers: uniqueTeachers, learningAreas, classes: classList, assignments, workloadPolicies, asOfDate: today };
 }
 
 export async function createTeacherClassAssignment(
