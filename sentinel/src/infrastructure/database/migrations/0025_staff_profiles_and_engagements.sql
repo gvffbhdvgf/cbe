@@ -266,7 +266,7 @@ REVOKE ALL ON FUNCTION sentinel_private.link_staff_account(uuid,uuid,uuid) FROM 
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.end_staff_engagement(uuid,uuid,date) FROM PUBLIC;
 --> statement-breakpoint
-GRANT EXECUTE ON FUNCTION sentinel_private.create_staff_profile(uuid,uuid,text,text,text,text,text,text,text,text,date,date) TO sentinel_learner_runtime;
+GRANT EXECUTE ON FUNCTION sentinel_private.create_staff_profile(uuid,uuid,text,text,text,text,text,text,text,text,date,date,boolean) TO sentinel_learner_runtime;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.link_staff_account(uuid,uuid,uuid) TO sentinel_learner_runtime;
 --> statement-breakpoint
