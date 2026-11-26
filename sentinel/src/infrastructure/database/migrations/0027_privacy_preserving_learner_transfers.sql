@@ -1,7 +1,7 @@
 -- Privacy-preserving, two-institution learner transfer workflow.
 CREATE TABLE public.learner_transfer_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  transfer_reference varchar(20) NOT NULL UNIQUE DEFAULT upper(substr(replace(gen_random_uuid()::text,'-',''),1,16)),
+  transfer_reference varchar(20) NOT NULL DEFAULT upper(substr(replace(gen_random_uuid()::text,'-',''),1,16)),
   sending_organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
   receiving_organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
   source_grade integer NOT NULL CHECK (source_grade BETWEEN 1 AND 9),
@@ -25,6 +25,7 @@ CREATE TABLE public.learner_transfer_requests (
   cancelled_at timestamptz,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
+  CONSTRAINT learner_transfer_reference_unique UNIQUE (transfer_reference),
   CONSTRAINT learner_transfer_distinct_organisations_check CHECK (sending_organisation_id <> receiving_organisation_id),
   CONSTRAINT learner_transfer_rejection_state_check CHECK ((status = 'rejected') = (rejection_code IS NOT NULL)),
   CONSTRAINT learner_transfer_requests_id_sender_unique UNIQUE (id, sending_organisation_id),
