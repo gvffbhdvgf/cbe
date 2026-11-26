@@ -231,7 +231,6 @@ export const teacherClassAssignments = pgTable('teacher_class_assignments', {
   unique('teacher_class_assignments_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
   index('teacher_class_assignments_class_area_idx').on(table.tenantOrganisationId, table.organisationId, table.classId, table.learningAreaId, table.status),
 ]);
-")),
 
 export const guardianRelationships = pgTable('guardian_relationships', {
   id: uuid('id').defaultRandom().primaryKey(),
