@@ -78,8 +78,8 @@ export async function POST(request: Request, context: { params: Promise<{ organi
       return Response.json(await linkGuardianAccount(data.user.id, organisationId, value.profileId, value.email));
     }
     if (value.action === 'record-invitation') {
-      if (!isText(value.profileId) || !isText(value.email) || !isText(value.authUserId)) return Response.json({ error: 'Guardian profile, email and provisioned account are required' }, { status: 400 });
-      return Response.json(await recordGuardianAccountInvitation(data.user.id, organisationId, value.profileId, value.email, value.authUserId));
+      if (!isText(value.profileId) || !isText(value.email)) return Response.json({ error: 'Guardian profile and account email are required' }, { status: 400 });
+      return Response.json(await recordGuardianAccountInvitation(data.user.id, organisationId, value.profileId, value.email));
     }
     if (value.action === 'revoke-relationship') {
       if (!isText(value.relationshipId) || !isText(value.reason)) return Response.json({ error: 'Relationship and revocation reason are required' }, { status: 400 });
