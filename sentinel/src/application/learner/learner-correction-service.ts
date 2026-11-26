@@ -1,5 +1,4 @@
 import { desc, eq, sql } from 'drizzle-orm';
-import { db } from '@/infrastructure/database/client';
 import { learnerRecordCorrectionRequests } from '@/infrastructure/database/schema/learner-correction';
 import { requireLearnerManager } from './learner-service';
 import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
