@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { connection } from 'next/server';
+import { Suspense } from 'react';
 import { auth } from '@/lib/auth/server';
 import { BrandMark, SoftflixSignature } from '@/components/brand-mark';
 import { SignOutButton } from '@/components/sign-out-button';
@@ -8,7 +9,11 @@ import { getMyTeacherWorkloadSummary } from '@/application/organisation/teacher-
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export default async function MyTeachingWorkloadPage({ params, searchParams }: { params: Promise<{ organisationId: string }>; searchParams: Promise<{ academicYear?: string }> }) {
+export default function MyTeachingWorkloadPage({ params, searchParams }: { params: Promise<{ organisationId: string }>; searchParams: Promise<{ academicYear?: string }> }) {
+  return <Suspense fallback={<main className="min-h-screen bg-[#F4F8FA] p-10 text-sm text-[#667D91]">Loading your workload…</main>}><MyTeachingWorkloadContent params={params} searchParams={searchParams}/></Suspense>;
+}
+
+async function MyTeachingWorkloadContent({ params, searchParams }: { params: Promise<{ organisationId: string }>; searchParams: Promise<{ academicYear?: string }> }) {
   await connection();
   const { organisationId } = await params;
   const query = await searchParams;
