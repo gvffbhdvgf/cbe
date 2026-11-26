@@ -1,6 +1,7 @@
-import { and, asc, eq, ne, sql } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
+import { organisationTransferEligibility } from '@/infrastructure/database/schema/security';
 import { learnerEnrolments, learnerProfiles, learnerTransferRequests, learnerTransferSourceLinks, people } from '@/infrastructure/database/schema/learner';
 import { requireLearnerManager } from '@/application/learner/learner-service';
 import { withAuthenticatedLearnerDb, type LearnerTransaction } from '@/infrastructure/database/learner-rls-client';
@@ -35,55 +36,77 @@ export async function getTransferManagementSummary(actorUserId: string, organisa
     .from(organisations).where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active'))).limit(1);
   if (!organisation) throw new LearnerTransferError('Organisation not found or inactive', 404);
 
-  const [activeEnrolments, otherOrganisations, outgoing, incoming] = await Promise.all([
-    db.select({
-      enrolmentId: learnerEnrolments.id, learnerId: learnerProfiles.id, learnerReference: learnerProfiles.learnerReference,
-      firstName: people.legalFirstName, lastName: people.legalLastName, preferredName: people.preferredName,
-      grade: learnerEnrolments.grade, academicYear: learnerEnrolments.academicYear,
-      startsAt: learnerEnrolments.startsAt, endsAt: learnerEnrolments.endsAt,
-    }).from(learnerEnrolments)
-      .innerJoin(learnerProfiles, and(eq(learnerEnrolments.learnerId, learnerProfiles.id), eq(learnerEnrolments.tenantOrganisationId, learnerProfiles.tenantOrganisationId)))
-      .innerJoin(people, and(eq(learnerProfiles.personId, people.id), eq(learnerProfiles.tenantOrganisationId, people.tenantOrganisationId)))
-      .where(and(eq(learnerEnrolments.organisationId, organisationId), eq(learnerEnrolments.status, 'active'), eq(learnerProfiles.status, 'active')))
-      .orderBy(asc(learnerProfiles.learnerReference)),
-    db.select({ id: organisations.id, name: organisations.name }).from(organisations)
-      .where(and(eq(organisations.status, 'active'), ne(organisations.id, organisationId)))
-      .orderBy(asc(organisations.name)),
-    db.select({
-      id: learnerTransferRequests.id, transferReference: learnerTransferRequests.transferReference,
-      receivingOrganisationId: learnerTransferRequests.receivingOrganisationId, receivingOrganisationName: organisations.name,
-      sourceGrade: learnerTransferRequests.sourceGrade, destinationGrade: learnerTransferRequests.destinationGrade,
-      destinationAcademicYear: learnerTransferRequests.destinationAcademicYear, effectiveAt: learnerTransferRequests.effectiveAt,
-      reasonCode: learnerTransferRequests.reasonCode, status: learnerTransferRequests.status,
-      requestedAt: learnerTransferRequests.requestedAt, learnerId: learnerTransferSourceLinks.sourceLearnerId,
-      sourceEnrolmentId: learnerTransferSourceLinks.sourceEnrolmentId, learnerReference: learnerProfiles.learnerReference,
-      firstName: people.legalFirstName, lastName: people.legalLastName, preferredName: people.preferredName,
-    }).from(learnerTransferRequests)
-      .innerJoin(learnerTransferSourceLinks, eq(learnerTransferSourceLinks.transferRequestId, learnerTransferRequests.id))
-      .innerJoin(organisations, eq(learnerTransferRequests.receivingOrganisationId, organisations.id))
-      .innerJoin(learnerProfiles, eq(learnerTransferSourceLinks.sourceLearnerId, learnerProfiles.id))
-      .innerJoin(people, eq(learnerProfiles.personId, people.id))
-      .where(eq(learnerTransferRequests.sendingOrganisationId, organisationId))
-      .orderBy(asc(learnerTransferRequests.requestedAt)),
-    db.select({
-      id: learnerTransferRequests.id, transferReference: learnerTransferRequests.transferReference,
-      sendingOrganisationName: organisations.name, sourceGrade: learnerTransferRequests.sourceGrade,
-      destinationGrade: learnerTransferRequests.destinationGrade, destinationAcademicYear: learnerTransferRequests.destinationAcademicYear,
-      effectiveAt: learnerTransferRequests.effectiveAt, reasonCode: learnerTransferRequests.reasonCode,
-      status: learnerTransferRequests.status, rejectionCode: learnerTransferRequests.rejectionCode,
-      requestedAt: learnerTransferRequests.requestedAt,
-    }).from(learnerTransferRequests)
-      .innerJoin(organisations, eq(learnerTransferRequests.sendingOrganisationId, organisations.id))
-      .where(eq(learnerTransferRequests.receivingOrganisationId, organisationId))
-      .orderBy(asc(learnerTransferRequests.requestedAt)),
-  ]);
+  const learnerData = await withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+      const [eligibilityRows, activeEnrolments, outgoing, incoming, directoryResult] = await Promise.all([
+        tx.select({
+          organisationId: organisationTransferEligibility.organisationId,
+          registryIssuer: organisationTransferEligibility.registryIssuer,
+          registryIdentifier: organisationTransferEligibility.registryIdentifier,
+          status: organisationTransferEligibility.status,
+          submittedEvidenceReference: organisationTransferEligibility.submittedEvidenceReference,
+          requestedAt: organisationTransferEligibility.requestedAt,
+          verificationMethod: organisationTransferEligibility.verificationMethod,
+          reviewEvidenceReference: organisationTransferEligibility.reviewEvidenceReference,
+          reviewedAt: organisationTransferEligibility.reviewedAt,
+          validUntil: organisationTransferEligibility.validUntil,
+          rejectionReason: organisationTransferEligibility.rejectionReason,
+          suspensionReason: organisationTransferEligibility.suspensionReason,
+        }).from(organisationTransferEligibility)
+          .where(eq(organisationTransferEligibility.organisationId, organisationId)).limit(1),
+        tx.select({
+          enrolmentId: learnerEnrolments.id, learnerId: learnerProfiles.id, learnerReference: learnerProfiles.learnerReference,
+          firstName: people.legalFirstName, lastName: people.legalLastName, preferredName: people.preferredName,
+          grade: learnerEnrolments.grade, academicYear: learnerEnrolments.academicYear,
+          startsAt: learnerEnrolments.startsAt, endsAt: learnerEnrolments.endsAt,
+        }).from(learnerEnrolments)
+          .innerJoin(learnerProfiles, and(eq(learnerEnrolments.learnerId, learnerProfiles.id), eq(learnerEnrolments.tenantOrganisationId, learnerProfiles.tenantOrganisationId)))
+          .innerJoin(people, and(eq(learnerProfiles.personId, people.id), eq(learnerProfiles.tenantOrganisationId, people.tenantOrganisationId)))
+          .where(and(eq(learnerEnrolments.organisationId, organisationId), eq(learnerEnrolments.status, 'active'), eq(learnerProfiles.status, 'active')))
+          .orderBy(asc(learnerProfiles.learnerReference)),
+        tx.select({
+          id: learnerTransferRequests.id, transferReference: learnerTransferRequests.transferReference,
+          receivingOrganisationId: learnerTransferRequests.receivingOrganisationId, receivingOrganisationName: organisations.name,
+          sourceGrade: learnerTransferRequests.sourceGrade, destinationGrade: learnerTransferRequests.destinationGrade,
+          destinationAcademicYear: learnerTransferRequests.destinationAcademicYear, effectiveAt: learnerTransferRequests.effectiveAt,
+          reasonCode: learnerTransferRequests.reasonCode, status: learnerTransferRequests.status,
+          requestedAt: learnerTransferRequests.requestedAt, learnerId: learnerTransferSourceLinks.sourceLearnerId,
+          sourceEnrolmentId: learnerTransferSourceLinks.sourceEnrolmentId, learnerReference: learnerProfiles.learnerReference,
+          firstName: people.legalFirstName, lastName: people.legalLastName, preferredName: people.preferredName,
+        }).from(learnerTransferRequests)
+          .innerJoin(learnerTransferSourceLinks, eq(learnerTransferSourceLinks.transferRequestId, learnerTransferRequests.id))
+          .innerJoin(organisations, eq(learnerTransferRequests.receivingOrganisationId, organisations.id))
+          .innerJoin(learnerProfiles, eq(learnerTransferSourceLinks.sourceLearnerId, learnerProfiles.id))
+          .innerJoin(people, eq(learnerProfiles.personId, people.id))
+          .where(eq(learnerTransferRequests.sendingOrganisationId, organisationId))
+          .orderBy(asc(learnerTransferRequests.requestedAt)),
+        tx.select({
+          id: learnerTransferRequests.id, transferReference: learnerTransferRequests.transferReference,
+          sendingOrganisationName: organisations.name, sourceGrade: learnerTransferRequests.sourceGrade,
+          destinationGrade: learnerTransferRequests.destinationGrade, destinationAcademicYear: learnerTransferRequests.destinationAcademicYear,
+          effectiveAt: learnerTransferRequests.effectiveAt, reasonCode: learnerTransferRequests.reasonCode,
+          status: learnerTransferRequests.status, rejectionCode: learnerTransferRequests.rejectionCode,
+          requestedAt: learnerTransferRequests.requestedAt,
+        }).from(learnerTransferRequests)
+          .innerJoin(organisations, eq(learnerTransferRequests.sendingOrganisationId, organisations.id))
+          .where(eq(learnerTransferRequests.receivingOrganisationId, organisationId))
+          .orderBy(asc(learnerTransferRequests.requestedAt)),
+        tx.execute(sql`SELECT organisation_id, organisation_name FROM sentinel_private.list_verified_transfer_institutions() WHERE organisation_id <> ${organisationId}::uuid`),
+      ]);
+      return { eligibility: eligibilityRows[0] ?? null, activeEnrolments, outgoing, incoming, directoryResult };
+    });
 
   return {
     organisation,
-    activeEnrolments: activeEnrolments.map(row => ({ ...row, startsAt: dateOnly(row.startsAt)!, endsAt: dateOnly(row.endsAt) })),
-    otherOrganisations,
-    outgoing: outgoing.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)!, requestedAt: row.requestedAt.toISOString() })),
-    incoming: incoming.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)!, requestedAt: row.requestedAt.toISOString() })),
+    eligibility: learnerData.eligibility ? {
+      ...learnerData.eligibility,
+      requestedAt: learnerData.eligibility.requestedAt.toISOString(),
+      reviewedAt: learnerData.eligibility.reviewedAt?.toISOString() ?? null,
+      validUntil: dateOnly(learnerData.eligibility.validUntil),
+    } : null,
+    activeEnrolments: learnerData.activeEnrolments.map(row => ({ ...row, startsAt: dateOnly(row.startsAt)!, endsAt: dateOnly(row.endsAt) })),
+    otherOrganisations: learnerData.directoryResult.rows.map(row => ({ id: String(row.organisation_id), name: String(row.organisation_name) })),
+    outgoing: learnerData.outgoing.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)!, requestedAt: row.requestedAt.toISOString() })),
+    incoming: learnerData.incoming.map(row => ({ ...row, effectiveAt: dateOnly(row.effectiveAt)!, requestedAt: row.requestedAt.toISOString() })),
   };
 }
 
@@ -93,6 +116,28 @@ async function callTransferFunction<T extends Record<string, unknown>>(
   await assertTransferManager(actorUserId, organisationId);
   if (!uuidPattern.test(organisationId)) throw new LearnerTransferError('A valid organisation identifier is required', 400);
   return withAuthenticatedLearnerDb(actorUserId, query);
+}
+
+const registryIssuers = ['moe_registration_number','nemis_uic','kemis_institution_id','tveta_registration_number','other_authority'] as const;
+
+export async function requestOrganisationTransferEligibility(actorUserId: string, organisationId: string, input: {
+  registryIssuer: string; registryIdentifier: string; submittedEvidenceReference: string;
+}) {
+  if (!registryIssuers.includes(input.registryIssuer as typeof registryIssuers[number])) {
+    throw new LearnerTransferError('Select a supported official institutional identifier', 400);
+  }
+  const identifier = input.registryIdentifier.trim();
+  const evidenceReference = input.submittedEvidenceReference.trim();
+  if (identifier.length < 3 || identifier.length > 180 || evidenceReference.length < 3 || evidenceReference.length > 180) {
+    throw new LearnerTransferError('An institutional identifier and secure evidence reference are required', 400);
+  }
+  return callTransferFunction(actorUserId, organisationId, async tx => {
+    const result = await tx.execute(sql`SELECT sentinel_private.request_organisation_transfer_eligibility(
+      ${organisationId}::uuid, ${input.registryIssuer}::text, ${identifier}::text, ${evidenceReference}::text
+    ) AS organisation_id`);
+    if (!result.rows[0]?.organisation_id) throw new LearnerTransferError('The database did not confirm the eligibility request');
+    return { organisationId, status: 'pending' as const };
+  });
 }
 
 export async function requestLearnerTransfer(actorUserId: string, sendingOrganisationId: string, input: {
