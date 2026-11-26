@@ -17,6 +17,8 @@ describe('academic-year rollover migration', () => {
     expect(sql).toContain("outcome IN ('unresolved','promote','repeat','not_progressing')");
     expect(sql).toContain('v_current_count <> v_snapshot_count');
     expect(sql).toContain("item.status = 'unresolved'");
+    expect(sql).toContain("request.status IN ('pending','approved')");
+    expect(sql).toContain('Resolve existing pending or approved progression requests');
   });
 
   it('reuses independently reviewed progression requests rather than bulk-changing enrolments', async () => {
