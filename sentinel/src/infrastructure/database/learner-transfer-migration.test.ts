@@ -57,7 +57,7 @@ describe('privacy-preserving learner transfer migration', () => {
     expect(sql).toContain('p_effective_at date');
     expect(sql).toContain('v_request.effective_at > v_today');
     expect(sql).toContain('v_destination.starts_at <> v_request.effective_at');
-    expect(sql).toContain('destination enrolment must be active');
+    expect(sql).toMatch(/destination enrolment must be active/i);
   });
 
   it('forces RLS, denies direct writes and grants only controlled functions', async () => {
