@@ -39,12 +39,12 @@ export async function PATCH(request: Request, context: { params: Promise<{ organ
   let body: unknown;
   try { body = await request.json(); } catch { return Response.json({ error: 'A valid JSON body is required' }, { status: 400 }); }
   if (!body || typeof body !== 'object' || !('classId' in body) || typeof body.classId !== 'string'
-    || !('effectiveAt' in body) || typeof body.effectiveAt !== 'string' || !('reason' in body) || typeof body.reason !== 'string') {
+    || !('reason' in body) || typeof body.reason !== 'string') {
     return Response.json({ error: 'Target class, effective date and reassignment reason are required' }, { status: 400 });
   }
   try {
     const placement = await reassignLearnerToClass(data.user.id, organisationId, enrolmentId, {
-      classId: body.classId, effectiveAt: body.effectiveAt, reason: body.reason,
+      classId: body.classId, reason: body.reason,
     });
     return Response.json({ placement });
   } catch (error) {
