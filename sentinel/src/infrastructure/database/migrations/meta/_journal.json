@@ -232,6 +232,13 @@
       "when": 1795699000000,
       "tag": "0032_academic_year_rollover_batches",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795700400000,
+      "tag": "0033_teacher_weekly_workload",
+      "breakpoints": true
     }
   ]
 }
