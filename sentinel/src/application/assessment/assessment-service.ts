@@ -325,11 +325,11 @@ export async function getAssessmentInstrumentOutcomeOptions(actorUserId: string,
 }
 
 export async function createAssessmentTaskOutcomeMapping(
-  actorUserId: string, organisationId: string, taskId: string, curriculumSourceNodeId: string,
+  actorUserId: string, organisationId: string, instrumentVersionId: string, taskId: string, curriculumSourceNodeId: string,
 ) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_task_outcome_mapping(
-      ${organisationId}::uuid, ${taskId}::uuid, ${curriculumSourceNodeId}::uuid
+      ${organisationId}::uuid, ${instrumentVersionId}::uuid, ${taskId}::uuid, ${curriculumSourceNodeId}::uuid
     ) AS mapping_id`);
     return result.rows[0]?.mapping_id;
   });
