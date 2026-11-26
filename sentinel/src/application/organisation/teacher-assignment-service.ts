@@ -146,3 +146,23 @@ export async function reviseTeacherWeeklyWorkloadAllocation(actorUserId: string,
     return { allocationId };
   });
 }
+
+export async function getMyTeacherWorkloadSummary(actorUserId: string, organisationId: string, academicYear: number) {
+  if (!uuidPattern.test(organisationId) || !Number.isInteger(academicYear)) throw new TeacherAssignmentError('A valid organisation and academic year are required', 400);
+  const [organisation] = await db.select({ id: organisations.id, name: organisations.name, timeZone: organisations.timeZone }).from(organisations).where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active'))).limit(1);
+  if (!organisation) throw new TeacherAssignmentError('Organisation not found or inactive', 404);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: organisation.timeZone }).format(new Date());
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const [assignments, allocations, policies] = await Promise.all([
+      tx.select({ id: teacherClassAssignments.id, classId: teacherClassAssignments.classId, grade: teacherClassAssignments.grade, academicYear: teacherClassAssignments.academicYear, startsOn: teacherClassAssignments.startsOn, endsOn: teacherClassAssignments.endsOn, status: teacherClassAssignments.status, learningArea: curriculumLearningAreas.name }).from(teacherClassAssignments).innerJoin(curriculumLearningAreas, eq(teacherClassAssignments.learningAreaId, curriculumLearningAreas.id)).where(and(eq(teacherClassAssignments.organisationId, organisationId), eq(teacherClassAssignments.teacherUserId, actorUserId), eq(teacherClassAssignments.academicYear, academicYear))),
+      tx.select({ teacherAssignmentId: teacherWeeklyWorkloadAllocations.teacherAssignmentId, weeklyPeriods: teacherWeeklyWorkloadAllocations.weeklyPeriods, startsOn: teacherWeeklyWorkloadAllocations.startsOn, endsOn: teacherWeeklyWorkloadAllocations.endsOn, status: teacherWeeklyWorkloadAllocations.status }).from(teacherWeeklyWorkloadAllocations).where(eq(teacherWeeklyWorkloadAllocations.organisationId, organisationId)),
+      tx.select({ referenceWeeklyPeriods: teacherWorkloadPolicies.referenceWeeklyPeriods, maximumWeeklyPeriods: teacherWorkloadPolicies.maximumWeeklyPeriods, periodDurationMinutes: teacherWorkloadPolicies.periodDurationMinutes, effectiveFrom: teacherWorkloadPolicies.effectiveFrom }).from(teacherWorkloadPolicies).where(and(eq(teacherWorkloadPolicies.organisationId, organisationId), eq(teacherWorkloadPolicies.academicYear, academicYear))),
+    ]);
+    const rows = assignments.filter(a=>a.status==='active' && a.startsOn<=today && (a.endsOn===null || a.endsOn>today)).map(assignment => {
+      const allocation = allocations.filter(a=>a.teacherAssignmentId===assignment.id && a.status==='active' && a.startsOn<=today && (a.endsOn===null || a.endsOn>today)).sort((a,b)=>b.startsOn.localeCompare(a.startsOn))[0];
+      return { ...assignment, weeklyPeriods: allocation?.weeklyPeriods ?? null };
+    });
+    const policy = policies.filter(p=>p.effectiveFrom<=today).sort((a,b)=>b.effectiveFrom.localeCompare(a.effectiveFrom))[0] ?? null;
+    return { organisation, academicYear, asOfDate: today, assignments: rows, totalWeeklyPeriods: rows.reduce((sum,row)=>sum+(row.weeklyPeriods??0),0), policy };
+  });
+}
