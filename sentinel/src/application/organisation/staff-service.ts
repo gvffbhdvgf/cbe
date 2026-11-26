@@ -1,7 +1,7 @@
 import { and, asc, eq, gt, ilike, isNull, lte, notExists, or, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
-import { authUsers, organisationMemberships } from '@/infrastructure/database/schema/security';
+import { auditEvents, authUsers, organisationMemberships } from '@/infrastructure/database/schema/security';
 import { people } from '@/infrastructure/database/schema/learner';
 import { staffEngagements, staffProfiles } from '@/infrastructure/database/schema/staff';
 import { requireLearnerManager } from '@/application/learner/learner-service';
@@ -191,4 +191,39 @@ export async function endStaffEngagement(actorUserId: string, organisationId: st
     if (!result.rows[0]?.ends_on) throw new StaffProfileError('The database did not confirm the engagement end date');
     return { engagementId, endsOn: result.rows[0].ends_on };
   });
+}
+
+
+export async function recordStaffAccountInvitation(actorUserId: string, organisationId: string, staffProfileId: string, email: string) {
+  await assertStaffManager(actorUserId, organisationId);
+  if (![organisationId, staffProfileId].every(value => uuidPattern.test(value))
+    || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+    throw new StaffProfileError('A valid staff profile and email address are required', 400);
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const [profile] = await db.select({
+    id: staffProfiles.id,
+    status: staffProfiles.status,
+    userId: staffProfiles.userId,
+  }).from(staffProfiles)
+    .where(and(eq(staffProfiles.id, staffProfileId), eq(staffProfiles.organisationId, organisationId)))
+    .limit(1);
+  if (!profile || profile.status !== 'active' || profile.userId !== null) {
+    throw new StaffProfileError('Only an active, unlinked staff profile can receive an account invitation', 409);
+  }
+  const [authUser] = await db.select({
+    id: authUsers.id, email: authUsers.email, emailVerified: authUsers.emailVerified, banned: authUsers.banned,
+  }).from(authUsers).where(eq(sql`lower(${authUsers.email})`, normalizedEmail)).limit(1);
+  if (!authUser || authUser.email.toLowerCase() !== normalizedEmail || authUser.emailVerified
+    || authUser.banned) {
+    throw new StaffProfileError('The provisioned account must match this unverified, active staff email address', 409);
+  }
+  await withAuthenticatedLearnerDb(actorUserId, async tx => {
+    await tx.insert(auditEvents).values({
+      actorUserId, organisationId, action: 'staff.account_invitation_sent',
+      resourceType: 'staff_profile', resourceId: staffProfileId,
+      metadata: { email: normalizedEmail, authUserId: authUser.id },
+    });
+  });
+  return { staffProfileId, invitationRecorded: true };
 }
