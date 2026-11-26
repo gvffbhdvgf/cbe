@@ -367,7 +367,7 @@ export const teacherClassAssignments = pgTable('teacher_class_assignments', {
 
 export const learnerTransferRequests = pgTable('learner_transfer_requests', {
   id: uuid('id').defaultRandom().primaryKey(),
-  transferReference: varchar('transfer_reference', { length: 20 }).notNull(),
+  transferReference: varchar('transfer_reference', { length: 20 }).notNull().default(sql`upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 16))`),
   sendingOrganisationId: uuid('sending_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
   receivingOrganisationId: uuid('receiving_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
   sourceGrade: integer('source_grade').notNull(),
@@ -399,7 +399,7 @@ export const learnerTransferRequests = pgTable('learner_transfer_requests', {
   check('learner_transfer_reason_check', sql`${table.reasonCode} IN ('family_relocation','school_change','placement_change','other')`),
   check('learner_transfer_status_check', sql`${table.status} IN ('requested','accepted','rejected','released','completed','cancelled')`),
   check('learner_transfer_rejection_code_check', sql`${table.rejectionCode} IS NULL OR ${table.rejectionCode} IN ('not_eligible','missing_documentation','capacity_unavailable','other')`),
-  check('learner_transfer_rejection_state_check', sql`${table.status} = 'rejected' OR ${table.rejectionCode} IS NULL`),
+  check('learner_transfer_rejection_state_check', sql`(${table.status} = 'rejected') = (${table.rejectionCode} IS NOT NULL)`),
   unique('learner_transfer_requests_id_sender_unique').on(table.id, table.sendingOrganisationId),
   unique('learner_transfer_requests_id_receiver_unique').on(table.id, table.receivingOrganisationId),
   unique('learner_transfer_reference_unique').on(table.transferReference),
