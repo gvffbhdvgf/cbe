@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, or } from 'drizzle-orm';
+import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
 import { authUsers } from '@/infrastructure/database/schema/security';
@@ -83,7 +83,7 @@ export async function getGuardianManagementSummary(actorUserId: string, organisa
   const guardianPeople = personIds.length ? await db.select({
     id: people.id, firstName: people.legalFirstName, middleName: people.legalMiddleName,
     lastName: people.legalLastName, preferredName: people.preferredName,
-  }).from(people).where(and(eq(people.tenantOrganisationId, organisationId))) : [];
+  }).from(people).where(and(eq(people.tenantOrganisationId, organisationId), inArray(people.id, personIds))) : [];
   const learnerById = new Map(learners.map(l => [l.id, l]));
   const personById = new Map(guardianPeople.map(p => [p.id, p]));
   const profileByPerson = new Map(profiles.map(p => [p.personId, p]));
