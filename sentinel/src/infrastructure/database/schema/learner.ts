@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, date, foreignKey, index, integer, pgTable, text, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, check, date, foreignKey, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
 import { curriculumLearningAreas } from './curriculum';
@@ -340,4 +340,59 @@ export const learnerTransferDestinationLinks = pgTable('learner_transfer_destina
   foreignKey({ columns: [table.receivingOrganisationId, table.destinationLearnerId], foreignColumns: [learnerProfiles.tenantOrganisationId, learnerProfiles.id], name: 'learner_transfer_destination_learner_fk' }).onDelete('restrict'),
   foreignKey({ columns: [table.receivingOrganisationId, table.receivingOrganisationId, table.destinationEnrolmentId, table.destinationLearnerId], foreignColumns: [learnerEnrolments.tenantOrganisationId, learnerEnrolments.organisationId, learnerEnrolments.id, learnerEnrolments.learnerId], name: 'learner_transfer_destination_enrolment_fk' }).onDelete('restrict'),
   index('learner_transfer_destination_enrolment_idx').on(table.receivingOrganisationId, table.destinationEnrolmentId),
+]);
+
+
+export const learnerRecordCorrectionRequests = pgTable('learner_record_correction_requests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  learnerId: uuid('learner_id').notNull(),
+  personId: uuid('person_id').notNull(),
+  originalValues: jsonb('original_values').$type<Record<string, string | null>>().notNull(),
+  proposedValues: jsonb('proposed_values').$type<Record<string, string | null>>().notNull(),
+  reason: text('reason').notNull(),
+  evidenceReference: varchar('evidence_reference', { length: 180 }),
+  status: varchar('status', { length: 16 }).notNull().default('pending'),
+  requestedBy: uuid('requested_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  requestedAt: timestamp('requested_at', { withTimezone: true }).notNull().defaultNow(),
+  reviewedBy: uuid('reviewed_by').references(() => authUsers.id, { onDelete: 'restrict' }),
+  reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+  reviewReason: text('review_reason'),
+  appliedAt: timestamp('applied_at', { withTimezone: true }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('learner_record_correction_requests_scope_check', sql`${table.tenantOrganisationId} = ${table.organisationId}`),
+  check('learner_record_correction_requests_status_check', sql`${table.status} IN ('pending','applied','rejected','conflicted')`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.learnerId], foreignColumns: [learnerProfiles.tenantOrganisationId, learnerProfiles.id], name: 'learner_record_correction_requests_learner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.personId], foreignColumns: [people.tenantOrganisationId, people.id], name: 'learner_record_correction_requests_person_fk' }).onDelete('restrict'),
+  unique('learner_record_correction_requests_scope_id_unique').on(table.tenantOrganisationId, table.organisationId, table.id),
+  uniqueIndex('learner_record_correction_one_pending_per_learner_idx').on(table.organisationId, table.learnerId).where(sql`${table.status} = 'pending'`),
+  index('learner_record_correction_requests_history_idx').on(table.organisationId, table.requestedAt),
+]);
+
+export const learnerRecordCorrectionHistory = pgTable('learner_record_correction_history', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull(),
+  organisationId: uuid('organisation_id').notNull(),
+  learnerId: uuid('learner_id').notNull(),
+  personId: uuid('person_id').notNull(),
+  correctionRequestId: uuid('correction_request_id').notNull(),
+  previousValues: jsonb('previous_values').$type<Record<string, string | null>>().notNull(),
+  correctedValues: jsonb('corrected_values').$type<Record<string, string | null>>().notNull(),
+  changedFields: text('changed_fields').array().notNull(),
+  reason: text('reason').notNull(),
+  evidenceReference: varchar('evidence_reference', { length: 180 }),
+  requestedBy: uuid('requested_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  reviewedBy: uuid('reviewed_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  appliedAt: timestamp('applied_at', { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('learner_record_correction_history_scope_check', sql`${table.tenantOrganisationId} = ${table.organisationId}`),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.correctionRequestId], foreignColumns: [learnerRecordCorrectionRequests.tenantOrganisationId, learnerRecordCorrectionRequests.organisationId, learnerRecordCorrectionRequests.id], name: 'learner_record_correction_history_request_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.learnerId], foreignColumns: [learnerProfiles.tenantOrganisationId, learnerProfiles.id], name: 'learner_record_correction_history_learner_fk' }).onDelete('restrict'),
+  foreignKey({ columns: [table.tenantOrganisationId, table.personId], foreignColumns: [people.tenantOrganisationId, people.id], name: 'learner_record_correction_history_person_fk' }).onDelete('restrict'),
+  unique('learner_record_correction_history_request_unique').on(table.correctionRequestId),
+  index('learner_record_correction_history_learner_idx').on(table.organisationId, table.learnerId, table.appliedAt),
 ]);
