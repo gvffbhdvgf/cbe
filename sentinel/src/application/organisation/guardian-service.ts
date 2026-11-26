@@ -1,7 +1,7 @@
 import { and, asc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
-import { authUsers } from '@/infrastructure/database/schema/security';
+import { auditEvents, authUsers } from '@/infrastructure/database/schema/security';
 import { guardianProfiles, guardianRelationships, learnerEnrolments, learnerProfiles, people } from '@/infrastructure/database/schema/learner';
 import { requireLearnerManager } from '@/application/learner/learner-service';
 import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
@@ -175,6 +175,35 @@ export async function reviewGuardianRelationship(actorUserId: string, organisati
     )`);
     return { relationshipId, decision: input.decision };
   });
+}
+
+export async function recordGuardianAccountInvitation(actorUserId: string, organisationId: string, profileId: string, email: string, authUserId: string) {
+  await assertGuardianManager(actorUserId, organisationId);
+  if (![organisationId, profileId, authUserId].every(v => uuidPattern.test(v)) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+    throw new GuardianManagementError('Valid organisation, guardian profile, account and email are required', 400);
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const [profile] = await db.select({
+    contactEmail: guardianProfiles.contactEmail,
+    verificationStatus: guardianProfiles.verificationStatus,
+    linkedUserId: guardianProfiles.userId,
+  }).from(guardianProfiles).where(and(eq(guardianProfiles.id, profileId), eq(guardianProfiles.tenantOrganisationId, organisationId))).limit(1);
+  if (!profile || profile.verificationStatus !== 'verified' || profile.linkedUserId !== null || profile.contactEmail?.toLowerCase() !== normalizedEmail) {
+    throw new GuardianManagementError('Only an independently verified guardian profile with the matching, unlinked contact email can be invited', 409);
+  }
+  const [authUser] = await db.select({ id: authUsers.id, email: authUsers.email, emailVerified: authUsers.emailVerified, banned: authUsers.banned })
+    .from(authUsers).where(eq(authUsers.id, authUserId)).limit(1);
+  if (!authUser || authUser.email.toLowerCase() !== normalizedEmail || authUser.emailVerified || authUser.banned) {
+    throw new GuardianManagementError('The provisioned account does not match the pending guardian email verification', 409);
+  }
+  await withAuthenticatedLearnerDb(actorUserId, async tx => {
+    await tx.insert(auditEvents).values({
+      actorUserId, organisationId, action: 'guardian.account_invitation_sent',
+      resourceType: 'guardian_profile', resourceId: profileId,
+      metadata: { email: normalizedEmail, authUserId },
+    });
+  });
+  return { guardianProfileId: profileId, invitationRecorded: true };
 }
 
 export async function linkGuardianAccount(actorUserId: string, organisationId: string, profileId: string, email: string) {
