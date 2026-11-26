@@ -176,13 +176,13 @@ export async function createAssessmentProgramme(actorUserId: string, organisatio
 }
 
 export async function createAssessmentInstrumentVersion(
-  actorUserId: string, organisationId: string, learningAreaId: string, grade: number,
+  actorUserId: string, organisationId: string, curriculumGradeOfferingId: string,
   instrumentCode: string, title: string,
   tasks: Array<{ taskCode: string; title: string; responseType: 'text' | 'numeric' | 'boolean' | 'choice' | 'observation' | 'evidence'; maximumScore: number; required: boolean; displayOrder: number }>,
 ) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
-    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_instrument_version(
-      ${organisationId}::uuid, ${learningAreaId}::uuid, ${grade}::integer,
+    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_instrument_version_from_offering(
+      ${organisationId}::uuid, ${curriculumGradeOfferingId}::uuid,
       ${instrumentCode}::text, ${title}::text, ${JSON.stringify(tasks)}::jsonb
     ) AS instrument_version_id`);
     return result.rows[0]?.instrument_version_id;
@@ -238,14 +238,24 @@ export async function getAssessmentAuthoringOptions(actorUserId: string, organis
   const role = await getOrganisationActorRole(actorUserId, organisationId);
   if (!canReadAssessmentData(role)) throw new AssessmentAccessError('Assessment authoring access is required');
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
-    const [programmes, instruments, learningAreas] = await Promise.all([
+    const [programmes, instruments, learningAreas, gradeOfferingResult] = await Promise.all([
       tx.select({ id: assessmentProgrammes.id, code: assessmentProgrammes.programmeCode, title: assessmentProgrammes.title, type: assessmentProgrammes.programmeType })
         .from(assessmentProgrammes).where(and(eq(assessmentProgrammes.organisationId, organisationId), eq(assessmentProgrammes.status, 'active'))).orderBy(assessmentProgrammes.title),
       tx.select({ id: assessmentInstrumentVersions.id, code: assessmentInstrumentVersions.instrumentCode, version: assessmentInstrumentVersions.versionNumber, title: assessmentInstrumentVersions.title, grade: assessmentInstrumentVersions.grade, learningAreaId: assessmentInstrumentVersions.learningAreaId, status: assessmentInstrumentVersions.status, createdBy: assessmentInstrumentVersions.createdBy })
         .from(assessmentInstrumentVersions).where(eq(assessmentInstrumentVersions.organisationId, organisationId)).orderBy(desc(assessmentInstrumentVersions.createdAt)),
       tx.select({ id: curriculumLearningAreas.id, name: curriculumLearningAreas.name }).from(curriculumLearningAreas).orderBy(curriculumLearningAreas.name),
+      tx.execute(sql`
+        SELECT offering.id, offering.grade, offering.learning_area_id, area.name AS learning_area,
+          edition.edition_label, pathway.name AS pathway_name, offering.availability_status
+        FROM public.curriculum_grade_offerings AS offering
+        JOIN public.curriculum_learning_areas AS area ON area.id = offering.learning_area_id
+        JOIN public.curriculum_editions AS edition ON edition.id = offering.edition_id
+        JOIN public.curriculum_pathways AS pathway ON pathway.id = offering.pathway_id
+        WHERE offering.availability_status IN ('document_listed','document_available')
+        ORDER BY offering.grade, area.name, edition.edition_label, pathway.name
+      `),
     ]);
-    return { programmes, instruments, learningAreas, timeZone: organisation.timeZone };
+    return { programmes, instruments, learningAreas, gradeOfferings: gradeOfferingResult.rows, timeZone: organisation.timeZone };
   });
 }
 
