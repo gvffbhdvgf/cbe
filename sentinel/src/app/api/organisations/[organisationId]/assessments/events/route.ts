@@ -2,7 +2,8 @@ import { auth } from '@/lib/auth/server';
 import { AssessmentAccessError, AssessmentTransitionError, createAssessmentEventLocal, listAssessmentEvents } from '@/application/assessment/assessment-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\nconst localDateTimePattern = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const localDateTimePattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export async function GET(_request: Request, context: { params: Promise<{ organisationId: string }> }) {
   const { data } = await auth.getSession();
