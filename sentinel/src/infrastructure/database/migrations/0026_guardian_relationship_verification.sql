@@ -21,7 +21,7 @@ CREATE TABLE public.guardian_profiles (
   CONSTRAINT guardian_profiles_tenant_person_unique UNIQUE (tenant_organisation_id, person_id),
   CONSTRAINT guardian_profiles_status_check CHECK (status IN ('active', 'inactive', 'suspended')),
   CONSTRAINT guardian_profiles_verification_status_check CHECK (verification_status IN ('pending', 'verified', 'rejected')),
-  CONSTRAINT guardian_profiles_contact_email_check CHECK (contact_email IS NULL OR contact_email ~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'),
+  CONSTRAINT guardian_profiles_contact_email_check CHECK (contact_email IS NULL OR contact_email ~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'),
   CONSTRAINT guardian_profiles_verification_method_check CHECK (verification_method IS NULL OR verification_method IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')),
   CONSTRAINT guardian_profiles_verified_check CHECK (verification_status <> 'verified' OR (verified_at IS NOT NULL AND verified_by IS NOT NULL AND verification_method IS NOT NULL AND evidence_reference IS NOT NULL)),
   CONSTRAINT guardian_profiles_rejected_check CHECK (verification_status <> 'rejected' OR (rejected_at IS NOT NULL AND rejected_by IS NOT NULL AND rejection_reason IS NOT NULL)),
@@ -129,6 +129,7 @@ AS $$
 DECLARE
   v_actor_id uuid := sentinel_private.current_user_id();
   v_time_zone text;
+  v_today date;
   v_person_id uuid := p_person_id;
   v_profile_id uuid;
   v_profile_status text;
@@ -146,6 +147,7 @@ BEGIN
   FROM public.organisations o
   WHERE o.id = p_organisation_id AND o.status = 'active';
   IF v_time_zone IS NULL THEN RAISE EXCEPTION 'Organisation not found or inactive' USING ERRCODE = 'P0002'; END IF;
+  v_today := (now() AT TIME ZONE v_time_zone)::date;
   SELECT lp.status INTO v_learner_status
   FROM public.learner_profiles lp
   WHERE lp.tenant_organisation_id = p_organisation_id AND lp.id = p_learner_id
@@ -153,13 +155,13 @@ BEGIN
   IF v_learner_status IS DISTINCT FROM 'active' THEN
     RAISE EXCEPTION 'An active learner record in this organisation is required' USING ERRCODE = '23514';
   END IF;
-  IF p_relationship_type NOT IN ('mother', 'father', 'parent', 'legal_guardian', 'foster_parent', 'grandparent', 'sibling', 'relative', 'other') THEN
+  IF p_relationship_type IS NULL OR p_relationship_type NOT IN ('mother', 'father', 'parent', 'legal_guardian', 'foster_parent', 'grandparent', 'sibling', 'relative', 'other') THEN
     RAISE EXCEPTION 'Choose a supported guardian relationship type' USING ERRCODE = '22023';
   END IF;
-  IF p_starts_on IS NULL OR (p_ends_on IS NOT NULL AND p_ends_on <= p_starts_on) THEN
+  IF p_starts_on IS NULL OR (p_ends_on IS NOT NULL AND (p_ends_on <= p_starts_on OR p_ends_on <= v_today)) THEN
     RAISE EXCEPTION 'Guardian relationship dates are invalid' USING ERRCODE = '22023';
   END IF;
-  IF p_contact_email IS NOT NULL AND p_contact_email !~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' THEN
+  IF p_contact_email IS NOT NULL AND (length(btrim(p_contact_email)) > 254 OR p_contact_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' ) THEN
     RAISE EXCEPTION 'Enter a valid guardian contact email' USING ERRCODE = '22023';
   END IF;
   v_starts_at := p_starts_on::timestamp AT TIME ZONE v_time_zone;
@@ -169,7 +171,7 @@ BEGIN
     IF p_confirm_distinct_person IS NOT TRUE THEN
       RAISE EXCEPTION 'Confirm that you checked for an existing Person record before creating a new guardian' USING ERRCODE = '22023';
     END IF;
-    IF NULLIF(btrim(p_first_name), '') IS NULL OR NULLIF(btrim(p_last_name), '') IS NULL THEN
+    IF NULLIF(btrim(p_first_name), '') IS NULL OR NULLIF(btrim(p_last_name), '') IS NULL OR length(btrim(p_first_name)) > 120 OR length(btrim(p_middle_name)) > 120 OR length(btrim(p_last_name)) > 120 OR length(btrim(p_preferred_name)) > 120 THEN
       RAISE EXCEPTION 'Legal first and last names are required for a new guardian Person' USING ERRCODE = '22023';
     END IF;
     INSERT INTO public.people (tenant_organisation_id, legal_first_name, legal_middle_name, legal_last_name, preferred_name, created_by)
@@ -248,8 +250,8 @@ BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Guardian profile review authority is required' USING ERRCODE = '42501';
   END IF;
-  IF v_decision NOT IN ('verified', 'rejected') OR v_method NOT IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')
-     OR v_evidence IS NULL OR length(v_evidence) > 160 OR (v_decision = 'rejected' AND (v_reason IS NULL OR length(v_reason) > 300)) THEN
+  IF v_decision IS NULL OR v_decision NOT IN ('verified', 'rejected') OR v_method IS NULL OR v_method NOT IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')
+     OR v_evidence IS NULL OR length(v_evidence) < 3 OR length(v_evidence) > 160 OR (v_decision = 'rejected' AND (v_reason IS NULL OR length(v_reason) < 3 OR length(v_reason) > 300)) THEN
     RAISE EXCEPTION 'A valid review decision, method and evidence reference are required' USING ERRCODE = '22023';
   END IF;
   SELECT * INTO v_profile FROM public.guardian_profiles
@@ -310,8 +312,8 @@ BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Guardian relationship review authority is required' USING ERRCODE = '42501';
   END IF;
-  IF v_decision NOT IN ('verified', 'rejected') OR v_method NOT IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')
-     OR v_evidence IS NULL OR length(v_evidence) > 160 OR (v_decision = 'rejected' AND (v_reason IS NULL OR length(v_reason) > 300)) THEN
+  IF v_decision IS NULL OR v_decision NOT IN ('verified', 'rejected') OR v_method IS NULL OR v_method NOT IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')
+     OR v_evidence IS NULL OR length(v_evidence) < 3 OR length(v_evidence) > 160 OR (v_decision = 'rejected' AND (v_reason IS NULL OR length(v_reason) < 3 OR length(v_reason) > 300)) THEN
     RAISE EXCEPTION 'A valid review decision, method and evidence reference are required' USING ERRCODE = '22023';
   END IF;
   SELECT * INTO v_relationship FROM public.guardian_relationships
@@ -372,7 +374,7 @@ BEGIN
   IF v_actor_id IS NULL OR NOT sentinel_private.can_manage_learner_records(p_organisation_id) THEN
     RAISE EXCEPTION 'Guardian account-link authority is required' USING ERRCODE = '42501';
   END IF;
-  IF v_email IS NULL OR v_email !~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' THEN
+  IF v_email IS NULL OR v_email !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' THEN
     RAISE EXCEPTION 'Enter the guardian contact email recorded on the verified profile' USING ERRCODE = '22023';
   END IF;
   SELECT * INTO v_profile FROM public.guardian_profiles
@@ -426,7 +428,7 @@ BEGIN
     RAISE EXCEPTION 'Only an active verified guardian relationship can be revoked' USING ERRCODE = '23514';
   END IF;
   UPDATE public.guardian_relationships
-  SET status = 'revoked', ends_at = now(), revoked_at = now(), revoked_by = v_actor_id,
+  SET status = 'revoked', ends_at = GREATEST(now(), v_relationship.starts_at + interval '1 second'), revoked_at = now(), revoked_by = v_actor_id,
       revocation_reason = v_reason, can_view_progress = false, can_receive_messages = false, updated_at = now()
   WHERE id = p_relationship_id;
   INSERT INTO public.audit_events (actor_user_id, organisation_id, action, resource_type, resource_id, metadata)
