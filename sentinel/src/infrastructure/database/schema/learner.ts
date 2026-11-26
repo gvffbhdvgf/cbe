@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, date, foreignKey, index, integer, pgTable, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, check, date, foreignKey, index, integer, pgTable, text, timestamp, unique, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
 import { curriculumLearningAreas } from './curriculum';
@@ -45,6 +45,7 @@ export const classes = pgTable('classes', {
   grade: integer('grade').notNull(),
   classCode: varchar('class_code', { length: 40 }).notNull(),
   displayName: varchar('display_name', { length: 120 }).notNull(),
+  capacity: integer('capacity'),
   status: varchar('status', { length: 16 }).notNull().default('active'),
   createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -55,6 +56,7 @@ export const classes = pgTable('classes', {
   check('classes_grade_check', sql`${table.grade} BETWEEN 1 AND 9`),
   check('classes_academic_year_check', sql`${table.academicYear} BETWEEN 2000 AND 2100`),
   check('classes_status_check', sql`${table.status} IN ('active', 'archived')`),
+  check('classes_capacity_check', sql`${table.capacity} IS NULL OR ${table.capacity} BETWEEN 1 AND 500`),
   index('classes_org_grade_year_idx').on(table.organisationId, table.grade, table.academicYear),
 ]);
 
@@ -81,6 +83,30 @@ export const learnerEnrolments = pgTable('learner_enrolments', {
   check('learner_enrolments_effective_dates_check', sql`${table.endsAt} IS NULL OR ${table.endsAt} > ${table.startsAt}`),
   uniqueIndex('learner_enrolments_one_active_per_learner_idx').on(table.tenantOrganisationId, table.learnerId).where(sql`${table.status} = 'active'`),
   index('learner_enrolments_org_grade_year_idx').on(table.organisationId, table.grade, table.academicYear, table.status),
+]);
+
+
+export const learnerClassPlacements = pgTable('learner_class_placements', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  enrolmentId: uuid('enrolment_id').notNull().references(() => learnerEnrolments.id, { onDelete: 'restrict' }),
+  learnerId: uuid('learner_id').notNull().references(() => learnerProfiles.id, { onDelete: 'restrict' }),
+  classId: uuid('class_id').notNull(),
+  grade: integer('grade').notNull(),
+  academicYear: integer('academic_year').notNull(),
+  startsOn: date('starts_on').notNull(),
+  endsOn: date('ends_on'),
+  status: varchar('status', { length: 16 }).notNull().default('active'),
+  createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('learner_class_placements_scope_check', sql.raw('tenant_organisation_id = organisation_id')),
+  check('learner_class_placements_period_check', sql.raw('ends_on IS NULL OR ends_on > starts_on')),
+  check('learner_class_placements_status_check', sql.raw("status IN ('active','ended')")),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.classId, table.grade, table.academicYear], foreignColumns: [classes.tenantOrganisationId, classes.organisationId, classes.id, classes.grade, classes.academicYear], name: 'learner_class_placements_class_fk' }).onDelete('restrict'),
+  uniqueIndex('learner_class_placements_one_active_idx').on(table.tenantOrganisationId, table.enrolmentId).where(sql`${table.status} = 'active'`),
+  index('learner_class_placements_history_idx').on(table.tenantOrganisationId, table.learnerId, table.startsOn),
 ]);
 
 export const guardianRelationships = pgTable('guardian_relationships', {
@@ -126,6 +152,40 @@ export const learnerProgressionEvents = pgTable('learner_progression_events', {
   index('learner_progression_tenant_learner_idx').on(table.tenantOrganisationId, table.learnerId, table.effectiveAt),
 ]);
 
+
+
+export const learnerProgressionRequests = pgTable('learner_progression_requests', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  tenantOrganisationId: uuid('tenant_organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  organisationId: uuid('organisation_id').notNull().references(() => organisations.id, { onDelete: 'restrict' }),
+  enrolmentId: uuid('enrolment_id').notNull().references(() => learnerEnrolments.id, { onDelete: 'restrict' }),
+  learnerId: uuid('learner_id').notNull().references(() => learnerProfiles.id, { onDelete: 'restrict' }),
+  fromGrade: integer('from_grade').notNull(),
+  fromAcademicYear: integer('from_academic_year').notNull(),
+  toGrade: integer('to_grade').notNull(),
+  toAcademicYear: integer('to_academic_year').notNull(),
+  targetClassId: uuid('target_class_id'),
+  effectiveAt: date('effective_at').notNull(),
+  reason: text('reason').notNull(),
+  status: varchar('status', { length: 16 }).notNull().default('pending'),
+  requestedBy: uuid('requested_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
+  approvedBy: uuid('approved_by').references(() => authUsers.id, { onDelete: 'restrict' }),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  decisionNote: text('decision_note'),
+  executedAt: timestamp('executed_at', { withTimezone: true }),
+  newEnrolmentId: uuid('new_enrolment_id').references(() => learnerEnrolments.id, { onDelete: 'restrict' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  check('learner_progression_requests_scope_check', sql.raw('tenant_organisation_id = organisation_id')),
+  check('learner_progression_requests_year_check', sql.raw('to_academic_year = from_academic_year + 1')),
+  check('learner_progression_requests_grade_step_check', sql.raw('to_grade = from_grade OR to_grade = from_grade + 1')),
+  check('learner_progression_requests_status_check', sql.raw("status IN ('pending','approved','rejected','executed')")),
+  check('learner_progression_requests_reason_check', sql.raw('length(btrim(reason)) BETWEEN 10 AND 500')),
+  foreignKey({ columns: [table.tenantOrganisationId, table.organisationId, table.targetClassId, table.toGrade, table.toAcademicYear], foreignColumns: [classes.tenantOrganisationId, classes.organisationId, classes.id, classes.grade, classes.academicYear], name: 'learner_progression_requests_class_fk' }).onDelete('restrict'),
+  uniqueIndex('learner_progression_requests_pending_idx').on(table.tenantOrganisationId, table.enrolmentId).where(sql`${table.status} IN ('pending','approved')`),
+  index('learner_progression_requests_status_idx').on(table.tenantOrganisationId, table.organisationId, table.status, table.createdAt),
+]);
 
 export const teacherClassAssignments = pgTable('teacher_class_assignments', {
   id: uuid('id').defaultRandom().primaryKey(),
