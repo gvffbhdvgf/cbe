@@ -1,19 +1,20 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { OutcomeMappingControls } from './outcome-mapping-controls';
 
 type Programme = { id: string; code: string; title: string; type: string };
 type Instrument = { id: string; code: string; version: number; title: string; grade: number; learningAreaId: string; status: string; createdBy: string };
 type LearningArea = { id: string; name: string };
+type GradeOffering = { id: string; grade: number; learning_area_id: string; learning_area: string; edition_label: string; pathway_name: string; availability_status: string };
 type TaskDraft = { taskCode: string; title: string; responseType: 'text'|'numeric'|'boolean'|'choice'|'observation'|'evidence'; maximumScore: string; required: boolean };
-type Props = { organisationId: string; actorUserId: string; programmes: Programme[]; instruments: Instrument[]; learningAreas: LearningArea[]; timeZone: string };
+type Props = { organisationId: string; actorUserId: string; programmes: Programme[]; instruments: Instrument[]; learningAreas: LearningArea[]; gradeOfferings: GradeOffering[]; timeZone: string };
 
 const inputClass = 'mt-1 w-full rounded-xl border border-[#DCE7EC] bg-white px-3 py-2.5 text-[12px] text-[#29465D] outline-none focus:border-[#73CFC2]';
 const labelClass = 'block text-[10px] font-semibold uppercase tracking-[.1em] text-[#7890A0]';
 
-export function AssessmentAuthoringControls({ organisationId, actorUserId, programmes, instruments, learningAreas, timeZone }: Props) {
+export function AssessmentAuthoringControls({ organisationId, actorUserId, programmes, instruments, learningAreas, gradeOfferings, timeZone }: Props) {
   const router = useRouter();
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -25,6 +26,7 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
   const [instrumentTitle, setInstrumentTitle] = useState('');
   const [learningAreaId, setLearningAreaId] = useState(learningAreas[0]?.id ?? '');
   const [grade, setGrade] = useState('6');
+  const [gradeOfferingId, setGradeOfferingId] = useState(gradeOfferings.find(item => item.grade === 6 && item.learning_area_id === (learningAreas[0]?.id ?? ''))?.id ?? '');
   const [tasks, setTasks] = useState<TaskDraft[]>([{ taskCode: 'TASK-01', title: '', responseType: 'text', maximumScore: '10', required: true }]);
   const [programmeId, setProgrammeId] = useState(programmes[0]?.id ?? '');
   const [instrumentVersionId, setInstrumentVersionId] = useState(instruments.find(item => item.status === 'approved')?.id ?? '');
@@ -33,6 +35,10 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
   const [endsAt, setEndsAt] = useState('');
   const [academicYear, setAcademicYear] = useState(String(new Date().getFullYear()));
   const [moderationRequired, setModerationRequired] = useState(true);
+  const matchingGradeOfferings = gradeOfferings.filter(item => item.grade === Number(grade) && item.learning_area_id === learningAreaId);
+  useEffect(() => {
+    if (!matchingGradeOfferings.some(item => item.id === gradeOfferingId)) setGradeOfferingId(matchingGradeOfferings[0]?.id ?? '');
+  }, [grade, learningAreaId, gradeOfferings, gradeOfferingId]);
 
   async function send(path: string, body: unknown, label: string) {
     setBusy(label); setError(''); setMessage('');
@@ -55,7 +61,7 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
   async function createInstrument(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const result = await send(`/api/organisations/${organisationId}/assessments/instruments`, {
-      learningAreaId, grade: Number(grade), instrumentCode, title: instrumentTitle,
+      curriculumGradeOfferingId: gradeOfferingId, instrumentCode, title: instrumentTitle,
       tasks: tasks.map((task, index) => ({ ...task, maximumScore: Number(task.maximumScore), displayOrder: index })),
     }, 'Instrument draft creation');
     if (result?.instrumentVersionId) { setInstrumentCode(''); setInstrumentTitle(''); setTasks([{ taskCode: 'TASK-01', title: '', responseType: 'text', maximumScore: '10', required: true }]); }
@@ -85,12 +91,12 @@ export function AssessmentAuthoringControls({ organisationId, actorUserId, progr
       </form>
       <form onSubmit={createInstrument} className="rounded-2xl border border-[#E5EDF1] bg-[#FBFDFD] p-4">
         <h3 className="text-[13px] font-semibold text-[#29465D]">2. Instrument version draft</h3>
-        <div className="mt-4 grid grid-cols-2 gap-3"><label className={labelClass}>Grade<select value={grade} onChange={event => setGrade(event.target.value)} className={inputClass}>{Array.from({length:9},(_,i)=><option key={i+1} value={i+1}>Grade {i+1}</option>)}</select></label><label className={labelClass}>Learning area<select required value={learningAreaId} onChange={event => setLearningAreaId(event.target.value)} className={inputClass}>{learningAreas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}</select></label></div>
+        <div className="mt-4 grid grid-cols-2 gap-3"><label className={labelClass}>Grade<select value={grade} onChange={event => setGrade(event.target.value)} className={inputClass}>{Array.from({length:9},(_,i)=><option key={i+1} value={i+1}>Grade {i+1}</option>)}</select></label><label className={labelClass}>Learning area<select required value={learningAreaId} onChange={event => setLearningAreaId(event.target.value)} className={inputClass}>{learningAreas.map(area=><option key={area.id} value={area.id}>{area.name}</option>)}</select></label></div>\n        <label className={labelClass + ' mt-3'}>Curriculum edition and pathway<select required value={gradeOfferingId} onChange={event => setGradeOfferingId(event.target.value)} className={inputClass}><option value="">Select a verified catalogue offering</option>{matchingGradeOfferings.map(item=><option key={item.id} value={item.id}>{item.edition_label} · {item.pathway_name} · {item.availability_status}</option>)}</select></label>
         <label className={labelClass + ' mt-3'}>Instrument code<input required value={instrumentCode} onChange={event => setInstrumentCode(event.target.value)} placeholder="e.g. G6-MATH-T2" className={inputClass}/></label>
         <label className={labelClass + ' mt-3'}>Instrument title<input required value={instrumentTitle} onChange={event => setInstrumentTitle(event.target.value)} placeholder="Grade 6 Mathematics assessment" className={inputClass}/></label>
         <div className="mt-4 flex items-center justify-between"><p className={labelClass}>Tasks</p><button type="button" onClick={() => setTasks(current => [...current, { taskCode: `TASK-${String(current.length+1).padStart(2,'0')}`, title: '', responseType: 'text', maximumScore: '10', required: true }])} className="text-[10px] font-semibold text-[#087F86]">+ Add task</button></div>
         {tasks.map((task,index)=><div key={index} className="mt-3 rounded-xl border border-[#E5EDF1] bg-white p-3"><div className="grid grid-cols-2 gap-2"><label className={labelClass}>Task code<input required value={task.taskCode} onChange={event => setTasks(current => current.map((item,i)=>i===index?{...item,taskCode:event.target.value}:item))} className={inputClass}/></label><label className={labelClass}>Maximum score<input required type="number" min="0.01" step="0.01" value={task.maximumScore} onChange={event => setTasks(current => current.map((item,i)=>i===index?{...item,maximumScore:event.target.value}:item))} className={inputClass}/></label></div><label className={labelClass + ' mt-2'}>Task title<input required value={task.title} onChange={event => setTasks(current => current.map((item,i)=>i===index?{...item,title:event.target.value}:item))} className={inputClass}/></label><div className="mt-2 flex flex-wrap items-center gap-3"><select value={task.responseType} onChange={event => setTasks(current => current.map((item,i)=>i===index?{...item,responseType:event.target.value as TaskDraft['responseType']}:item))} className="rounded-lg border border-[#DCE7EC] px-2 py-2 text-[10px] text-[#29465D]">{['text','numeric','boolean','choice','observation','evidence'].map(type=><option key={type} value={type}>{type}</option>)}</select><label className="flex items-center gap-2 text-[10px] text-[#647D8D]"><input type="checkbox" checked={task.required} onChange={event => setTasks(current => current.map((item,i)=>i===index?{...item,required:event.target.checked}:item))}/>Required</label>{tasks.length>1 && <button type="button" onClick={()=>setTasks(current=>current.filter((_,i)=>i!==index))} className="ml-auto text-[10px] text-[#A43D34]">Remove</button>}</div></div>)}
-        <button disabled={busy !== '' || learningAreas.length===0} className="mt-4 rounded-full bg-[#102B45] px-4 py-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{busy === 'Instrument draft creation' ? 'Creating…' : 'Save instrument draft'}</button>
+        <button disabled={busy !== '' || learningAreas.length===0 || !gradeOfferingId} className="mt-4 rounded-full bg-[#102B45] px-4 py-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{busy === 'Instrument draft creation' ? 'Creating…' : 'Save instrument draft'}</button>
       </form>
     </div>
     <div className="mt-5 rounded-2xl border border-[#E5EDF1] p-4"><h3 className="text-[13px] font-semibold text-[#29465D]">3. Independent instrument approval</h3><p className="mt-1 text-[10px] text-[#8498A7]">The author cannot approve their own instrument version.</p>{instruments.length===0 ? <p className="mt-3 text-[11px] text-[#8A9CAB]">No instrument versions yet.</p> : <div className="mt-3 divide-y divide-[#EDF1F3]">{instruments.map(instrument=><div key={instrument.id} className="border-b border-[#EDF1F3] py-3 last:border-0"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-[11px] font-semibold text-[#29465D]">{instrument.code} v{instrument.version} · {instrument.title}</p><p className="mt-1 text-[10px] text-[#8A9CAB]">Grade {instrument.grade} · {instrument.status}</p></div>{instrument.status==='draft' && instrument.createdBy!==actorUserId ? <button type="button" disabled={busy!==''} onClick={()=>void approve(instrument)} className="rounded-full border border-[#CFE1E6] px-3 py-2 text-[10px] font-semibold text-[#087F86]">Approve version</button> : instrument.status==='draft' ? <span className="text-[10px] text-[#9AABB7]">Awaiting a different approver</span> : null}</div><OutcomeMappingControls organisationId={organisationId} instrumentVersionId={instrument.id} actorUserId={actorUserId} instrumentStatus={instrument.status}/></div>)}</div>}</div>
