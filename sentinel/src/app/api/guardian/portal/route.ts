@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth/server';
 import { getGuardianPortalSummary } from '@/application/guardian/guardian-portal-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const { data } = await auth.getSession();
   if (!data?.user) return Response.json({ error: 'Authentication required' }, { status: 401 });
