@@ -120,3 +120,16 @@ export async function revokeTeacherClassAssignment(actorUserId: string, organisa
     return { assignmentId, status: 'revoked' as const, revokedAt: result.rows[0].revoked_at };
   });
 }
+
+export async function setTeacherWorkloadPolicy(actorUserId: string, organisationId: string, academicYear: number, referenceWeeklyPeriods: number, maximumWeeklyPeriods: number, periodDurationMinutes: number | null, effectiveFrom: string, reason: string) {
+  await assertTeacherAssignmentManager(actorUserId, organisationId);
+  if (!Number.isInteger(academicYear) || !Number.isInteger(referenceWeeklyPeriods) || !Number.isInteger(maximumWeeklyPeriods) || (periodDurationMinutes !== null && !Number.isInteger(periodDurationMinutes)) || !datePattern.test(effectiveFrom) || reason.trim().length < 10 || reason.trim().length > 500) {
+    throw new TeacherAssignmentError('Valid workload policy values, effective date and reason are required', 400);
+  }
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.set_teacher_workload_policy(${organisationId}::uuid, ${academicYear}::integer, ${referenceWeeklyPeriods}::integer, ${maximumWeeklyPeriods}::integer, ${periodDurationMinutes}::integer, ${effectiveFrom}::date, ${reason}) AS policy_id`);
+    const policyId = result.rows[0]?.policy_id;
+    if (!policyId) throw new TeacherAssignmentError('The database did not confirm the workload policy');
+    return { policyId };
+  });
+}
