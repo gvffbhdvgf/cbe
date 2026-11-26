@@ -49,6 +49,32 @@ ALTER TABLE public.teacher_workload_policies ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 ALTER TABLE public.teacher_workload_policies FORCE ROW LEVEL SECURITY;
 --> statement-breakpoint
+CREATE FUNCTION sentinel_private.can_read_teacher_workload_policy(p_organisation_id uuid)
+RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+AS $
+  SELECT sentinel_private.current_user_id() IS NOT NULL
+    AND (
+      sentinel_private.can_manage_learner_records(p_organisation_id)
+      OR EXISTS (
+        SELECT 1 FROM public.organisation_memberships membership
+        INNER JOIN neon_auth."user" auth_user ON auth_user.id = membership.user_id
+        WHERE membership.organisation_id = p_organisation_id
+          AND membership.user_id = sentinel_private.current_user_id()
+          AND membership.role = 'teacher'
+          AND membership.status = 'active'
+          AND membership.starts_at <= pg_catalog.now()
+          AND (membership.ends_at IS NULL OR membership.ends_at > pg_catalog.now())
+          AND auth_user."emailVerified" = true
+          AND COALESCE(auth_user.banned, false) = false
+      )
+    )
+$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.can_read_teacher_workload_policy(uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION sentinel_private.can_read_teacher_workload_policy(uuid) TO sentinel_learner_runtime;
+--> statement-breakpoint
 CREATE POLICY teacher_weekly_workload_allocations_select ON public.teacher_weekly_workload_allocations
   FOR SELECT TO sentinel_learner_runtime
   USING (sentinel_private.can_read_teacher_assignment(organisation_id, (
@@ -58,7 +84,7 @@ CREATE POLICY teacher_weekly_workload_allocations_select ON public.teacher_weekl
 --> statement-breakpoint
 CREATE POLICY teacher_workload_policies_select ON public.teacher_workload_policies
   FOR SELECT TO sentinel_learner_runtime
-  USING (sentinel_private.can_read_teacher_assignment(organisation_id, sentinel_private.current_user_id()));
+  USING (sentinel_private.can_read_teacher_workload_policy(organisation_id));
 --> statement-breakpoint
 GRANT SELECT ON TABLE public.teacher_weekly_workload_allocations, public.teacher_workload_policies TO sentinel_learner_runtime;
 --> statement-breakpoint
