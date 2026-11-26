@@ -12,6 +12,8 @@ import { LearnerManager } from './learner-manager';
 import { ProgressionRequestManager } from './progression-request-manager';
 import { LearnerCorrectionManager } from './learner-correction-manager';
 import { listLearnerRecordCorrections } from '@/application/learner/learner-correction-service';
+import { listAcademicYearRollovers } from '@/application/learner/academic-year-rollover-service';
+import { AcademicYearRolloverManager } from './academic-year-rollover-manager';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -29,12 +31,14 @@ async function LearnersContent({ params }: { params: Promise<{ organisationId: s
   let classOptions;
   let progressionRequests;
   let correctionRequests;
+  let rolloverData;
   try {
     [summary, classOptions, progressionRequests, correctionRequests] = await Promise.all([
       getLearnerManagementSummary(data.user.id, organisationId),
       listClasses(data.user.id, organisationId),
       listLearnerProgressionRequests(data.user.id, organisationId),
       listLearnerRecordCorrections(data.user.id, organisationId),
+      listAcademicYearRollovers(data.user.id, organisationId),
     ]);
   } catch { redirect('/workspace/organisations'); }
   return <main className="min-h-screen bg-[#F4F8FA]">
@@ -45,6 +49,7 @@ async function LearnersContent({ params }: { params: Promise<{ organisationId: s
       <LearnerManager organisationId={organisationId} initialLearners={summary.learners} initialClasses={classOptions.filter(item=>item.status==='active')}/>
       <ProgressionRequestManager organisationId={organisationId} actorUserId={data.user.id} learners={summary.learners} classes={classOptions.filter(item=>item.status==='active')} requests={progressionRequests as never}/>
       <LearnerCorrectionManager organisationId={organisationId} actorUserId={data.user.id} learners={summary.learners} initialRequests={correctionRequests as never}/>
+      <AcademicYearRolloverManager organisationId={organisationId} learners={summary.learners} classes={classOptions as never} initialBatches={rolloverData.batches as never} initialItems={rolloverData.items as never}/>
       <footer className="mt-12 flex items-center justify-between border-t border-[#E1EAF0] pt-5"><SoftflixSignature/><span className="text-[10px] text-[#9AABB7]">Child data minimisation · Organisation scope · Audit trail</span></footer>
     </div>
   </main>;
