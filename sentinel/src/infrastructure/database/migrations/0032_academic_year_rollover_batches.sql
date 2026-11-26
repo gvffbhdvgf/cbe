@@ -13,13 +13,13 @@ CREATE TABLE public.academic_year_rollover_batches (
   updated_at timestamptz NOT NULL DEFAULT now(),
   CHECK (tenant_organisation_id = organisation_id),
   CHECK (to_academic_year = from_academic_year + 1),
-  CHECK ((status = 'draft' AND submitted_at IS NULL) OR (status IN ('submitted','cancelled') AND submitted_at IS NOT NULL)),
+  CHECK ((status = 'draft' AND submitted_at IS NULL) OR (status = 'submitted' AND submitted_at IS NOT NULL) OR status = 'cancelled'),
   UNIQUE (tenant_organisation_id, organisation_id, id)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX academic_year_rollover_one_open_batch_idx
   ON public.academic_year_rollover_batches(tenant_organisation_id, organisation_id, from_academic_year)
-  WHERE status IN ('draft','submitted');
+  WHERE status = 'draft';
 --> statement-breakpoint
 CREATE TABLE public.academic_year_rollover_items (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -300,3 +300,34 @@ $$;
 REVOKE ALL ON FUNCTION sentinel_private.submit_academic_year_rollover(uuid) FROM PUBLIC;
 --> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.submit_academic_year_rollover(uuid) TO sentinel_learner_runtime;
+--> statement-breakpoint
+CREATE FUNCTION sentinel_private.cancel_academic_year_rollover(p_batch_id uuid)
+RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+AS $$
+DECLARE
+  v_actor_id uuid := sentinel_private.current_user_id();
+  v_batch public.academic_year_rollover_batches%ROWTYPE;
+BEGIN
+  SELECT batch.* INTO v_batch
+  FROM public.academic_year_rollover_batches batch
+  WHERE batch.id = p_batch_id
+    AND sentinel_private.can_manage_learner_records(batch.organisation_id)
+  FOR UPDATE;
+  IF NOT FOUND OR v_batch.status <> 'draft' THEN
+    RAISE EXCEPTION 'Draft academic-year rollover not found' USING ERRCODE = 'P0002';
+  END IF;
+  UPDATE public.academic_year_rollover_batches
+  SET status = 'cancelled', updated_at = now()
+  WHERE id = p_batch_id;
+  INSERT INTO public.audit_events(actor_user_id, organisation_id, action, resource_type, resource_id, metadata)
+  VALUES (v_actor_id, v_batch.organisation_id, 'learner.academic_year_rollover_cancelled',
+    'academic_year_rollover_batch', p_batch_id::text,
+    jsonb_build_object('fromAcademicYear',v_batch.from_academic_year,'toAcademicYear',v_batch.to_academic_year));
+  RETURN p_batch_id;
+END;
+$$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.cancel_academic_year_rollover(uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION sentinel_private.cancel_academic_year_rollover(uuid) TO sentinel_learner_runtime;
