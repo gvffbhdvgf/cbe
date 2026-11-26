@@ -1,8 +1,8 @@
 import { auth } from '@/lib/auth/server';
-import { AssessmentAccessError, AssessmentTransitionError, createAssessmentEvent, listAssessmentEvents } from '@/application/assessment/assessment-service';
+import { AssessmentAccessError, AssessmentTransitionError, createAssessmentEventLocal, listAssessmentEvents } from '@/application/assessment/assessment-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;\nconst localDateTimePattern = /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}$/;
 
 export async function GET(_request: Request, context: { params: Promise<{ organisationId: string }> }) {
   const { data } = await auth.getSession();
@@ -40,13 +40,13 @@ export async function POST(request: Request, context: { params: Promise<{ organi
   const value = body as Record<string, unknown>;
   if (typeof value.programmeId !== 'string' || !uuidPattern.test(value.programmeId)
     || typeof value.instrumentVersionId !== 'string' || !uuidPattern.test(value.instrumentVersionId)
-    || typeof value.title !== 'string' || typeof value.startsAt !== 'string' || Number.isNaN(Date.parse(value.startsAt))
-    || typeof value.endsAt !== 'string' || Number.isNaN(Date.parse(value.endsAt))
+    || typeof value.title !== 'string' || typeof value.startsAtLocal !== 'string' || !localDateTimePattern.test(value.startsAtLocal)
+    || typeof value.endsAtLocal !== 'string' || !localDateTimePattern.test(value.endsAtLocal) || value.startsAtLocal >= value.endsAtLocal
     || !Number.isInteger(value.academicYear) || typeof value.moderationRequired !== 'boolean') {
-    return Response.json({ error: 'Valid programme, approved instrument, title, date window, academic year and moderation setting are required' }, { status: 400 });
+    return Response.json({ error: 'Valid programme, approved instrument, title, organisation-local date window, academic year and moderation setting are required' }, { status: 400 });
   }
   try {
-    const eventId = await createAssessmentEvent(data.user.id, organisationId, value.programmeId, value.instrumentVersionId, value.title, value.startsAt, value.endsAt, Number(value.academicYear), value.moderationRequired);
+    const eventId = await createAssessmentEventLocal(data.user.id, organisationId, value.programmeId, value.instrumentVersionId, value.title, value.startsAtLocal, value.endsAtLocal, Number(value.academicYear), value.moderationRequired);
     return Response.json({ eventId, status: 'draft' }, { status: 201 });
   } catch (error) {
     if (error instanceof LearnerAuthenticationError) return Response.json({ error: 'Authentication required' }, { status: 401 });
