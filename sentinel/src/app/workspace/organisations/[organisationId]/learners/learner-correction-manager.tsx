@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 
 type LearnerOption = { id: string; learnerReference: string; firstName: string; lastName: string };
 type Correction = { id: string; learnerId: string; fieldKey: string; originalValue: string | null; proposedValue: string | null; reason: string; evidenceReference: string | null; status: string; requestedBy: string; requestedAt: Date | string; reviewedBy: string | null; reviewedAt: Date | string | null; reviewReason: string | null };
@@ -31,7 +31,7 @@ export function LearnerCorrectionManager({ organisationId, actorUserId, learners
     if (response.ok) setRequests(payload.requests);
   }
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy('submit'); setError(''); setNotice('');
     try {
       const response = await fetch(`/api/organisations/${organisationId}/learner-corrections`, {
