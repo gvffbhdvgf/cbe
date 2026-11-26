@@ -101,6 +101,7 @@ export const assessmentEvents = pgTable('assessment_events', {
   title: varchar('title', { length: 180 }).notNull(),
   startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
   endsAt: timestamp('ends_at', { withTimezone: true }).notNull(),
+  timeZone: varchar('time_zone', { length: 64 }).notNull().default('Africa/Nairobi'),
   status: varchar('status', { length: 16 }).notNull().default('draft'),
   moderationRequired: boolean('moderation_required').notNull().default(false),
   createdBy: uuid('created_by').notNull().references(() => authUsers.id, { onDelete: 'restrict' }),
