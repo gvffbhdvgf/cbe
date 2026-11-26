@@ -148,6 +148,13 @@
       "when": 1795670400000,
       "tag": "0020_assessment_authoring",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1795674000000,
+      "tag": "0021_curriculum_mapping_and_timezone",
+      "breakpoints": true
     }
   ]
 }
