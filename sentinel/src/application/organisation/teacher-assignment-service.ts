@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull, or } from 'drizzle-orm';
 import { sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
@@ -16,8 +16,16 @@ export class TeacherAssignmentError extends Error {
   constructor(message: string, status = 409) { super(message); this.name = 'TeacherAssignmentError'; this.status = status; }
 }
 
+async function assertTeacherAssignmentManager(actorUserId: string, organisationId: string) {
+  try { await requireLearnerManager(actorUserId, organisationId); }
+  catch (error) {
+    const message = error instanceof Error ? error.message : 'Teacher assignment management is not authorised';
+    throw new TeacherAssignmentError(message, message.includes('not found') ? 404 : 403);
+  }
+}
+
 export async function getTeacherAssignmentManagementSummary(actorUserId: string, organisationId: string) {
-  await requireLearnerManager(actorUserId, organisationId);
+  await assertTeacherAssignmentManager(actorUserId, organisationId);
   const [organisation] = await db.select({ id: organisations.id, name: organisations.name })
     .from(organisations).where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active'))).limit(1);
   if (!organisation) throw new TeacherAssignmentError('Organisation not found or inactive', 404);
@@ -27,7 +35,7 @@ export async function getTeacherAssignmentManagementSummary(actorUserId: string,
       .from(organisationMemberships)
       .innerJoin(authUsers, eq(organisationMemberships.userId, authUsers.id))
       .where(and(eq(organisationMemberships.organisationId, organisationId), eq(organisationMemberships.role, 'teacher'),
-        eq(organisationMemberships.status, 'active'), eq(authUsers.emailVerified, true))),
+        eq(organisationMemberships.status, 'active'), eq(authUsers.emailVerified, true), or(eq(authUsers.banned, false), isNull(authUsers.banned)))),
     db.select({ id: curriculumLearningAreas.id, name: curriculumLearningAreas.name })
       .from(curriculumLearningAreas).orderBy(curriculumLearningAreas.name),
     listClasses(actorUserId, organisationId),
@@ -53,7 +61,7 @@ export async function createTeacherClassAssignment(
   actorUserId: string, organisationId: string, teacherUserId: string, classId: string,
   learningAreaId: string, startsOn: string, endsOn: string | null,
 ) {
-  await requireLearnerManager(actorUserId, organisationId);
+  await assertTeacherAssignmentManager(actorUserId, organisationId);
   if (![organisationId, teacherUserId, classId, learningAreaId].every(value => uuidPattern.test(value))) {
     throw new TeacherAssignmentError('Valid organisation, teacher, class and learning-area identifiers are required', 400);
   }
