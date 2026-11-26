@@ -26,6 +26,11 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
   const [busy,setBusy]=useState('');
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
+  const [referencePeriods,setReferencePeriods]=useState('');
+  const [maximumPeriods,setMaximumPeriods]=useState('');
+  const [periodDuration,setPeriodDuration]=useState('');
+  const [policyEffectiveFrom,setPolicyEffectiveFrom]=useState(new Date().toISOString().slice(0,10));
+  const [policyReason,setPolicyReason]=useState('');
 
   async function create(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy('create'); setError(''); setMessage('');
@@ -37,6 +42,16 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
       router.refresh();
     } catch(cause) { setError(cause instanceof Error?cause.message:'Unable to create teacher assignment.'); }
     finally { setBusy(''); }
+  }
+
+  async function savePolicy(event:FormEvent<HTMLFormElement>) {
+    event.preventDefault();setBusy('policy');setError('');setMessage('');
+    try {
+      const response=await fetch('/api/organisations/'+organisationId+'/workload-policy',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({academicYear:currentYear,referenceWeeklyPeriods:Number(referencePeriods),maximumWeeklyPeriods:Number(maximumPeriods),periodDurationMinutes:periodDuration===''?null:Number(periodDuration),effectiveFrom:policyEffectiveFrom,reason:policyReason})});
+      const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Unable to save workload policy');
+      setMessage('Workload policy version recorded. Previous policy versions remain in history.');router.refresh();
+    } catch(cause){setError(cause instanceof Error?cause.message:'Unable to save workload policy');}
+    finally{setBusy('');}
   }
 
   async function revoke(assignmentId:string) {
@@ -53,14 +68,22 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
   }
 
   const years = Array.from(new Set(assignments.map(a=>a.academic_year))).sort((a,b)=>b-a);
-  const totals = teachers.map(teacher => ({ teacher, periods: assignments.filter(a => a.teacher_user_id===teacher.userId && a.status==='active' && a.weekly_periods!==null && a.starts_on<=asOfDate && (a.ends_on===null || a.ends_on>asOfDate)).reduce((sum,a)=>sum+(a.weekly_periods??0),0) }));
   const currentYear = years[0] ?? new Date().getFullYear();
+  const totals = teachers.map(teacher => ({ teacher, periods: assignments.filter(a => a.teacher_user_id===teacher.userId && a.academic_year===currentYear && a.status==='active' && a.weekly_periods!==null && a.starts_on<=asOfDate && (a.ends_on===null || a.ends_on>asOfDate)).reduce((sum,a)=>sum+(a.weekly_periods??0),0) }));
   const policy = workloadPolicies.filter(p=>p.academicYear===currentYear && p.effectiveFrom<=asOfDate).sort((a,b)=>b.effectiveFrom.localeCompare(a.effectiveFrom))[0];
   return <div className="mt-8 space-y-6">
     <section className="rounded-[20px] border border-[#DCE8EC] bg-white p-5 sm:p-7">
       <p className="eyebrow">Workforce planning</p><h2 className="mt-2 text-[20px] font-semibold text-[#102B45]">Weekly teaching workload</h2>
       <p className="mt-2 text-[11px] leading-6 text-[#7B909F]">Recurring weekly periods from active teaching assignments, as of {asOfDate}. This is not a daily timetable or an employment decision.</p>
       <p className="mt-3 text-[10px] text-[#718697]">{policy ? 'Year '+currentYear+': reference '+policy.referenceWeeklyPeriods+' · maximum '+policy.maximumWeeklyPeriods+' periods/week' : 'No workload policy configured for '+currentYear+'. Totals are shown without threshold labels.'}</p>
+      <form onSubmit={savePolicy} className="mt-4 grid gap-3 rounded-xl border border-[#E5EDF1] bg-[#FBFDFD] p-4 sm:grid-cols-3">
+        <label className={label}>Reference periods/week<input required type="number" min="1" max="60" value={referencePeriods} onChange={e=>setReferencePeriods(e.target.value)} className={field}/></label>
+        <label className={label}>Maximum periods/week<input required type="number" min="1" max="60" value={maximumPeriods} onChange={e=>setMaximumPeriods(e.target.value)} className={field}/></label>
+        <label className={label}>Period duration minutes<input type="number" min="15" max="180" value={periodDuration} onChange={e=>setPeriodDuration(e.target.value)} className={field} placeholder="Optional"/></label>
+        <label className={label}>Effective from<input required type="date" value={policyEffectiveFrom} onChange={e=>setPolicyEffectiveFrom(e.target.value)} className={field}/></label>
+        <label className={label+" sm:col-span-2"}>Policy reason<input required minLength={10} maxLength={500} value={policyReason} onChange={e=>setPolicyReason(e.target.value)} className={field} placeholder="Institution-approved workload policy basis"/></label>
+        <div className="sm:col-span-3"><button disabled={busy!==''} className="rounded-xl bg-[#102B45] px-4 py-3 text-[10px] font-semibold text-white disabled:opacity-40">Record workload policy version</button></div>
+      </form>
       <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{totals.map(({teacher,periods})=><div key={teacher.userId} className="rounded-xl border border-[#E5EDF1] p-3"><p className="text-[11px] font-semibold text-[#29465D]">{teacher.name}</p><p className="mt-1 text-[18px] font-semibold text-[#102B45]">{periods} <span className="text-[10px] font-normal text-[#718697]">periods / week</span></p>{policy&&<p className="mt-1 text-[10px] text-[#718697]">{periods>policy.maximumWeeklyPeriods?'Above maximum':periods>policy.referenceWeeklyPeriods?'Above reference':'Within configured reference'}</p>}</div>)}</div>
     </section>
     <section className="rounded-[20px] border border-[#DCE8EC] bg-white p-5 sm:p-7">
