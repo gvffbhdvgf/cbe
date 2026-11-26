@@ -7,7 +7,7 @@ import { requireLearnerManager } from '@/application/learner/learner-service';
 import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const datePattern = /^\\d{4}-\\d{2}-\\d{2}$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 const relationshipTypes = ['mother','father','parent','legal_guardian','foster_parent','grandparent','sibling','relative','other'] as const;
 const verificationMethods = ['school_record','official_document','in_person','guardian_otp','other'] as const;
 
@@ -113,7 +113,7 @@ export async function createGuardianRelationship(actorUserId: string, organisati
     throw new GuardianManagementError('A valid relationship date range is required', 400);
   }
   const email = input.contactEmail?.trim().toLowerCase() || null;
-  if (email && (email.length > 254 || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))) throw new GuardianManagementError('Enter a valid guardian contact email', 400);
+  if (email && (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) throw new GuardianManagementError('Enter a valid guardian contact email', 400);
   if (input.personId === null && (!input.confirmDistinctPerson || !input.firstName?.trim() || !input.lastName?.trim())) {
     throw new GuardianManagementError('Search for an existing person first; confirm a distinct person before creating a new guardian record', 400);
   }
@@ -172,7 +172,7 @@ export async function reviewGuardianRelationship(actorUserId: string, organisati
 
 export async function linkGuardianAccount(actorUserId: string, organisationId: string, profileId: string, email: string) {
   await assertGuardianManager(actorUserId, organisationId);
-  if (![organisationId, profileId].every(v => uuidPattern.test(v)) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+  if (![organisationId, profileId].every(v => uuidPattern.test(v)) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     throw new GuardianManagementError('Valid organisation, guardian profile and account email are required', 400);
   }
   return withAuthenticatedLearnerDb(actorUserId, async tx => {
