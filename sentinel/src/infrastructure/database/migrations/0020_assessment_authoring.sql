@@ -22,7 +22,7 @@ BEGIN
   END IF;
   IF length(trim(p_programme_code)) NOT BETWEEN 2 AND 64
     OR length(trim(p_title)) NOT BETWEEN 3 AND 180
-    OR p_programme_type NOT IN ('formative','summative','diagnostic') THEN
+    OR p_programme_type IS NULL OR p_programme_type NOT IN ('formative','summative','diagnostic') THEN
     RAISE EXCEPTION 'Programme details are invalid' USING ERRCODE = '22023';
   END IF;
 
@@ -72,9 +72,14 @@ BEGIN
     RAISE EXCEPTION 'Assessment authoring authority is required' USING ERRCODE = '42501';
   END IF;
   IF p_grade NOT BETWEEN 1 AND 9 OR length(trim(p_instrument_code)) NOT BETWEEN 2 AND 64
-    OR length(trim(p_title)) NOT BETWEEN 3 AND 180 OR jsonb_typeof(p_tasks) <> 'array'
-    OR jsonb_array_length(p_tasks) NOT BETWEEN 1 AND 100 THEN
-    RAISE EXCEPTION 'Instrument details or task list are invalid' USING ERRCODE = '22023';
+    OR length(trim(p_title)) NOT BETWEEN 3 AND 180 THEN
+    RAISE EXCEPTION 'Instrument details are invalid' USING ERRCODE = '22023';
+  END IF;
+  IF p_tasks IS NULL OR jsonb_typeof(p_tasks) IS DISTINCT FROM 'array' THEN
+    RAISE EXCEPTION 'Instrument tasks must be supplied as an array' USING ERRCODE = '22023';
+  END IF;
+  IF jsonb_array_length(p_tasks) NOT BETWEEN 1 AND 100 THEN
+    RAISE EXCEPTION 'An instrument requires between one and one hundred tasks' USING ERRCODE = '22023';
   END IF;
   IF NOT EXISTS (SELECT 1 FROM public.curriculum_learning_areas area WHERE area.id = p_learning_area_id) THEN
     RAISE EXCEPTION 'Learning area not found' USING ERRCODE = '23503';
@@ -102,7 +107,7 @@ BEGIN
     IF length(v_task_code) NOT BETWEEN 1 AND 40
       OR length(trim(v_task->>'title')) NOT BETWEEN 2 AND 200
       OR v_response_type NOT IN ('text','numeric','boolean','choice','observation','evidence')
-      OR v_maximum_score <= 0 OR v_maximum_score > 100000
+      OR v_maximum_score IS NULL OR v_maximum_score <= 0 OR v_maximum_score > 100000
       OR (v_task ? 'required' AND jsonb_typeof(v_task->'required') <> 'boolean') THEN
       RAISE EXCEPTION 'Instrument task % is invalid', v_task_count USING ERRCODE = '22023';
     END IF;
