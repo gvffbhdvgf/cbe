@@ -28,7 +28,7 @@ async function TeachingAssignmentsContent({ params }: { params: Promise<{ organi
     <div className="mx-auto max-w-[1200px] px-6 py-10 sm:px-10 lg:px-14 lg:py-14">
       <div className="text-[10px] font-medium text-[#8A9CAB]"><Link href="/workspace/organisations" className="hover:text-[#087F86]">Institutions</Link> / <span className="text-[#4F6B7E]">Teaching assignments</span></div>
       <div className="mt-8 max-w-[820px]"><p className="eyebrow">People and workforce</p><h1 className="mt-3 text-[36px] font-semibold tracking-[-.055em] text-[#102B45]">{summary.organisation.name}</h1><p className="mt-3 text-[13px] leading-7 text-[#718697]">Define who is responsible for each class and learning area, with clear effective dates and auditable revocation.</p></div>
-      <TeachingAssignmentManager organisationId={organisationId} teachers={summary.teachers} classes={summary.classes} learningAreas={summary.learningAreas} assignments={summary.assignments as never}/>
+      <TeachingAssignmentManager organisationId={organisationId} teachers={summary.teachers} classes={summary.classes} learningAreas={summary.learningAreas} assignments={summary.assignments as never} workloadPolicies={summary.workloadPolicies as never} asOfDate={summary.asOfDate}/>
       <footer className="mt-12 flex items-center justify-between border-t border-[#E1EAF0] pt-5"><SoftflixSignature/><span className="text-[10px] text-[#9AABB7]">Teacher scope · Effective dates · Audit history</span></footer>
     </div>
   </main>;
