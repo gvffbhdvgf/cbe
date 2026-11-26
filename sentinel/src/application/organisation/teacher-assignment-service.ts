@@ -6,6 +6,7 @@ import { authUsers, organisationMemberships } from '@/infrastructure/database/sc
 import { curriculumLearningAreas } from '@/infrastructure/database/schema/curriculum';
 import { classes, teacherClassAssignments } from '@/infrastructure/database/schema/learner';
 import { staffProfiles, staffEngagements } from '@/infrastructure/database/schema/staff';
+import { teacherWeeklyWorkloadAllocations, teacherWorkloadPolicies } from '@/infrastructure/database/schema/teacher-workload';
 import { listClasses } from '@/application/learner/class-service';
 import { requireLearnerManager } from '@/application/learner/learner-service';
 import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
@@ -71,12 +72,21 @@ export async function getTeacherAssignmentManagementSummary(actorUserId: string,
       .where(eq(teacherClassAssignments.organisationId, organisationId))
       .orderBy(asc(teacherClassAssignments.status), asc(teacherClassAssignments.grade), asc(classes.classCode), asc(curriculumLearningAreas.name), asc(authUsers.name)),
   ]);
-  return { organisation, teachers, learningAreas, classes: classList, assignments: assignmentResult };
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: organisation.timeZone }).format(new Date());
+  const [workloadAllocations, workloadPolicies] = await withAuthenticatedLearnerDb(actorUserId, async (tx) => Promise.all([
+    tx.select({ id: teacherWeeklyWorkloadAllocations.id, teacherAssignmentId: teacherWeeklyWorkloadAllocations.teacherAssignmentId, weeklyPeriods: teacherWeeklyWorkloadAllocations.weeklyPeriods, startsOn: teacherWeeklyWorkloadAllocations.startsOn, endsOn: teacherWeeklyWorkloadAllocations.endsOn, status: teacherWeeklyWorkloadAllocations.status }).from(teacherWeeklyWorkloadAllocations).where(eq(teacherWeeklyWorkloadAllocations.organisationId, organisationId)),
+    tx.select({ id: teacherWorkloadPolicies.id, academicYear: teacherWorkloadPolicies.academicYear, referenceWeeklyPeriods: teacherWorkloadPolicies.referenceWeeklyPeriods, maximumWeeklyPeriods: teacherWorkloadPolicies.maximumWeeklyPeriods, periodDurationMinutes: teacherWorkloadPolicies.periodDurationMinutes, effectiveFrom: teacherWorkloadPolicies.effectiveFrom }).from(teacherWorkloadPolicies).where(eq(teacherWorkloadPolicies.organisationId, organisationId)),
+  ]));
+  const assignments = assignmentResult.map(assignment => {
+    const active = workloadAllocations.filter(allocation => allocation.teacherAssignmentId === assignment.id && allocation.status === 'active' && allocation.startsOn <= today && (allocation.endsOn === null || allocation.endsOn > today)).sort((a,b) => b.startsOn.localeCompare(a.startsOn))[0];
+    return { ...assignment, weekly_periods: active?.weeklyPeriods ?? null, workload_allocation_id: active?.id ?? null };
+  });
+  return { organisation, teachers, learningAreas, classes: classList, assignments, workloadPolicies, asOfDate: today };
 }
 
 export async function createTeacherClassAssignment(
   actorUserId: string, organisationId: string, teacherUserId: string, classId: string,
-  learningAreaId: string, startsOn: string, endsOn: string | null,
+  learningAreaId: string, startsOn: string, endsOn: string | null, weeklyPeriods: number, workloadReason: string,
 ) {
   await assertTeacherAssignmentManager(actorUserId, organisationId);
   if (![organisationId, teacherUserId, classId, learningAreaId].every(value => uuidPattern.test(value))) {
@@ -85,6 +95,8 @@ export async function createTeacherClassAssignment(
   if (!datePattern.test(startsOn) || (endsOn !== null && !datePattern.test(endsOn)) || (endsOn !== null && endsOn <= startsOn)) {
     throw new TeacherAssignmentError('A valid effective date range is required', 400);
   }
+  if (!Number.isInteger(weeklyPeriods) || weeklyPeriods < 1 || weeklyPeriods > 60) throw new TeacherAssignmentError('Weekly periods must be between 1 and 60', 400);
+  if (workloadReason.trim().length < 10 || workloadReason.trim().length > 500) throw new TeacherAssignmentError('A workload reason of 10 to 500 characters is required', 400);
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.create_teacher_class_assignment(
       ${organisationId}::uuid, ${teacherUserId}::uuid, ${classId}::uuid,
@@ -92,6 +104,7 @@ export async function createTeacherClassAssignment(
     ) AS assignment_id`);
     const assignmentId = result.rows[0]?.assignment_id;
     if (!assignmentId) throw new TeacherAssignmentError('The database did not confirm the teacher assignment');
+    await tx.execute(sql`SELECT sentinel_private.set_teacher_weekly_workload_allocation(${organisationId}::uuid, ${assignmentId}::uuid, ${weeklyPeriods}::integer, ${startsOn}::date, ${endsOn}::date, ${workloadReason})`);
     return { assignmentId };
   });
 }
