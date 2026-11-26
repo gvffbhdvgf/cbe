@@ -176,6 +176,13 @@
       "when": 1795683000000,
       "tag": "0024_curriculum_pathway_grade_levels",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": 7,
+      "when": 1795684200000,
+      "tag": "0025_staff_profiles_and_engagements",
+      "breakpoints": true
     }
   ]
 }
