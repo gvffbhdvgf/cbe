@@ -397,3 +397,16 @@ Next: implement controlled teacher-to-class/learning-area assignments, class-tar
 - Reused the existing signed-in development administrator browser session. The learner workspace loaded and displayed the correction manager, supported field choices, proposed-value/evidence/reason inputs, submit action and empty correction history. This confirms the page's initial request-list read path renders successfully.
 - No correction was submitted; no learner data was changed. Browser smoke testing does not replace full submission/review lifecycle E2E.
 - Remaining: exercise submit, independent approval and rejection, stale-value conflict and audit assertions using synthetic identities/data on a disposable Neon branch only.
+
+
+## 26 November 2026 — Learner correction lifecycle E2E on isolated data
+
+- Used disposable Neon child branch `br-delicate-shape-bh7l5aid` only. Created a synthetic learner, synthetic reviewer and synthetic membership; no synthetic records were added to the shared development branch.
+- Submission function created a pending correction and captured the original/proposed values, reason and evidence reference.
+- Independent school administrator successfully approved a synthetic legal-name correction; the person record changed and two audit events were appended.
+- Requester self-approval was rejected with SQLSTATE `42501`.
+- A second request was made stale by changing its underlying synthetic field; approval was blocked with SQLSTATE `23514` and instructed the caller to submit a fresh request.
+- A third request was rejected by the independent reviewer; the underlying person field remained unchanged.
+- Audit metadata was verified not to contain original/proposed values. An authenticated non-member saw zero correction requests through RLS. Runtime direct table INSERT/UPDATE/DELETE remained denied.
+- Combined with the signed-in Preview smoke test, this completes the first governed correction workflow validation. No real learner records were changed. The disposable branch retains only synthetic validation records.
+- Next milestone: academic-year rollover, followed by weekly-period teacher workload modelling.
