@@ -52,6 +52,17 @@ export function AcademicYearRolloverManager({organisationId,learners,classes,ini
   finally{setBusy('');}
  }
 
+ async function cancel(batch:Batch) {
+  if(!window.confirm(`Cancel the draft ${batch.from_academic_year} → ${batch.to_academic_year} rollover plan? This does not change learner enrolments.`))return;
+  setBusy(batch.id);setError('');setNotice('');
+  try {
+   const response=await fetch(`/api/organisations/${organisationId}/academic-year-rollovers/${batch.id}/cancel`,{method:'POST'});
+   const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Unable to cancel rollover plan');
+   await refresh();setNotice('Draft rollover plan cancelled. No learner enrolments were changed.');
+  } catch(cause){setError(cause instanceof Error?cause.message:'Unable to cancel rollover plan');}
+  finally{setBusy('');}
+ }
+
  async function submit(batch:Batch) {
   if(!window.confirm(`Submit the complete ${batch.from_academic_year} → ${batch.to_academic_year} cohort plan? Promotion/repetition decisions will create individual progression requests for independent approval. No enrolment will change at submission.`))return;
   setBusy(batch.id);setError('');setNotice('');
@@ -99,7 +110,7 @@ export function AcademicYearRolloverManager({organisationId,learners,classes,ini
        </div>;
       })}
      </div>
-     {batch.status==='draft'&&<div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#EAF0F4] pt-4"><p className="text-[10px] text-[#8498A7]">Every active learner must have a saved decision before submission. Promotion and repetition still require independent approval.</p><button type="button" disabled={busy===batch.id||batch.unresolved_count>0||batch.planned_count+batch.excluded_count!==batch.learner_count} onClick={()=>void submit(batch)} className="rounded-xl bg-[#102B45] px-4 py-3 text-[10px] font-semibold text-white disabled:opacity-40">{busy===batch.id?'Submitting…':'Submit rollover plan'}</button></div>}
+     {batch.status==='draft'&&<div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-[#EAF0F4] pt-4"><p className="text-[10px] text-[#8498A7]">Every active learner must have a saved decision before submission. Promotion and repetition still require independent approval.</p><div className="flex gap-2"><button type="button" disabled={busy===batch.id||batch.unresolved_count>0||batch.planned_count+batch.excluded_count!==batch.learner_count} onClick={()=>void submit(batch)} className="rounded-xl bg-[#102B45] px-4 py-3 text-[10px] font-semibold text-white disabled:opacity-40">{busy===batch.id?'Working…':'Submit rollover plan'}</button><button type="button" disabled={busy===batch.id} onClick={()=>void cancel(batch)} className="rounded-xl border border-[#DCE7EC] px-4 py-3 text-[10px] font-semibold text-[#526B7E] disabled:opacity-40">Cancel draft</button></div></div>}
     </article>;
    })}
   </div>
