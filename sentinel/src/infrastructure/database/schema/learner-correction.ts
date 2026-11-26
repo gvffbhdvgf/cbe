@@ -2,7 +2,6 @@ import { sql } from 'drizzle-orm';
 import { check, index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { organisations } from './organisation';
 import { authUsers } from './security';
-import { learnerProfiles, people } from './learner';
 
 export const learnerRecordCorrectionRequests = pgTable('learner_record_correction_requests', {
   id: uuid('id').defaultRandom().primaryKey(),
