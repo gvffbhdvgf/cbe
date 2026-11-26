@@ -173,7 +173,7 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
           <div><label className={label}>Legal last name</label><input required value={lastName} onChange={e=>setLastName(e.target.value)} className={field}/></div>
           <div><label className={label}>Middle name (optional)</label><input value={middleName} onChange={e=>setMiddleName(e.target.value)} className={field}/></div>
           <div><label className={label}>Preferred name (optional)</label><input value={preferredName} onChange={e=>setPreferredName(e.target.value)} className={field}/></div>
-          <label className="flex items-start gap-2 text-[11px] text-[#627B8E] sm:col-span-2"><input type="checkbox" checked={confirmDistinctPerson} onChange={e=>setConfirmDistinctPerson(e.target.checked)} className="mt-0.5"/> I searched the organisation's person register and confirmed this is a distinct person.</label>
+          <label className="flex items-start gap-2 text-[11px] text-[#627B8E] sm:col-span-2"><input type="checkbox" checked={confirmDistinctPerson} onChange={e=>setConfirmDistinctPerson(e.target.checked)} className="mt-0.5"/> I searched the organisation&apos;s person register and confirmed this is a distinct person.</label>
         </div>}
         <div className="grid gap-3 sm:grid-cols-2">
           <div><label className={label}>Guardian contact email (optional)</label><input type="email" value={contactEmail} onChange={e=>setContactEmail(e.target.value)} className={field} placeholder="Used only for verified account linking"/></div>
