@@ -358,6 +358,89 @@ REVOKE ALL ON FUNCTION sentinel_private.schedule_assessment_event(uuid) FROM PUB
 GRANT EXECUTE ON FUNCTION sentinel_private.schedule_assessment_event(uuid) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
+GRANT SELECT ON TABLE
+  public.curriculum_learning_areas,
+  public.curriculum_grade_offerings,
+  public.curriculum_editions,
+  public.curriculum_pathways
+TO sentinel_learner_runtime;
+--> statement-breakpoint
+
+CREATE FUNCTION sentinel_private.list_assessment_instrument_outcome_mappings(
+  p_organisation_id uuid, p_instrument_version_id uuid
+) RETURNS TABLE (
+  task_id uuid, task_code text, task_title text, required boolean,
+  mapping_id uuid, curriculum_source_node_id uuid, mapping_status text,
+  created_by uuid, reviewed_by uuid, reviewed_at timestamptz, review_note text,
+  outcome_code text, outcome_title text, document_code text, grade integer, learning_area text
+)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+AS $mappings$
+  SELECT task.id, task.task_code::text, task.title::text, task.required,
+    mapping.id, mapping.curriculum_source_node_id, mapping.status::text,
+    mapping.created_by, mapping.reviewed_by, mapping.reviewed_at, mapping.review_note,
+    node.node_code::text, node.title::text, document.document_code::text,
+    offering.grade, area.name::text
+  FROM public.assessment_tasks AS task
+  JOIN public.assessment_instrument_versions AS instrument
+    ON instrument.id = task.instrument_version_id
+   AND instrument.tenant_organisation_id = task.tenant_organisation_id
+   AND instrument.organisation_id = task.organisation_id
+  LEFT JOIN public.assessment_task_outcome_mappings AS mapping
+    ON mapping.task_id = task.id
+   AND mapping.instrument_version_id = task.instrument_version_id
+   AND mapping.tenant_organisation_id = task.tenant_organisation_id
+   AND mapping.organisation_id = task.organisation_id
+  LEFT JOIN public.curriculum_source_nodes AS node ON node.id = mapping.curriculum_source_node_id
+  LEFT JOIN public.curriculum_design_documents AS document ON document.id = node.document_id
+  LEFT JOIN public.curriculum_grade_offerings AS offering ON offering.id = document.grade_offering_id
+  LEFT JOIN public.curriculum_learning_areas AS area ON area.id = offering.learning_area_id
+  WHERE task.organisation_id = p_organisation_id
+    AND instrument.id = p_instrument_version_id
+    AND sentinel_private.can_access_assessment_data(p_organisation_id)
+  ORDER BY task.display_order, task.task_code, node.node_code
+$mappings$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.list_assessment_instrument_outcome_mappings(uuid,uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION sentinel_private.list_assessment_instrument_outcome_mappings(uuid,uuid) TO sentinel_learner_runtime;
+--> statement-breakpoint
+
+CREATE FUNCTION sentinel_private.list_assessment_instrument_outcome_options(
+  p_organisation_id uuid, p_instrument_version_id uuid
+) RETURNS TABLE (
+  id uuid, node_code text, title text, document_code text,
+  grade integer, learning_area text
+)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+AS $outcomes$
+  SELECT node.id, node.node_code::text, node.title::text, document.document_code::text,
+    offering.grade, area.name::text
+  FROM public.assessment_instrument_versions AS instrument
+  JOIN public.curriculum_grade_offerings AS offering
+    ON offering.id = instrument.curriculum_grade_offering_id
+   AND offering.grade = instrument.grade
+   AND offering.learning_area_id = instrument.learning_area_id
+  JOIN public.curriculum_design_documents AS document
+    ON document.grade_offering_id = offering.id
+   AND document.review_status = 'approved'
+   AND document.rights_status = 'confirmed'
+  JOIN public.curriculum_source_nodes AS node
+    ON node.document_id = document.id
+   AND node.node_type = 'specific_outcome'
+   AND node.extraction_status = 'approved'
+  JOIN public.curriculum_learning_areas AS area ON area.id = offering.learning_area_id
+  WHERE instrument.id = p_instrument_version_id
+    AND instrument.organisation_id = p_organisation_id
+    AND sentinel_private.can_access_assessment_data(p_organisation_id)
+  ORDER BY document.document_code, node.node_code
+$outcomes$;
+--> statement-breakpoint
+REVOKE ALL ON FUNCTION sentinel_private.list_assessment_instrument_outcome_options(uuid,uuid) FROM PUBLIC;
+--> statement-breakpoint
+GRANT EXECUTE ON FUNCTION sentinel_private.list_assessment_instrument_outcome_options(uuid,uuid) TO sentinel_learner_runtime;
+--> statement-breakpoint
+
 CREATE FUNCTION sentinel_private.create_assessment_task_outcome_mapping(
   p_organisation_id uuid, p_instrument_version_id uuid, p_task_id uuid, p_curriculum_source_node_id uuid
 ) RETURNS uuid
