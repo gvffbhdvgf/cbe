@@ -165,6 +165,83 @@ export async function finalizeAssessmentMarkCorrection(actorUserId: string, orga
   });
 }
 
+
+export async function createAssessmentProgramme(actorUserId: string, organisationId: string, programmeCode: string, title: string, programmeType: 'formative' | 'summative' | 'diagnostic') {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_programme(
+      ${organisationId}::uuid, ${programmeCode}::text, ${title}::text, ${programmeType}::text
+    ) AS programme_id`);
+    return result.rows[0]?.programme_id;
+  });
+}
+
+export async function createAssessmentInstrumentVersion(
+  actorUserId: string, organisationId: string, learningAreaId: string, grade: number,
+  instrumentCode: string, title: string,
+  tasks: Array<{ taskCode: string; title: string; responseType: 'text' | 'numeric' | 'boolean' | 'choice' | 'observation' | 'evidence'; maximumScore: number; required: boolean; displayOrder: number }>,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_instrument_version(
+      ${organisationId}::uuid, ${learningAreaId}::uuid, ${grade}::integer,
+      ${instrumentCode}::text, ${title}::text, ${JSON.stringify(tasks)}::jsonb
+    ) AS instrument_version_id`);
+    return result.rows[0]?.instrument_version_id;
+  });
+}
+
+export async function approveAssessmentInstrumentVersion(actorUserId: string, organisationId: string, instrumentVersionId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.approve_assessment_instrument_version(${instrumentVersionId}::uuid) AS approved_at`);
+    return result.rows[0]?.approved_at;
+  });
+}
+
+export async function createAssessmentEvent(
+  actorUserId: string, organisationId: string, programmeId: string, instrumentVersionId: string,
+  title: string, startsAt: string, endsAt: string, academicYear: number, moderationRequired: boolean,
+) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_event(
+      ${organisationId}::uuid, ${programmeId}::uuid, ${instrumentVersionId}::uuid,
+      ${title}::text, ${startsAt}::timestamptz, ${endsAt}::timestamptz,
+      ${academicYear}::integer, ${moderationRequired}::boolean
+    ) AS event_id`);
+    return result.rows[0]?.event_id;
+  });
+}
+
+export async function scheduleAssessmentEvent(actorUserId: string, organisationId: string, eventId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT sentinel_private.schedule_assessment_event(${eventId}::uuid) AS eligible_count`);
+    return result.rows[0]?.eligible_count;
+  });
+}
+
+export async function getAssessmentAuthoringOptions(actorUserId: string, organisationId: string) {
+  const [organisation] = await db.select({ id: organisations.id })
+    .from(organisations).where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active'))).limit(1);
+  if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
+  const role = await getOrganisationActorRole(actorUserId, organisationId);
+  if (!canReadAssessmentData(role)) throw new AssessmentAccessError('Assessment authoring access is required');
+  return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
+    const [programmes, instruments, learningAreas] = await Promise.all([
+      tx.select({ id: assessmentProgrammes.id, code: assessmentProgrammes.programmeCode, title: assessmentProgrammes.title, type: assessmentProgrammes.programmeType })
+        .from(assessmentProgrammes).where(and(eq(assessmentProgrammes.organisationId, organisationId), eq(assessmentProgrammes.status, 'active'))).orderBy(assessmentProgrammes.title),
+      tx.select({ id: assessmentInstrumentVersions.id, code: assessmentInstrumentVersions.instrumentCode, version: assessmentInstrumentVersions.versionNumber, title: assessmentInstrumentVersions.title, grade: assessmentInstrumentVersions.grade, learningAreaId: assessmentInstrumentVersions.learningAreaId, status: assessmentInstrumentVersions.status, createdBy: assessmentInstrumentVersions.createdBy })
+        .from(assessmentInstrumentVersions).where(eq(assessmentInstrumentVersions.organisationId, organisationId)).orderBy(desc(assessmentInstrumentVersions.createdAt)),
+      tx.select({ id: curriculumLearningAreas.id, name: curriculumLearningAreas.name }).from(curriculumLearningAreas).orderBy(curriculumLearningAreas.name),
+    ]);
+    return { programmes, instruments, learningAreas };
+  });
+}
+
+export async function getAssessmentEligibleEnrolments(actorUserId: string, organisationId: string, eventId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`SELECT * FROM sentinel_private.list_assessment_eligible_enrolments(${eventId}::uuid)`);
+    return result.rows;
+  });
+}
+
 export async function listAssessmentEvents(actorUserId: string, organisationId: string) {
   const [organisation] = await db.select({ id: organisations.id })
     .from(organisations)
