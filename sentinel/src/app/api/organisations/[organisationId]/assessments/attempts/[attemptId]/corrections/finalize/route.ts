@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth/server';
 import { AssessmentAccessError, AssessmentTransitionError, finalizeAssessmentMarkCorrection } from '@/application/assessment/assessment-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function POST(_request: Request, context: { params: Promise<{ organisationId: string; attemptId: string }> }) {
   const { data } = await auth.getSession();
