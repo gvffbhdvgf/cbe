@@ -1,7 +1,7 @@
 import { auth } from '@/lib/auth/server';
 import {
   createGuardianRelationship, getGuardianManagementSummary, GuardianManagementError,
-  linkGuardianAccount, reviewGuardianProfile, reviewGuardianRelationship, revokeGuardianRelationship,
+  linkGuardianAccount, recordGuardianAccountInvitation, reviewGuardianProfile, reviewGuardianRelationship, revokeGuardianRelationship,
 } from '@/application/organisation/guardian-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
@@ -76,6 +76,10 @@ export async function POST(request: Request, context: { params: Promise<{ organi
     if (value.action === 'link-account') {
       if (!isText(value.profileId) || !isText(value.email)) return Response.json({ error: 'Guardian profile and verified account email are required' }, { status: 400 });
       return Response.json(await linkGuardianAccount(data.user.id, organisationId, value.profileId, value.email));
+    }
+    if (value.action === 'record-invitation') {
+      if (!isText(value.profileId) || !isText(value.email) || !isText(value.authUserId)) return Response.json({ error: 'Guardian profile, email and provisioned account are required' }, { status: 400 });
+      return Response.json(await recordGuardianAccountInvitation(data.user.id, organisationId, value.profileId, value.email, value.authUserId));
     }
     if (value.action === 'revoke-relationship') {
       if (!isText(value.relationshipId) || !isText(value.reason)) return Response.json({ error: 'Relationship and revocation reason are required' }, { status: 400 });
