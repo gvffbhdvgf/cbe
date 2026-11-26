@@ -17,7 +17,7 @@ describe('curriculum mapping and timezone migration contract', () => {
     expect(sql).toContain('pg_catalog.pg_timezone_names');
     expect(sql).toContain('assessment_events_time_zone_validation');
     expect(sql).toContain('time_zone,');
-    expect(sql).toContain('timeZone',);
+    expect(sql).toContain("'timeZone', v_time_zone");
   });
 
   it('converts institution-local wall-clock times in PostgreSQL, not the browser timezone', async () => {
