@@ -285,3 +285,19 @@ Next: implement controlled teacher-to-class/learning-area assignments, class-tar
 - Preview deployment `dpl_9hSFNbrgfLfLLQHPJ1QrAj5tPdhP` is building from that commit. Stable preview alias: `https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app`.
 - Remaining operational step: provision/verify a real Teacher membership in the institution, then create its class/learning-area assignment and run the browser smoke test with that teacher. Current institution has no eligible Teacher membership.
 - Preview/development only. No production deployment or production database was changed.
+
+
+## 26 November 2026 — Learner lifecycle transitions and class capacity
+
+- Added optional class capacity (1–500; null means unlimited), occupancy reporting, audited capacity changes and serialised capacity checks on placement writes.
+- Added timestamped `learner_class_placements` history. Initial placement, reassignment, withdrawal and progression execution retain class history instead of overwriting the only record of a learner's class.
+- Added audited immediate class reassignment with a required reason, and controlled learner withdrawal with an effective last-active date and required reason. Reasons are stored in access-controlled learner records, not copied into audit metadata.
+- Added progression request, independent approve/reject and effective-date execution. A requester cannot approve their own request; execution is blocked until the approved effective date. The learner workspace includes a progression planning and approvals register.
+- Updated assessment-event scheduling so a class-targeted event freezes only learners whose effective class placement covered the event start time. Historical class placements remain available for historical event eligibility.
+- Added API and UI for class capacity creation/update, learner class reassignment, withdrawal and progression planning/approval/execution. Direct runtime INSERT/UPDATE/DELETE remains denied on class placement history and progression request tables; writes go through security-definer operations with role checks and audit.
+- Migration `0023_learner_lifecycle_transitions` is applied on development branch `br-nameless-block-bhpsx0vq`; migration ledger hash `9be3c2886f13ef522a6d3a6b16a7fcc8c531902496b5f77536ea27fab3b547a7`. Existing class assignments were backfilled into timestamped placement history.
+- Isolated Neon E2E validation passed for class reassignment/history, full-class capacity rejection, withdrawal, progression request, rejection of self-approval, independent approval, and prevention of execution before the effective date.
+- CI passed on commit `f902d7dca247b6977f2ec6c95ceb7bf7b87e5dbc` (migration journal, lint, TypeScript, tests and production build).
+- Preview deployment `dpl_47KWQXdFYniDZvKeHVk3EmEo3sCS` is queued/building from that commit. Stable preview alias remains `https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app`.
+- Remaining lifecycle work: transfer requests with receiving-institution acceptance, controlled learner-record corrections, guardian relationship verification, and end-to-end browser validation with real role-separated accounts. Progression execution still awaits an approved request's effective date.
+- Preview/development only. No production deployment or production database was changed.
