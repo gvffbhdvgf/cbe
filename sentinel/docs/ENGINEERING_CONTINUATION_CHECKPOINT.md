@@ -1,17 +1,16 @@
-## 26 November 2026 — Academic-year rollover and weekly workload checkpoint
+## 26 November 2026 — Academic-year rollover and weekly teacher workload
 
-Latest source commit at checkpoint: `a9a04edc17a2ae1fbb43de9ab57c6017b792331a`. GitHub Actions [45823562738](https://github.com/gvffbhdvgf/cbe/actions/runs/45823562738) passed migration-journal validation, lint, TypeScript, tests and production build.
+Latest source commit: [d4b1d60](https://github.com/gvffbhdvgf/cbe/commit/d4b1d6097642a85a3701866ca1169d58fc35de91). GitHub Actions [45825680671](https://github.com/gvffbhdvgf/cbe/actions/runs/45825680671) passed migration-journal validation, lint, TypeScript, tests and production build.
 
-- Governed learner identity correction migration 0031 is applied to shared Sentinel Development; isolated lifecycle E2E passed on a disposable Neon branch.
-- Academic-year rollover migration 0032 and workspace/API are committed and CI-tested. The rollover schema was exercised on disposable Neon validation branches; it is not yet applied to the shared development branch.
-- Weekly workload migration 0033, Drizzle schema, assignment-period capture, workload-policy API and manager workload summary/configuration UI are committed. Migration 0033 was applied to disposable branch `br-lively-fog-bhtep2ku`.
-- Disposable-branch database checks confirmed forced RLS on both workload tables, runtime SELECT only (no INSERT/UPDATE/DELETE), runtime EXECUTE on both controlled functions, no PUBLIC EXECUTE, and rejection of unauthenticated function execution (SQLSTATE 42501).
-- Neon branch capacity is currently exhausted. Do not apply migrations 0032/0033 to shared Development until disposable validation capacity is available and full E2E checks are completed. No Production changes.
-- ADR-007 remains in progress: effective-dated workload revision controls and teacher self-view are still outstanding. No universal/statutory teaching-period threshold is assumed; institution thresholds must be configured.
+- Migration 0031 governed learner identity corrections is applied to shared Development; isolated lifecycle E2E passed.
+- Migration 0032 academic-year rollover and its workspace/API are implemented and CI-tested. Its schema was exercised on disposable rollover-validation branches but is not yet applied to shared Development.
+- Migration 0033 weekly teacher workload is implemented in source: effective-dated weekly-period allocations, institution/year policy versions, workload manager summary and configuration, effective-dated workload revision controls, and teacher self-service workload page/API.
+- Migration 0033 was applied on disposable branch `br-lively-fog-bhtep2ku`. Subsequent RLS hardening restricts policy reads to active, verified teacher members or authorised managers. Both workload tables use forced RLS and runtime SELECT only; direct runtime INSERT/UPDATE/DELETE are denied. Controlled functions have runtime EXECUTE, no PUBLIC EXECUTE, and unauthenticated invocation was rejected with SQLSTATE 42501. The updated allocation function and membership-scoped policy were checked on that branch.
+- Neon branch capacity is currently exhausted. Do not apply migrations 0032/0033 to shared Development until disposable validation capacity returns and full role-separated lifecycle E2E passes.
+- ADR-007 remains in progress: full role-separated E2E, shared Development application, Preview smoke test, and policy/workload validation with synthetic teacher assignments remain outstanding. No universal/statutory teaching-period threshold is assumed.
+- No Production changes or real learner/staff data changes.
 
 ## Earlier engineering checkpoints
-
-# Sentinel — Engineering Continuation Checkpoint
 
 ## 26 November 2026 — Assessment governance and correction milestones
 
