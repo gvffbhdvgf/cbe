@@ -232,13 +232,6 @@ export const teacherClassAssignments = pgTable('teacher_class_assignments', {
   index('teacher_class_assignments_class_area_idx').on(table.tenantOrganisationId, table.organisationId, table.classId, table.learningAreaId, table.status),
 ]);
 ")),
-  check('guardian_profiles_verification_method_check', sql`${table.verificationMethod} IS NULL OR ${table.verificationMethod} IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')`),
-  check('guardian_profiles_verified_check', sql`${table.verificationStatus} <> 'verified' OR (${table.verifiedAt} IS NOT NULL AND ${table.verifiedBy} IS NOT NULL AND ${table.verificationMethod} IS NOT NULL AND ${table.evidenceReference} IS NOT NULL)`),
-  check('guardian_profiles_rejected_check', sql`${table.verificationStatus} <> 'rejected' OR (${table.rejectedAt} IS NOT NULL AND ${table.rejectedBy} IS NOT NULL AND ${table.rejectionReason} IS NOT NULL)`),
-  check('guardian_profiles_user_link_check', sql`${table.userId} IS NULL OR (${table.verificationStatus} = 'verified' AND ${table.contactEmail} IS NOT NULL)`),
-  uniqueIndex('guardian_profiles_org_user_unique').on(table.tenantOrganisationId, table.userId).where(sql`${table.userId} IS NOT NULL`),
-  index('guardian_profiles_org_verification_idx').on(table.tenantOrganisationId, table.verificationStatus, table.status),
-]);
 
 export const guardianRelationships = pgTable('guardian_relationships', {
   id: uuid('id').defaultRandom().primaryKey(),
