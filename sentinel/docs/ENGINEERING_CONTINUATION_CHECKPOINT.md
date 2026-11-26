@@ -237,3 +237,15 @@ The development Neon Auth branch currently has no active platform administrator.
 ### Preview environment-complete redeployment
 
 After adding the branch-scoped `NEXT_PUBLIC_APP_URL`, the Preview was redeployed so the deployment snapshot includes all six environment variables. Latest deployment is READY: `dpl_7FvYMmHimJgUQyCS3SjVKHNhDUPT`. Stable branch URL remains https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app. The deployment uses commit `5a0fc2adf86eb9d07841d49496fd06d87b223a90`. SSO protection remains enabled.
+
+
+## 26 November 2026 — Administrator password setup flow implemented
+
+- Added a password-setup entry point to the sign-in page and a guided setup flow at `/auth/forgot-password`.
+- The flow uses Managed Neon Auth Email OTP: request email-verification OTP, verify the email, request a separate password-reset OTP, then set the password. It does not expose a password-setting backdoor, edit auth hashes, or enable public registration.
+- Neon Auth's shared development email provider supports OTP rather than verification links. The branch remains configured for OTP verification; an attempted switch to link verification was rejected by Neon and made no configuration change.
+- Enabled `revoke_sessions_on_password_reset` on the development branch.
+- Preview build deployed and READY: `dpl_6FsANYdaupTEHPYhn12VVCoY9hMh`, source commit `cac975991ada3a63dea36485ccaf7cc5c8efd4a0`. The existing stable Preview branch URL is unchanged.
+- Browser smoke test confirmed the new setup page renders. The verification-code request was accepted and the browser is waiting on the email OTP. No OTP was read or entered, no password was set, and no administrator privilege was granted.
+- Read-only verification confirms the pre-provisioned identity is still unverified and has no platform-administrator row. Complete OTP verification and password reset in the user's browser, then grant platform-administrator access only after the email is verified and the owner approval is confirmed.
+- This is Preview/development only. No production deployment or production database was changed.
