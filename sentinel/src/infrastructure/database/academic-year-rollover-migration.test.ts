@@ -25,6 +25,7 @@ describe('academic-year rollover migration', () => {
     expect(sql).toContain('progression_request_id = v_request_id');
     expect(sql).not.toMatch(/UPDATE\s+public\.learner_enrolments/i);
     expect(sql).toContain("'learner.academic_year_rollover_submitted'");
+    expect(sql).not.toMatch(/'reason',\\s*btrim\\(p_reason\\)/i);
   });
 
   it('restricts direct runtime writes and scopes read access through RLS', async () => {
