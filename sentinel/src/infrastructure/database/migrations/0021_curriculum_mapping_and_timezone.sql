@@ -379,8 +379,9 @@ AS $mappings$
   SELECT task.id, task.task_code::text, task.title::text, task.required,
     mapping.id, mapping.curriculum_source_node_id, mapping.status::text,
     mapping.created_by, mapping.reviewed_by, mapping.reviewed_at, mapping.review_note,
-    node.node_code::text, node.title::text, document.document_code::text,
-    offering.grade, area.name::text
+    CASE WHEN document.id IS NOT NULL AND offering.id IS NOT NULL THEN node.node_code::text END,
+    CASE WHEN document.id IS NOT NULL AND offering.id IS NOT NULL THEN node.title::text END,
+    document.document_code::text, offering.grade, area.name::text
   FROM public.assessment_tasks AS task
   JOIN public.assessment_instrument_versions AS instrument
     ON instrument.id = task.instrument_version_id
@@ -392,8 +393,10 @@ AS $mappings$
    AND mapping.tenant_organisation_id = task.tenant_organisation_id
    AND mapping.organisation_id = task.organisation_id
   LEFT JOIN public.curriculum_source_nodes AS node ON node.id = mapping.curriculum_source_node_id
-  LEFT JOIN public.curriculum_design_documents AS document ON document.id = node.document_id
-  LEFT JOIN public.curriculum_grade_offerings AS offering ON offering.id = document.grade_offering_id
+  LEFT JOIN public.curriculum_design_documents AS document
+    ON document.id = node.document_id AND document.review_status = 'approved' AND document.rights_status = 'confirmed'
+  LEFT JOIN public.curriculum_grade_offerings AS offering
+    ON offering.id = document.grade_offering_id AND offering.id = instrument.curriculum_grade_offering_id
   LEFT JOIN public.curriculum_learning_areas AS area ON area.id = offering.learning_area_id
   WHERE task.organisation_id = p_organisation_id
     AND instrument.id = p_instrument_version_id
