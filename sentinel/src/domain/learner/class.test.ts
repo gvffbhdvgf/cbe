@@ -4,7 +4,7 @@ import { createClassDefinition } from './class';
 describe('createClassDefinition', () => {
   it('normalises the class code and trims the display name', () => {
     expect(createClassDefinition({ grade: 4, academicYear: 2026, classCode: ' stream-a ', displayName: '  Grade 4 East  ' })).toEqual({
-      grade: 4, academicYear: 2026, classCode: 'STREAM-A', displayName: 'Grade 4 East',
+      grade: 4, academicYear: 2026, classCode: 'STREAM-A', displayName: 'Grade 4 East', capacity: null,
     });
   });
   it('rejects grades outside the KICD Grades 1–9 catalogue', () => {
@@ -16,6 +16,10 @@ describe('createClassDefinition', () => {
   it('rejects blank or malformed class codes', () => {
     expect(() => createClassDefinition({ grade: 1, academicYear: 2026, classCode: ' ', displayName: 'Grade 1 A' })).toThrow('Class code must use');
     expect(() => createClassDefinition({ grade: 1, academicYear: 2026, classCode: 'A EAST', displayName: 'Grade 1 A' })).toThrow('Class code must use');
+  });
+  it('accepts a bounded capacity and rejects invalid values', () => {
+    expect(createClassDefinition({ grade: 1, academicYear: 2026, classCode: 'A', displayName: 'Grade 1 A', capacity: 35 }).capacity).toBe(35);
+    expect(() => createClassDefinition({ grade: 1, academicYear: 2026, classCode: 'A', displayName: 'Grade 1 A', capacity: 0 })).toThrow('Class capacity must be an integer from 1 to 500, or left empty for unlimited');
   });
   it('requires a non-empty display name within the database limit', () => {
     expect(() => createClassDefinition({ grade: 1, academicYear: 2026, classCode: 'A', displayName: '  ' })).toThrow('Class name is required');
