@@ -11,9 +11,32 @@ export function ClassManager({ organisationId, initialClasses }: { organisationI
   const [classCode, setClassCode] = useState('A');
   const [displayName, setDisplayName] = useState('Grade 1 A');
   const [capacity, setCapacity] = useState('');
+  const [capacityEdits, setCapacityEdits] = useState<Record<string,string>>({});
+  const [savingCapacity, setSavingCapacity] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+
+  async function saveCapacity(item: ClassRecord) {
+    const raw = capacityEdits[item.id] ?? (item.capacity === null ? '' : String(item.capacity));
+    const nextCapacity = raw.trim() === '' ? null : Number(raw);
+    if (nextCapacity !== null && (!Number.isInteger(nextCapacity) || nextCapacity < 1 || nextCapacity > 500)) {
+      setError('Capacity must be a whole number from 1 to 500, or empty for unlimited.'); return;
+    }
+    setSavingCapacity(item.id); setError(''); setNotice('');
+    try {
+      const response = await fetch(`/api/organisations/${organisationId}/classes/${item.id}`, {
+        method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ capacity: nextCapacity }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to update class capacity');
+      const refresh = await fetch(`/api/organisations/${organisationId}/classes`);
+      const latest = await refresh.json();
+      if (refresh.ok) setClasses(latest.classes);
+      setNotice(`Capacity for ${item.displayName} was updated.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to update class capacity'); }
+    finally { setSavingCapacity(''); }
+  }
 
   async function addClass(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setPending(true); setError(''); setNotice('');
@@ -51,7 +74,7 @@ export function ClassManager({ organisationId, initialClasses }: { organisationI
 
     <section className="overflow-hidden rounded-[20px] border border-[#E1EAF0] bg-white">
       <div className="flex items-center justify-between border-b border-[#EAF0F4] px-6 py-5"><div><h2 className="text-[13px] font-semibold text-[#29465D]">Class register</h2><p className="mt-1 text-[10px] text-[#91A3B0]">Active and archived class groups</p></div><span className="rounded-full bg-[#F3F7F9] px-3 py-1.5 text-[10px] font-semibold text-[#7B91A1]">{classes.length} classes</span></div>
-      {classes.length ? <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left"><thead className="bg-[#FAFCFD] text-[9px] uppercase tracking-[.12em] text-[#8A9CAB]"><tr><th className="px-6 py-3">Class</th><th className="px-6 py-3">Code</th><th className="px-6 py-3">Grade</th><th className="px-6 py-3">Academic year</th><th className="px-6 py-3">Learners</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Status</th></tr></thead><tbody className="divide-y divide-[#EDF2F5]">{classes.map(item=><tr key={item.id}><td className="px-6 py-4 text-[12px] font-semibold text-[#18364E]">{item.displayName}</td><td className="px-6 py-4 font-mono text-[10px] text-[#6D8495]">{item.classCode}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.grade}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.academicYear}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.currentLearnerCount}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.capacity ?? 'Unlimited'}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.status}</td></tr>)}</tbody></table></div> : <div className="px-6 py-12 text-center text-[12px] text-[#8195A4]">No classes have been created for this organisation.</div>}
+      {classes.length ? <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left"><thead className="bg-[#FAFCFD] text-[9px] uppercase tracking-[.12em] text-[#8A9CAB]"><tr><th className="px-6 py-3">Class</th><th className="px-6 py-3">Code</th><th className="px-6 py-3">Grade</th><th className="px-6 py-3">Academic year</th><th className="px-6 py-3">Learners</th><th className="px-6 py-3">Capacity</th><th className="px-6 py-3">Status</th></tr></thead><tbody className="divide-y divide-[#EDF2F5]">{classes.map(item=><tr key={item.id}><td className="px-6 py-4 text-[12px] font-semibold text-[#18364E]">{item.displayName}</td><td className="px-6 py-4 font-mono text-[10px] text-[#6D8495]">{item.classCode}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.grade}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.academicYear}</td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.currentLearnerCount}</td><td className="px-6 py-4"><div className="flex items-center gap-2"><input aria-label={`Capacity for ${item.displayName}`} type="number" min={item.currentLearnerCount || 1} max={500} placeholder="Unlimited" value={capacityEdits[item.id] ?? (item.capacity === null ? '' : String(item.capacity))} onChange={event=>setCapacityEdits(current=>({...current,[item.id]:event.target.value}))} className="w-20 rounded-lg border border-[#DCE6EC] bg-[#FAFCFD] px-2 py-2 text-[10px]"/><button type="button" disabled={savingCapacity!==''} onClick={()=>void saveCapacity(item)} className="rounded-lg border border-[#DCE6EC] px-2 py-2 text-[9px] font-semibold text-[#087F86] disabled:opacity-40">{savingCapacity===item.id?'Saving…':'Save'}</button></div></td><td className="px-6 py-4 text-[11px] text-[#456176]">{item.status}</td></tr>)}</tbody></table></div> : <div className="px-6 py-12 text-center text-[12px] text-[#8195A4]">No classes have been created for this organisation.</div>}
     </section>
     {error && <p role="alert" className="rounded-xl border border-[#F6D6D2] bg-[#FFF5F3] p-3 text-[11px] text-[#B42318]">{error}</p>}
     {notice && <p role="status" className="rounded-xl border border-[#DDEBEA] bg-[#F2F8F8] p-3 text-[11px] text-[#087F86]">{notice}</p>}
