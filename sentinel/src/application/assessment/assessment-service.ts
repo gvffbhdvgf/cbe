@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
 import { assessmentEvents, assessmentInstrumentVersions, assessmentProgrammes } from '@/infrastructure/database/schema/assessment';
+import { classes } from '@/infrastructure/database/schema/learner';
 import { curriculumLearningAreas } from '@/infrastructure/database/schema/curriculum';
 import { getOrganisationActorRole } from '@/application/organisation/membership-service';
 import { canReadAssessmentData } from './assessment-policy';
@@ -53,6 +54,35 @@ async function runAssessmentOperation<T>(actorUserId: string, organisationId: st
   }
 }
 
+async function assertEventParticipationAuthority(actorUserId: string, organisationId: string) {
+  const [organisation] = await db.select({ id: organisations.id })
+    .from(organisations)
+    .where(and(eq(organisations.id, organisationId), eq(organisations.status, 'active')))
+    .limit(1);
+  if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
+  const role = await getOrganisationActorRole(actorUserId, organisationId);
+  if (!canReadAssessmentData(role) && role !== 'teacher') {
+    throw new AssessmentAccessError('You do not have permission to participate in assessment events for this organisation');
+  }
+}
+
+async function runEventParticipationOperation<T>(actorUserId: string, organisationId: string, operation: (tx: Parameters<Parameters<typeof withAuthenticatedLearnerDb>[1]>[0]) => Promise<T>): Promise<T> {
+  await assertEventParticipationAuthority(actorUserId, organisationId);
+  try {
+    return await withAuthenticatedLearnerDb(actorUserId, operation);
+  } catch (error) {
+    if (error instanceof AssessmentAccessError || error instanceof AssessmentTransitionError) throw error;
+    const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+    const message = error instanceof Error ? error.message : 'Assessment participation failed';
+    if (code === '42501') throw new AssessmentAccessError('Authentication or class/learning-area assignment is required');
+    if (code === 'P0002') throw new AssessmentTransitionError('Assessment record not found or access denied', 404);
+    if (code === '23514' || code === '55000' || code === '23505' || code === '22023' || code === '23503') {
+      throw new AssessmentTransitionError(message, 409);
+    }
+    throw error;
+  }
+}
+
 export async function openAssessmentEvent(actorUserId: string, organisationId: string, eventId: string) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.open_assessment_event(${eventId}::uuid) AS opened_at`);
@@ -61,21 +91,21 @@ export async function openAssessmentEvent(actorUserId: string, organisationId: s
 }
 
 export async function createAssessmentAttempt(actorUserId: string, organisationId: string, eventId: string, enrolmentId: string) {
-  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+  return runEventParticipationOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_attempt(${eventId}::uuid, ${enrolmentId}::uuid) AS attempt_id`);
     return result.rows[0]?.attempt_id;
   });
 }
 
 export async function captureAssessmentResponse(actorUserId: string, organisationId: string, attemptId: string, taskId: string, responsePayload: Record<string, unknown>) {
-  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+  return runEventParticipationOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.capture_assessment_response(${attemptId}::uuid, ${taskId}::uuid, ${JSON.stringify(responsePayload)}::jsonb) AS response_id`);
     return result.rows[0]?.response_id;
   });
 }
 
 export async function submitAssessmentAttempt(actorUserId: string, organisationId: string, attemptId: string) {
-  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+  return runEventParticipationOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.submit_assessment_attempt(${attemptId}::uuid) AS submitted_at`);
     return result.rows[0]?.submitted_at;
   });
@@ -198,14 +228,20 @@ export async function approveAssessmentInstrumentVersion(actorUserId: string, or
 
 export async function createAssessmentEventLocal(
   actorUserId: string, organisationId: string, programmeId: string, instrumentVersionId: string,
-  title: string, startsAtLocal: string, endsAtLocal: string, academicYear: number, moderationRequired: boolean,
+  title: string, startsAtLocal: string, endsAtLocal: string, academicYear: number, moderationRequired: boolean, classId: string | null = null,
 ) {
   return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
-    const result = await tx.execute(sql`SELECT sentinel_private.create_assessment_event_local(
-      ${organisationId}::uuid, ${programmeId}::uuid, ${instrumentVersionId}::uuid,
-      ${title}::text, ${startsAtLocal}::timestamp, ${endsAtLocal}::timestamp,
-      ${academicYear}::integer, ${moderationRequired}::boolean
-    ) AS event_id`);
+    const result = classId
+      ? await tx.execute(sql`SELECT sentinel_private.create_class_assessment_event_local(
+          ${organisationId}::uuid, ${programmeId}::uuid, ${instrumentVersionId}::uuid, ${classId}::uuid,
+          ${title}::text, ${startsAtLocal}::timestamp, ${endsAtLocal}::timestamp,
+          ${academicYear}::integer, ${moderationRequired}::boolean
+        ) AS event_id`)
+      : await tx.execute(sql`SELECT sentinel_private.create_assessment_event_local(
+          ${organisationId}::uuid, ${programmeId}::uuid, ${instrumentVersionId}::uuid,
+          ${title}::text, ${startsAtLocal}::timestamp, ${endsAtLocal}::timestamp,
+          ${academicYear}::integer, ${moderationRequired}::boolean
+        ) AS event_id`);
     return result.rows[0]?.event_id;
   });
 }
@@ -238,7 +274,7 @@ export async function getAssessmentAuthoringOptions(actorUserId: string, organis
   const role = await getOrganisationActorRole(actorUserId, organisationId);
   if (!canReadAssessmentData(role)) throw new AssessmentAccessError('Assessment authoring access is required');
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
-    const [programmes, instruments, learningAreas, gradeOfferingResult] = await Promise.all([
+    const [programmes, instruments, learningAreas, gradeOfferingResult, classOptions] = await Promise.all([
       tx.select({ id: assessmentProgrammes.id, code: assessmentProgrammes.programmeCode, title: assessmentProgrammes.title, type: assessmentProgrammes.programmeType })
         .from(assessmentProgrammes).where(and(eq(assessmentProgrammes.organisationId, organisationId), eq(assessmentProgrammes.status, 'active'))).orderBy(assessmentProgrammes.title),
       tx.select({ id: assessmentInstrumentVersions.id, code: assessmentInstrumentVersions.instrumentCode, version: assessmentInstrumentVersions.versionNumber, title: assessmentInstrumentVersions.title, grade: assessmentInstrumentVersions.grade, learningAreaId: assessmentInstrumentVersions.learningAreaId, status: assessmentInstrumentVersions.status, createdBy: assessmentInstrumentVersions.createdBy })
@@ -254,8 +290,11 @@ export async function getAssessmentAuthoringOptions(actorUserId: string, organis
         WHERE offering.availability_status IN ('document_listed','document_available')
         ORDER BY offering.grade, area.name, edition.edition_label, pathway.name
       `),
+      tx.select({ id: classes.id, classCode: classes.classCode, displayName: classes.displayName, grade: classes.grade, academicYear: classes.academicYear })
+        .from(classes).where(and(eq(classes.organisationId, organisationId), eq(classes.status, 'active')))
+        .orderBy(classes.grade, classes.academicYear, classes.classCode),
     ]);
-    return { programmes, instruments, learningAreas, gradeOfferings: gradeOfferingResult.rows as unknown as Array<{ id: string; grade: number; learning_area_id: string; learning_area: string; edition_label: string; pathway_name: string; availability_status: string }>, timeZone: organisation.timeZone };
+    return { programmes, instruments, learningAreas, classes: classOptions, gradeOfferings: gradeOfferingResult.rows as unknown as Array<{ id: string; grade: number; learning_area_id: string; learning_area: string; edition_label: string; pathway_name: string; availability_status: string }>, timeZone: organisation.timeZone };
   });
 }
 
@@ -301,7 +340,7 @@ export async function reviewAssessmentTaskOutcomeMapping(
 }
 
 export async function getAssessmentEligibleEnrolments(actorUserId: string, organisationId: string, eventId: string) {
-  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+  return runEventParticipationOperation(actorUserId, organisationId, async (tx) => {
     const result = await tx.execute(sql`SELECT * FROM sentinel_private.list_assessment_eligible_enrolments(${eventId}::uuid)`);
     return result.rows;
   });
@@ -315,12 +354,14 @@ export async function listAssessmentEvents(actorUserId: string, organisationId: 
   if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
 
   const role = await getOrganisationActorRole(actorUserId, organisationId);
-  if (!canReadAssessmentData(role)) {
+  if (!canReadAssessmentData(role) && role !== 'teacher') {
     throw new AssessmentAccessError('You do not have permission to view assessment records for this organisation');
   }
 
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => tx.select({
     id: assessmentEvents.id,
+    classId: assessmentEvents.classId,
+    className: classes.displayName,
     title: assessmentEvents.title,
     grade: assessmentEvents.grade,
     academicYear: assessmentEvents.academicYear,
@@ -346,6 +387,7 @@ export async function listAssessmentEvents(actorUserId: string, organisationId: 
       eq(assessmentEvents.organisationId, assessmentInstrumentVersions.organisationId),
     ))
     .innerJoin(curriculumLearningAreas, eq(assessmentEvents.learningAreaId, curriculumLearningAreas.id))
+    .leftJoin(classes, eq(assessmentEvents.classId, classes.id))
     .where(eq(assessmentEvents.organisationId, organisationId))
     .orderBy(desc(assessmentEvents.startsAt), desc(assessmentEvents.createdAt)));
 }
@@ -400,7 +442,7 @@ export async function getAssessmentAttemptMarkingSheet(actorUserId: string, orga
     .limit(1);
   if (!organisation) throw new AssessmentAccessError('Organisation not found or inactive');
   const role = await getOrganisationActorRole(actorUserId, organisationId);
-  if (!canReadAssessmentData(role)) throw new AssessmentAccessError('You do not have permission to view assessment evidence for this organisation');
+  if (!canReadAssessmentData(role) && role !== 'teacher') throw new AssessmentAccessError('You do not have permission to view assessment evidence for this organisation');
 
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
     const result = await tx.execute(sql`
