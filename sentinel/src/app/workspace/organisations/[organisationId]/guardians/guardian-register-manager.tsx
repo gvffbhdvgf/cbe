@@ -109,6 +109,29 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
     } finally { setBusy(''); }
   }
 
+  async function sendGuardianVerification(guardian: Guardian) {
+    if (!guardian.contactEmail) return;
+    setBusy('verify-invite:'+guardian.id);setError('');setMessage('');
+    try {
+      const verification = await authClient.emailOtp.sendVerificationOtp({
+        email: guardian.contactEmail,
+        type: 'email-verification',
+      });
+      if (verification.error) throw new Error(verification.error.message || 'Could not send the verification code.');
+      const link = window.location.origin + '/auth/verify-email';
+      setInvitationLinks(current => ({ ...current, [guardian.id]: link }));
+      const audit = await fetch('/api/organisations/'+organisationId+'/guardians', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'record-invitation', profileId: guardian.id, email: guardian.contactEmail }),
+      });
+      const auditPayload = await audit.json();
+      if (!audit.ok) throw new Error(auditPayload.error || 'The verification code was sent but its audit record could not be saved.');
+      setMessage('Verification code sent to the existing account. Share the setup page with the guardian.');
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not send the guardian verification code.');
+    } finally { setBusy(''); }
+  }
+
   async function copyInvitationLink(profileId: string) {
     const link = invitationLinks[profileId];
     if (!link) return;
@@ -177,7 +200,7 @@ export function GuardianRegisterManager({ organisationId, initialSummary }: { or
             <div className="flex flex-wrap gap-2 sm:col-span-2"><button disabled={busy!==''||evidenceFor(guardian.id).trim().length<3} onClick={()=>void runAction('profile:'+guardian.id,{action:'review-profile',profileId:guardian.id,decision:'verified',method:methodFor(guardian.id),evidenceReference:evidenceFor(guardian.id)},'Guardian identity verified independently.')} className="rounded-full bg-[#087F86] px-4 py-2 text-[10px] font-semibold text-white disabled:opacity-40">Verify identity</button><button disabled={busy!==''||evidenceFor(guardian.id).trim().length<3||!(rejectionReasons[guardian.id]||'').trim()} onClick={()=>void runAction('profile:'+guardian.id,{action:'review-profile',profileId:guardian.id,decision:'rejected',method:methodFor(guardian.id),evidenceReference:evidenceFor(guardian.id),rejectionReason:rejectionReasons[guardian.id]},'Guardian identity review recorded as rejected.')} className="rounded-full border border-[#E4C8C1] px-4 py-2 text-[10px] font-semibold text-[#9A4B3D] disabled:opacity-40">Reject identity</button></div>
             <p className="text-[10px] leading-5 text-[#8296A5] sm:col-span-2">The person who created this profile cannot review it. Keep sensitive document images outside audit metadata; record only the controlled evidence reference.</p>
           </div>}
-          {guardian.verificationStatus==='verified'&&guardian.userId===null&&guardian.contactEmail&&<div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F4F8FA] p-3"><p className="max-w-[520px] text-[10px] leading-5 text-[#718697]">Provision a new account and send an email verification code, or link an existing account after its owner verifies the same email address.</p><div className="flex flex-wrap gap-2"><button disabled={busy!==''||Boolean(invitationLinks[guardian.id])} onClick={()=>void inviteGuardianAccount(guardian)} className="rounded-full bg-[#087F86] px-4 py-2 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='invite:'+guardian.id?'Creating…':'Create account & send code'}</button><button disabled={busy!==''} onClick={()=>void runAction('link:'+guardian.id,{action:'link-account',profileId:guardian.id,email:guardian.contactEmail},'Verified guardian account linked.')} className="rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">Link existing verified account</button></div>{invitationLinks[guardian.id]&&<div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3"><p className="text-[10px] text-[#627B8E]">Share this setup page so the guardian can verify their email and choose a password.</p><button type="button" onClick={()=>void copyInvitationLink(guardian.id)} className="text-[10px] font-semibold text-[#087F86]">Copy setup link</button></div>}</div>}
+          {guardian.verificationStatus==='verified'&&guardian.userId===null&&guardian.contactEmail&&<div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-[#F4F8FA] p-3"><p className="max-w-[520px] text-[10px] leading-5 text-[#718697]">Provision a new account and send an email verification code, or link an existing account after its owner verifies the same email address.</p><div className="flex flex-wrap gap-2"><button disabled={busy!==''||Boolean(invitationLinks[guardian.id])} onClick={()=>void inviteGuardianAccount(guardian)} className="rounded-full bg-[#087F86] px-4 py-2 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='invite:'+guardian.id?'Creating…':'Create account & send code'}</button><button disabled={busy!==''||Boolean(invitationLinks[guardian.id])} onClick={()=>void sendGuardianVerification(guardian)} className="rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">{busy==='verify-invite:'+guardian.id?'Sending…':'Send code to existing account'}</button><button disabled={busy!==''} onClick={()=>void runAction('link:'+guardian.id,{action:'link-account',profileId:guardian.id,email:guardian.contactEmail},'Verified guardian account linked.')} className="rounded-full border border-[#BFD8D8] px-4 py-2 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">Link existing verified account</button></div>{invitationLinks[guardian.id]&&<div className="flex w-full flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3"><p className="text-[10px] text-[#627B8E]">Share this setup page so the guardian can verify their email and choose a password.</p><button type="button" onClick={()=>void copyInvitationLink(guardian.id)} className="text-[10px] font-semibold text-[#087F86]">Copy setup link</button></div>}</div>}
           <div className="mt-4 space-y-3">{guardian.relationships.map(rel=><div key={rel.id} className="rounded-xl border border-[#EAF0F3] p-3">
             <div className="flex flex-wrap items-center justify-between gap-2"><div><p className="text-[11px] font-semibold text-[#35556B]">{rel.learner?displayName({firstName:rel.learner.firstName,lastName:rel.learner.lastName,preferredName:rel.learner.preferredName}):'Learner record'} · {titleCase(rel.relationshipType)}</p><p className="mt-1 text-[10px] text-[#8296A5]">{rel.learner?.learnerReference||'—'} · {rel.learner?'Grade '+rel.learner.grade+' ('+rel.learner.academicYear+')':'No active enrolment'}</p></div><span className="rounded-full bg-[#F3F7F9] px-2.5 py-1 text-[9px] font-semibold text-[#718697]">{titleCase(rel.verificationStatus)} · {titleCase(rel.status)}</span></div>
             {rel.verificationStatus==='pending'&&guardian.verificationStatus==='verified'&&<div className="mt-3 grid gap-2 sm:grid-cols-2">
