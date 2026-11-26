@@ -9,7 +9,7 @@ export function AssessmentEventControls({ organisationId, eventId, status }: Pro
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const action = status === 'scheduled' ? 'open' : status === 'open' ? 'close' : null;
+  const action = status === 'draft' ? 'schedule' : status === 'scheduled' ? 'open' : status === 'open' ? 'close' : null;
   if (!action) return null;
 
   async function run() {
@@ -27,5 +27,5 @@ export function AssessmentEventControls({ organisationId, eventId, status }: Pro
     }
   }
 
-  return <div className="mt-3"><button type="button" onClick={() => void run()} disabled={busy} className="rounded-full border border-[#CFE1E6] px-3 py-2 text-[10px] font-semibold text-[#087F86] hover:bg-[#F0FAF8] disabled:opacity-40">{busy ? 'Saving…' : action === 'open' ? 'Open event' : 'Close event'}</button>{error && <p role="alert" className="mt-2 text-[10px] text-[#A43D34]">{error}</p>}</div>;
+  return <div className="mt-3"><button type="button" onClick={() => void run()} disabled={busy} className="rounded-full border border-[#CFE1E6] px-3 py-2 text-[10px] font-semibold text-[#087F86] hover:bg-[#F0FAF8] disabled:opacity-40">{busy ? 'Saving…' : action === 'schedule' ? 'Freeze roster & schedule' : action === 'open' ? 'Open event' : 'Close event'}</button>{error && <p role="alert" className="mt-2 text-[10px] text-[#A43D34]">{error}</p>}</div>;
 }
