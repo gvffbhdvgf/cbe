@@ -9,12 +9,15 @@ CREATE INDEX learner_enrolments_class_capacity_idx
   WHERE class_id IS NOT NULL AND status = 'active';
 --> statement-breakpoint
 
+ALTER TABLE public.learner_enrolments ADD CONSTRAINT learner_enrolments_tenant_org_id_learner_unique
+  UNIQUE (tenant_organisation_id, organisation_id, id, learner_id);
+--> statement-breakpoint
 CREATE TABLE public.learner_class_placements (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
   organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
-  enrolment_id uuid NOT NULL REFERENCES public.learner_enrolments(id) ON DELETE RESTRICT,
-  learner_id uuid NOT NULL REFERENCES public.learner_profiles(id) ON DELETE RESTRICT,
+  enrolment_id uuid NOT NULL,
+  learner_id uuid NOT NULL,
   class_id uuid NOT NULL,
   grade integer NOT NULL CHECK (grade BETWEEN 1 AND 9),
   academic_year integer NOT NULL CHECK (academic_year BETWEEN 2000 AND 2100),
@@ -24,6 +27,8 @@ CREATE TABLE public.learner_class_placements (
   created_by uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT learner_class_placements_scope_check CHECK (tenant_organisation_id = organisation_id),
+  CONSTRAINT learner_class_placements_enrolment_fk FOREIGN KEY (tenant_organisation_id, organisation_id, enrolment_id, learner_id)
+    REFERENCES public.learner_enrolments (tenant_organisation_id, organisation_id, id, learner_id) ON DELETE RESTRICT,
   CONSTRAINT learner_class_placements_period_check CHECK (ends_at IS NULL OR ends_at > starts_at),
   CONSTRAINT learner_class_placements_class_fk FOREIGN KEY
     (tenant_organisation_id, organisation_id, class_id, grade, academic_year)
@@ -265,8 +270,8 @@ CREATE TABLE public.learner_progression_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
   organisation_id uuid NOT NULL REFERENCES public.organisations(id) ON DELETE RESTRICT,
-  enrolment_id uuid NOT NULL REFERENCES public.learner_enrolments(id) ON DELETE RESTRICT,
-  learner_id uuid NOT NULL REFERENCES public.learner_profiles(id) ON DELETE RESTRICT,
+  enrolment_id uuid NOT NULL,
+  learner_id uuid NOT NULL,
   from_grade integer NOT NULL CHECK (from_grade BETWEEN 1 AND 9),
   from_academic_year integer NOT NULL,
   to_grade integer NOT NULL CHECK (to_grade BETWEEN 1 AND 9),
@@ -276,19 +281,27 @@ CREATE TABLE public.learner_progression_requests (
   reason text NOT NULL CHECK (length(btrim(reason)) BETWEEN 10 AND 500),
   status varchar(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','executed')),
   requested_by uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
+  decided_by uuid REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
+  decided_at timestamptz,
   approved_by uuid REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   approved_at timestamptz,
   decision_note text,
   executed_at timestamptz,
-  new_enrolment_id uuid REFERENCES public.learner_enrolments(id) ON DELETE RESTRICT,
+  new_enrolment_id uuid,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT learner_progression_requests_scope_check CHECK (tenant_organisation_id=organisation_id),
+  CONSTRAINT learner_progression_requests_enrolment_fk FOREIGN KEY (tenant_organisation_id, organisation_id, enrolment_id, learner_id)
+    REFERENCES public.learner_enrolments (tenant_organisation_id, organisation_id, id, learner_id) ON DELETE RESTRICT,
+  CONSTRAINT learner_progression_requests_new_enrolment_fk FOREIGN KEY (tenant_organisation_id, organisation_id, new_enrolment_id, learner_id)
+    REFERENCES public.learner_enrolments (tenant_organisation_id, organisation_id, id, learner_id) ON DELETE RESTRICT,
   CONSTRAINT learner_progression_requests_year_check CHECK (to_academic_year=from_academic_year+1),
   CONSTRAINT learner_progression_requests_grade_step_check CHECK (to_grade IN (from_grade,from_grade+1)),
   CONSTRAINT learner_progression_requests_decision_check CHECK (
-    (status='pending' AND approved_by IS NULL AND approved_at IS NULL)
-    OR (status IN ('approved','rejected','executed') AND approved_by IS NOT NULL AND approved_at IS NOT NULL)
+    (status='pending' AND decided_by IS NULL AND decided_at IS NULL AND approved_by IS NULL AND approved_at IS NULL)
+    OR (status='approved' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND approved_by=decided_by AND approved_at=decided_at)
+    OR (status='rejected' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND approved_by IS NULL AND approved_at IS NULL)
+    OR (status='executed' AND decided_by IS NOT NULL AND decided_at IS NOT NULL AND approved_by IS NOT NULL AND approved_at IS NOT NULL)
   ),
   CONSTRAINT learner_progression_requests_class_fk FOREIGN KEY
     (tenant_organisation_id,organisation_id,target_class_id,to_grade,to_academic_year)
@@ -372,7 +385,7 @@ BEGIN
   WHERE request.id=p_request_id AND request.organisation_id=p_organisation_id FOR UPDATE;
   IF NOT FOUND OR v_request.status<>'pending' THEN RAISE EXCEPTION 'Pending progression request not found' USING ERRCODE='P0002'; END IF;
   IF v_request.requested_by=v_actor_id THEN RAISE EXCEPTION 'Progression requests require independent approval by another authorised user' USING ERRCODE='42501'; END IF;
-  UPDATE public.learner_progression_requests SET status='approved',approved_by=v_actor_id,approved_at=v_now,
+  UPDATE public.learner_progression_requests SET status='approved',decided_by=v_actor_id,decided_at=v_now,approved_by=v_actor_id,approved_at=v_now,
     decision_note=NULLIF(pg_catalog.btrim(p_note),''),updated_at=v_now WHERE id=p_request_id;
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'learner.progression_approved','learner_progression_request',p_request_id::text,
@@ -402,7 +415,7 @@ BEGIN
   WHERE request.id=p_request_id AND request.organisation_id=p_organisation_id FOR UPDATE;
   IF NOT FOUND OR v_request.status<>'pending' THEN RAISE EXCEPTION 'Pending progression request not found' USING ERRCODE='P0002'; END IF;
   IF v_request.requested_by=v_actor_id THEN RAISE EXCEPTION 'Progression requests require an independent decision by another authorised user' USING ERRCODE='42501'; END IF;
-  UPDATE public.learner_progression_requests SET status='rejected',approved_by=v_actor_id,approved_at=v_now,
+  UPDATE public.learner_progression_requests SET status='rejected',decided_by=v_actor_id,decided_at=v_now,
     decision_note=v_note,updated_at=v_now WHERE id=p_request_id;
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'learner.progression_rejected','learner_progression_request',p_request_id::text,
