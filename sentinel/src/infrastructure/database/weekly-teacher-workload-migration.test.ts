@@ -21,6 +21,9 @@ describe('weekly teacher workload migration', () => {
   it('uses forced RLS and narrow audited SECURITY DEFINER operations', async () => {
     const sql = await readFile(migrationPath, 'utf8');
     expect(sql).toContain('FORCE ROW LEVEL SECURITY');
+    expect(sql).toContain('CREATE FUNCTION sentinel_private.can_read_teacher_workload_policy');
+    expect(sql).toContain("membership.role = 'teacher'");
+    expect(sql).toContain('USING (sentinel_private.can_read_teacher_workload_policy(organisation_id))');
     expect(sql).toContain('CREATE FUNCTION sentinel_private.set_teacher_weekly_workload_allocation');
     expect(sql).toContain('CREATE FUNCTION sentinel_private.set_teacher_workload_policy');
     expect(sql).toContain('REVOKE ALL ON FUNCTION');
