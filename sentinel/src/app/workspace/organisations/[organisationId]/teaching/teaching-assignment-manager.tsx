@@ -21,8 +21,8 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
   const [learningAreaId,setLearningAreaId]=useState(learningAreas[0]?.id ?? '');
   const [startsOn,setStartsOn]=useState(new Date().toISOString().slice(0,10));
   const [endsOn,setEndsOn]=useState('');
-  const [weeklyPeriods,setWeeklyPeriods]=useState('5');
-  const [workloadReason,setWorkloadReason]=useState('Initial weekly teaching allocation');
+  const [weeklyPeriods,setWeeklyPeriods]=useState('');
+  const [workloadReason,setWorkloadReason]=useState('');
   const [busy,setBusy]=useState('');
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
