@@ -314,7 +314,8 @@ export async function getAssessmentInstrumentOutcomeOptions(actorUserId: string,
         offering.grade, area.name AS learning_area
       FROM public.assessment_instrument_versions AS instrument
       JOIN public.curriculum_grade_offerings AS offering
-        ON offering.grade = instrument.grade
+        ON offering.id = instrument.curriculum_grade_offering_id
+       AND offering.grade = instrument.grade
        AND offering.learning_area_id = instrument.learning_area_id
       JOIN public.curriculum_design_documents AS document
         ON document.grade_offering_id = offering.id
