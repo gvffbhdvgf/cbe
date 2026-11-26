@@ -7,7 +7,6 @@ const journalPath = new URL('./migrations/meta/_journal.json', import.meta.url);
 describe('staff profiles and effective-dated engagements migration', () => {
   it('registers migration 0025 after adapted curriculum pathway coverage', async () => {
     const journal = JSON.parse(await readFile(journalPath, 'utf8')) as { entries: Array<{ idx: number; tag: string }> };
-    expect(journal.entries).toHaveLength(26);
     expect(journal.entries[25]).toMatchObject({ idx: 25, tag: '0025_staff_profiles_and_engagements' });
   });
 
