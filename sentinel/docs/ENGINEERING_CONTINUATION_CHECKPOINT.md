@@ -166,3 +166,30 @@ Next sequence:
 - Do not import identifiable learner data before legal, privacy, safeguarding and DPIA approvals.
 - Do not provision paid/persistent infrastructure or incur new service costs without approval.
 - Keep GitHub and Notion checkpoints synchronized.
+
+
+## 26 November 2026 — Assessment authoring and learner participation milestone
+
+Latest source commit: [5e82af3](https://github.com/gvffbhdvgf/cbe/commit/5e82af336bd26834f4cb1cc9941dd1592f2d28dc). GitHub Actions [45761211788](https://github.com/gvffbhdvgf/cbe/actions/runs/45761211788) passed migration-journal validation, lint, TypeScript, 123 tests across 22 files, and the production build.
+
+Migration 0020 is registered and applied to the isolated Neon development branch. It adds narrowly granted SECURITY DEFINER operations for:
+- Assessment programme creation with type and code validation.
+- Versioned instrument creation with 1–100 validated task definitions and concurrency-safe version numbering.
+- Independent instrument approval; the author cannot approve their own version.
+- Draft event creation restricted to an active programme and approved instrument.
+- Read access to the immutable frozen roster with any existing attempt reference/status.
+
+The workspace now includes programme authoring, instrument/task drafting, independent approval, event creation, event scheduling with roster freeze, and roster-based attempt launch. Attempt workspaces now expose one-time immutable response capture and submission controls. The existing marking/result workflow remains connected after submission.
+
+Development database verification:
+- Migration ledger entry 23 records migration 0020 with SHA-256 `0e6d3cd7a03872381e9e33bea98e7de6f31388102ab5719e3cff2b4bf3675b08`.
+- All five authoring/roster functions are SECURITY DEFINER; runtime has EXECUTE only and PUBLIC execution is revoked.
+- Runtime has no direct INSERT privilege on programmes, instruments, events or tasks.
+- An unauthenticated programme-creation call was rejected with SQLSTATE 42501.
+- No programmes, instruments, events, roster rows or attempts were created during verification.
+- Migration 0020 was executed on a disposable child branch before development application; the child branch was deleted afterward.
+- Production database and deployment remain unchanged.
+
+Known limitation: event timestamps are stored as absolute UTC instants while roster eligibility currently uses the UTC calendar date. Organisation timezone support should be modelled before relying on local-calendar eligibility across timezones. Choice response options and richer curriculum-outcome mapping authoring also remain to be completed.
+
+**Next milestone:** instrument curriculum outcome mapping/review, organisation timezone-aware scheduling, learner/class allocation and teacher-scoped participation, then end-to-end synthetic assessment journeys.
