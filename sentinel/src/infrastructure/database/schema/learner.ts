@@ -138,7 +138,7 @@ export const guardianProfiles = pgTable('guardian_profiles', {
   unique('guardian_profiles_tenant_person_unique').on(table.tenantOrganisationId, table.personId),
   check('guardian_profiles_status_check', sql`${table.status} IN ('active', 'inactive', 'suspended')`),
   check('guardian_profiles_verification_status_check', sql`${table.verificationStatus} IN ('pending', 'verified', 'rejected')`),
-  check('guardian_profiles_contact_email_check', sql.raw("contact_email IS NULL OR contact_email ~* '^[^[:space:]@]+@[^[:space:]@]+\\\\.[^[:space:]@]+$'")),
+  check('guardian_profiles_contact_email_check', sql.raw("contact_email IS NULL OR contact_email ~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$'")),
   check('guardian_profiles_verification_method_check', sql`${table.verificationMethod} IS NULL OR ${table.verificationMethod} IN ('school_record', 'official_document', 'in_person', 'guardian_otp', 'other')`),
   check('guardian_profiles_verified_check', sql`${table.verificationStatus} <> 'verified' OR (${table.verifiedAt} IS NOT NULL AND ${table.verifiedBy} IS NOT NULL AND ${table.verificationMethod} IS NOT NULL AND ${table.evidenceReference} IS NOT NULL)`),
   check('guardian_profiles_rejected_check', sql`${table.verificationStatus} <> 'rejected' OR (${table.rejectedAt} IS NOT NULL AND ${table.rejectedBy} IS NOT NULL AND ${table.rejectionReason} IS NOT NULL)`),
