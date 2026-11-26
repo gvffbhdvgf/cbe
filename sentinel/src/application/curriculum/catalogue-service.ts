@@ -50,7 +50,7 @@ export async function listCurriculumCatalogue() {
       .innerJoin(curriculumLearningAreas, eq(curriculumGradeOfferings.learningAreaId, curriculumLearningAreas.id))
       .innerJoin(curriculumSources, eq(curriculumDesignDocuments.sourceId, curriculumSources.id))
       .leftJoin(curriculumSourceNodes, eq(curriculumSourceNodes.documentId, curriculumDesignDocuments.id))
-      .groupBy(curriculumDesignDocuments.id, curriculumDesignDocuments.createdAt, curriculumGradeOfferings.grade, curriculumLearningAreas.areaCode, curriculumSources.title, curriculumSources.url)
+      .groupBy(curriculumDesignDocuments.id, curriculumDesignDocuments.createdAt, curriculumGradeOfferings.grade, curriculumLearningAreas.areaCode, curriculumLearningAreas.name, curriculumSources.title, curriculumSources.url)
       .orderBy(asc(curriculumGradeOfferings.grade), asc(curriculumLearningAreas.name), desc(curriculumDesignDocuments.createdAt)),
     db.select({
       id: curriculumPathwayGradeLevels.id,
