@@ -48,7 +48,26 @@ export function OutcomeMappingControls({ organisationId, instrumentVersionId, ac
     }
   }, [organisationId, instrumentVersionId]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/organisations/${organisationId}/assessments/instruments/${instrumentVersionId}/outcome-mappings`)
+      .then(async response => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || 'Unable to load outcome mappings.');
+        if (!cancelled) {
+          setRows(payload.mappings as MappingRow[]);
+          setOutcomes(payload.availableOutcomes as Outcome[]);
+          setError('');
+        }
+      })
+      .catch(cause => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Unable to load outcome mappings.');
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [organisationId, instrumentVersionId]);
 
   async function submit(path: string, body: unknown, label: string) {
     setBusy(label);
