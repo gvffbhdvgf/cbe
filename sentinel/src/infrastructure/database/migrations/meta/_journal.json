@@ -141,6 +141,13 @@
       "when": 1795660800000,
       "tag": "0019_assessment_correction_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795670400000,
+      "tag": "0020_assessment_authoring",
+      "breakpoints": true
     }
   ]
 }
