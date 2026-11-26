@@ -16,6 +16,9 @@ describe('learner lifecycle transition migration', () => {
     expect(sql).toContain('ALTER TABLE public.classes ADD COLUMN capacity integer');
     expect(sql).toContain('classes_capacity_check CHECK (capacity IS NULL OR capacity BETWEEN 1 AND 500)');
     expect(sql).toContain('assert_class_capacity_available');
+    expect(sql).toContain('FROM public.learner_class_placements placement');
+    expect(sql).toContain('placement.starts_at<=v_event.starts_at');
+    expect(sql).toContain('COALESCE(v_event.class_id,enrolment.class_id)');
     expect(sql).toContain('FOR UPDATE');
     expect(sql).toContain('set_class_capacity');
     expect(sql).toContain('Capacity cannot be lower than current occupancy');
