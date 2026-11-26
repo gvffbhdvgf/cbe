@@ -44,7 +44,7 @@ CREATE FUNCTION sentinel_private.create_assessment_instrument_version_from_offer
   p_instrument_code text, p_title text, p_tasks jsonb
 ) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
-AS $
+AS $instrument$
 DECLARE
   v_actor_id uuid;
   v_version_id uuid;
@@ -56,7 +56,6 @@ DECLARE
   v_maximum_score numeric;
   v_grade integer;
   v_learning_area_id uuid;
-  v_curriculum_grade_offering_id uuid;
 BEGIN
   v_actor_id := sentinel_private.current_user_id();
   IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501'; END IF;
@@ -129,7 +128,7 @@ BEGIN
       'taskCount', v_task_count));
   RETURN v_version_id;
 END;
-$;
+$instrument$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.create_assessment_instrument_version(uuid,uuid,integer,text,text,jsonb) FROM sentinel_learner_runtime;
 --> statement-breakpoint
@@ -335,7 +334,8 @@ DECLARE
   v_actor_id uuid;
   v_instrument_id uuid;
   v_grade integer;
-  v_learning_area_id uuid;\n  v_curriculum_grade_offering_id uuid;
+  v_learning_area_id uuid;
+  v_curriculum_grade_offering_id uuid;
   v_mapping_id uuid;
 BEGIN
   v_actor_id := sentinel_private.current_user_id();
@@ -353,6 +353,7 @@ BEGIN
   WHERE task.id = p_task_id
     AND task.tenant_organisation_id = p_organisation_id
     AND task.organisation_id = p_organisation_id
+    AND instrument.id = p_instrument_version_id
     AND instrument.status IN ('draft','in_review')
   FOR SHARE OF task, instrument;
   IF NOT FOUND THEN RAISE EXCEPTION 'Task not found, immutable, or access denied' USING ERRCODE = 'P0002'; END IF;
