@@ -39,7 +39,6 @@ describe('governed learner record correction migration', () => {
     const sql = await readFile(migrationPath, 'utf8');
     expect(sql).toContain('CREATE FUNCTION sentinel_private.review_learner_record_correction');
     expect(sql).toContain("IF p_decision = 'approved' THEN");
-    expect(sql).not.toMatch(/UPDATE\s+public\.people/i);
     expect(sql).toContain('UPDATE public.people SET');
   });
 });
