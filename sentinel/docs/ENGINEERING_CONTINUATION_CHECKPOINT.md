@@ -190,9 +190,9 @@ Development database verification:
 - Migration 0020 was executed on a disposable child branch before development application; the child branch was deleted afterward.
 - Production database and deployment remain unchanged.
 
-Known limitation: event timestamps are stored as absolute UTC instants while roster eligibility currently uses the UTC calendar date. Organisation timezone support should be modelled before relying on local-calendar eligibility across timezones. Choice response options and richer curriculum-outcome mapping authoring also remain to be completed.
+Resolved by migration 0021: organisations now carry a validated IANA timezone, assessment events snapshot that timezone, local wall-clock inputs are converted in PostgreSQL, and roster eligibility uses the event-local calendar date. Curriculum outcome mapping and independent review are now implemented. Remaining items include teacher/class-scoped participation, teacher assignment lifecycle, richer choice response options and browser-driven end-to-end assessment journeys.
 
-**Next milestone:** instrument curriculum outcome mapping/review, organisation timezone-aware scheduling, learner/class allocation and teacher-scoped participation, then end-to-end synthetic assessment journeys.
+**Next milestone:** learner/class allocation and teacher-scoped participation, then richer choice response options and browser-driven end-to-end assessment journeys.
 
 
 ## 26 November 2026 — Synthetic end-to-end assessment journey verified
@@ -231,7 +231,7 @@ A Vercel Preview deployment for `sentinel/bootstrap` is READY:
 
 ## Administrator access gate
 
-The development Neon Auth branch currently has no active platform administrator. Sentinel's public sign-up remains disabled. Do not issue shared/default credentials or grant the first administrator based on account creation order. The first platform administrator must be a verified, owner-approved email identity; provision the account and grant `public.platform_administrators` only after the user supplies/confirms the exact email address. The Neon shared email sender is configured; actual verification/password-reset delivery should be tested before relying on it.
+The initial platform administrator has completed email verification and password setup. An active `public.platform_administrators` row is present on the isolated development branch. Public sign-up remains disabled. Future administrators must use the verified, owner-approved identity workflow in `ADMINISTRATOR_BOOTSTRAP.md`; never issue shared/default credentials.
 
 
 ### Preview environment-complete redeployment
@@ -246,6 +246,27 @@ After adding the branch-scoped `NEXT_PUBLIC_APP_URL`, the Preview was redeployed
 - Neon Auth's shared development email provider supports OTP rather than verification links. The branch remains configured for OTP verification; an attempted switch to link verification was rejected by Neon and made no configuration change.
 - Enabled `revoke_sessions_on_password_reset` on the development branch.
 - Preview build deployed and READY: `dpl_6FsANYdaupTEHPYhn12VVCoY9hMh`, source commit `cac975991ada3a63dea36485ccaf7cc5c8efd4a0`. The existing stable Preview branch URL is unchanged.
-- Browser smoke test confirmed the new setup page renders. The verification-code request was accepted and the browser is waiting on the email OTP. No OTP was read or entered, no password was set, and no administrator privilege was granted.
-- Read-only verification confirms the pre-provisioned identity is still unverified and has no platform-administrator row. Complete OTP verification and password reset in the user's browser, then grant platform-administrator access only after the email is verified and the owner approval is confirmed.
+- Browser smoke test confirmed the setup page renders and the OTP request was accepted. The account owner completed email verification and password setup, then signed in. The active platform-administrator row was granted only after the verified identity check.
 - This is Preview/development only. No production deployment or production database was changed.
+
+
+## 26 November 2026 — Curriculum mapping and timezone milestone
+
+Migration 0021 `0021_curriculum_mapping_and_timezone.sql` is applied to the isolated Neon development branch `sentinel-development` (branch id `br-nameless-block-bhpsx0vq`). SHA-256: `09221113f1fd9e2ac8ff4033abf9f5974e6a41b23dff2234c583327299e91e03`. Migration ledger row 24 was verified.
+
+Implemented:
+- Validated IANA timezone on each organisation; assessment events snapshot the timezone used at creation.
+- Assessment event creation accepts organisation-local wall-clock values and converts them server-side to UTC; event roster eligibility uses the event's local calendar date.
+- Assessment instrument versions are bound to an exact curriculum grade offering (edition, pathway, grade and learning area). Legacy broad instrument-creation function execution was revoked from the runtime role; new creation requires the offering.
+- Task-to-outcome mapping proposals require an approved, rights-cleared specific outcome from that exact grade offering. Mapping approval/rejection requires a different reviewer and a reasoned review note; all actions are audited.
+- Runtime can read only public curriculum metadata directly. Source-document and source-node content is not granted directly; approved outcome data is returned through narrowly scoped SECURITY DEFINER functions that re-check access and source rights.
+- Added authoring controls, API routes and tests for outcome mapping and independent review. If no approved source outcomes exist, the UI reports that state rather than fabricating curriculum mappings.
+
+Verification:
+- GitHub Actions: [run 45776726284](https://github.com/gvffbhdvgf/cbe/actions/runs/45776726284) passed migration-journal validation, lint, type-check, 23 test files / 128 tests, and production build.
+- Development database checks confirm the new columns, three validation triggers, migration ledger row, function grants, and restricted source-document/source-node permissions.
+- Timezone conversion smoke test for 23:30 Africa/Nairobi stored 20:30 UTC and preserved the local eligibility date.
+- No curriculum outcomes were fabricated; current catalogue source review/rights state still determines whether mappings can be proposed.
+- Production database and production deployment remain unchanged.
+
+Next: implement controlled teacher-to-class/learning-area assignments, class-targeted assessment events and teacher-scoped participation without broadening organisation-wide assessment RLS.
