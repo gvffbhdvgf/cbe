@@ -92,6 +92,7 @@ BEGIN
     AND (p_ends_on IS NULL OR assignment.ends_on IS NULL OR p_ends_on <= assignment.ends_on)
   FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'Active teacher assignment not found for this effective period' USING ERRCODE = 'P0002'; END IF;
+  p_ends_on := COALESCE(p_ends_on, v_assignment.ends_on);
 
   PERFORM pg_advisory_xact_lock(hashtextextended(p_assignment_id::text || ':weekly-workload', 0));
   SELECT allocation.weekly_periods INTO v_previous
