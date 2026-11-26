@@ -2,215 +2,36 @@
   "version": "7",
   "dialect": "postgresql",
   "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1795630416277,
-      "tag": "0000_lovely_lilandra",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1795634550000,
-      "tag": "0001_organisation_access",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1795635600000,
-      "tag": "0002_membership_active_uniqueness",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1795637000000,
-      "tag": "0003_curriculum_catalogue_schema",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1795637500000,
-      "tag": "0004_seed_curriculum_catalogue",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1795638000000,
-      "tag": "0005_pathway_source_provenance",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1795638500000,
-      "tag": "0006_curriculum_document_staging",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1795639000000,
-      "tag": "0007_learner_records_tenant_scope",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1795639900000,
-      "tag": "0008_learner_record_rls",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1795640500000,
-      "tag": "0009_class_creation_rls",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1795641200000,
-      "tag": "0010_controlled_class_placement",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1795642000000,
-      "tag": "0011_grade6_cre_revised_source",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1795643000000,
-      "tag": "0012_assessment_lifecycle_foundation",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "7",
-      "when": 1795650000000,
-      "tag": "0013_assessment_event_eligible_roster",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "7",
-      "when": 1795653600000,
-      "tag": "0014_controlled_assessment_capture",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "7",
-      "when": 1795657200000,
-      "tag": "0015_audit_history_immutability",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "7",
-      "when": 1795659000000,
-      "tag": "0016_assessment_marking_results",
-      "breakpoints": true
-    },
-    {
-      "idx": 17,
-      "version": "7",
-      "when": 1795659600000,
-      "tag": "0017_assessment_result_governance",
-      "breakpoints": true
-    },
-    {
-      "idx": 18,
-      "version": "7",
-      "when": 1795660200000,
-      "tag": "0018_assessment_result_correction",
-      "breakpoints": true
-    },
-    {
-      "idx": 19,
-      "version": "7",
-      "when": 1795660800000,
-      "tag": "0019_assessment_correction_guard",
-      "breakpoints": true
-    },
-    {
-      "idx": 20,
-      "version": "7",
-      "when": 1795670400000,
-      "tag": "0020_assessment_authoring",
-      "breakpoints": true
-    },
-    {
-      "idx": 21,
-      "version": "7",
-      "when": 1795674000000,
-      "tag": "0021_curriculum_mapping_and_timezone",
-      "breakpoints": true
-    },
-    {
-      "idx": 22,
-      "version": "7",
-      "when": 1795680000000,
-      "tag": "0022_teacher_class_assignments_and_scoped_assessment",
-      "breakpoints": true
-    },
-    {
-      "idx": 23,
-      "version": "7",
-      "when": 1795681200000,
-      "tag": "0023_learner_lifecycle_transitions",
-      "breakpoints": true
-    },
-    {
-      "idx": 24,
-      "version": 7,
-      "when": 1795683000000,
-      "tag": "0024_curriculum_pathway_grade_levels",
-      "breakpoints": true
-    },
-    {
-      "idx": 25,
-      "version": 7,
-      "when": 1795684200000,
-      "tag": "0025_staff_profiles_and_engagements",
-      "breakpoints": true
-    },
-    {
-      "idx": 26,
-      "version": "7",
-      "when": 1795684555682,
-      "tag": "0026_guardian_relationship_verification",
-      "breakpoints": true
-    },
-    {
-      "idx": 27,
-      "version": "7",
-      "when": 1795684800000,
-      "tag": "0027_privacy_preserving_learner_transfers",
-      "breakpoints": true
-    },
-    {
-      "idx": 28,
-      "version": "7",
-      "when": 1795688400000,
-      "tag": "0028_guardian_portal_read_model",
-      "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "7",
-      "when": 1795689383990,
-      "tag": "0029_organisation_transfer_eligibility",
-      "breakpoints": true
-    }
+    {"idx":0,"version":"7","when":1795630416277,"tag":"0000_lovely_lilandra","breakpoints":true},
+    {"idx":1,"version":"7","when":1795634550000,"tag":"0001_organisation_access","breakpoints":true},
+    {"idx":2,"version":"7","when":1795635600000,"tag":"0002_membership_active_uniqueness","breakpoints":true},
+    {"idx":3,"version":"7","when":1795637000000,"tag":"0003_curriculum_catalogue_schema","breakpoints":true},
+    {"idx":4,"version":"7","when":1795637500000,"tag":"0004_seed_curriculum_catalogue","breakpoints":true},
+    {"idx":5,"version":"7","when":1795638000000,"tag":"0005_pathway_source_provenance","breakpoints":true},
+    {"idx":6,"version":"7","when":1795638500000,"tag":"0006_curriculum_document_staging","breakpoints":true},
+    {"idx":7,"version":"7","when":1795639000000,"tag":"0007_learner_records_tenant_scope","breakpoints":true},
+    {"idx":8,"version":"7","when":1795639900000,"tag":"0008_learner_record_rls","breakpoints":true},
+    {"idx":9,"version":"7","when":1795640500000,"tag":"0009_class_creation_rls","breakpoints":true},
+    {"idx":10,"version":"7","when":1795641200000,"tag":"0010_controlled_class_placement","breakpoints":true},
+    {"idx":11,"version":"7","when":1795642000000,"tag":"0011_grade6_cre_revised_source","breakpoints":true},
+    {"idx":12,"version":"7","when":1795643000000,"tag":"0012_assessment_lifecycle_foundation","breakpoints":true},
+    {"idx":13,"version":"7","when":1795650000000,"tag":"0013_assessment_event_eligible_roster","breakpoints":true},
+    {"idx":14,"version":"7","when":1795653600000,"tag":"0014_controlled_assessment_capture","breakpoints":true},
+    {"idx":15,"version":"7","when":1795657200000,"tag":"0015_audit_history_immutability","breakpoints":true},
+    {"idx":16,"version":"7","when":1795659000000,"tag":"0016_assessment_marking_results","breakpoints":true},
+    {"idx":17,"version":"7","when":1795659600000,"tag":"0017_assessment_result_governance","breakpoints":true},
+    {"idx":18,"version":"7","when":1795660200000,"tag":"0018_assessment_result_correction","breakpoints":true},
+    {"idx":19,"version":"7","when":1795660800000,"tag":"0019_assessment_correction_guard","breakpoints":true},
+    {"idx":20,"version":"7","when":1795670400000,"tag":"0020_assessment_authoring","breakpoints":true},
+    {"idx":21,"version":"7","when":1795674000000,"tag":"0021_curriculum_mapping_and_timezone","breakpoints":true},
+    {"idx":22,"version":"7","when":1795680000000,"tag":"0022_teacher_class_assignments_and_scoped_assessment","breakpoints":true},
+    {"idx":23,"version":"7","when":1795681200000,"tag":"0023_learner_lifecycle_transitions","breakpoints":true},
+    {"idx":24,"version":"7","when":1795683000000,"tag":"0024_curriculum_pathway_grade_levels","breakpoints":true},
+    {"idx":25,"version":"7","when":1795684200000,"tag":"0025_staff_profiles_and_engagements","breakpoints":true},
+    {"idx":26,"version":"7","when":1795684555682,"tag":"0026_guardian_relationship_verification","breakpoints":true},
+    {"idx":27,"version":"7","when":1795684800000,"tag":"0027_privacy_preserving_learner_transfers","breakpoints":true},
+    {"idx":28,"version":"7","when":1795688400000,"tag":"0028_guardian_portal_read_model","breakpoints":true},
+    {"idx":29,"version":"7","when":1795689383990,"tag":"0029_organisation_transfer_eligibility","breakpoints":true},
+    {"idx":30,"version":"7","when":1795693500000,"tag":"0030_platform_admin_organisation_read_rls","breakpoints":true}
   ]
 }
