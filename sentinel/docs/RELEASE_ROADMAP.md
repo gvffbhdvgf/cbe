@@ -41,3 +41,20 @@ Apply hard gates first: safeguarding, privacy, security, lawful authority, opera
 Defer microservices, predictive learner-risk scores, automated interventions, AI grading/ranking/progression, biometrics, public learner leaderboards and broad offline sync until evidence, governance and operational need justify them.
 
 Every release requires approved scope, privacy/threat review, access tests, migration/reconciliation plan, automated and manual tests, monitoring/support/backup readiness, release owner and rollback plan. Production promotion is controlled/manual, not every commit.
+## Implementation status — 26 November 2026
+
+### Completed in Preview/development
+- Canonical staff profiles linked to Person records, with separate effective-dated staff engagements.
+- Verified Teacher-account linking and a database-enforced staff/engagement precondition for teacher-to-class/learning-area allocation.
+- Staff register and teaching assignment workspaces, with browser verification on the signed-in Preview.
+- Staff tables are forced-RLS and runtime writes are function-only; no real staff data has been added.
+
+### Remaining operational and governance deliverables
+1. Guardian identity and relationship verification, with independent approval, evidence references and explicit progress/messaging permissions. The existing guardian relationship table remains fail-closed; no guardian records or runtime access policies are present.
+2. Learner transfer requests with sending-institution approval, receiving-institution acceptance, effective dates, history preservation and guardian consent where applicable.
+3. Governed learner-record corrections with reason, evidence, independent review and immutable before/after audit.
+4. Academic-year rollover with a preview, class-capacity checks, exception handling and independent approval; do not silently promote every learner.
+5. Teacher workload reporting after the institution's weekly-period/timetable model is agreed. Current teacher assignments do not yet store weekly periods, so workload totals must not be inferred.
+6. External exchange staging, validation, reconciliation and provenance after identity, guardian and transfer controls are in place.
+
+The current development institution has no verified Teacher memberships or guardian relationships. Its existing guardian table is forced-RLS and has no runtime privileges/policies, which keeps access fail-closed. Continue in Preview/development until the relevant governance, privacy, security and operational gates are approved. Production remains untouched.
