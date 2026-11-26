@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth/server';
-import { createStaffProfile, getStaffManagementSummary, StaffProfileError } from '@/application/organisation/staff-service';
+import { createStaffProfile, getStaffManagementSummary, recordStaffAccountInvitation, StaffProfileError } from '@/application/organisation/staff-service';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -31,6 +31,14 @@ export async function POST(request: Request, context: { params: Promise<{ organi
   try { body = await request.json(); } catch { return Response.json({ error: 'A JSON request body is required' }, { status: 400 }); }
   if (!body || typeof body !== 'object') return Response.json({ error: 'Invalid staff profile details' }, { status: 400 });
   const value = body as Record<string, unknown>;
+  if (value.action === 'record-invitation') {
+    if (typeof value.staffProfileId !== 'string' || typeof value.email !== 'string') {
+      return Response.json({ error: 'Staff profile and account email are required' }, { status: 400 });
+    }
+    try {
+      return Response.json(await recordStaffAccountInvitation(data.user.id, organisationId, value.staffProfileId, value.email));
+    } catch (error) { return handleError(error); }
+  }
   if ((value.personId !== null && typeof value.personId !== 'string')
     || typeof value.staffReference !== 'string' || typeof value.staffCategory !== 'string'
     || typeof value.jobTitle !== 'string' || typeof value.engagementType !== 'string'

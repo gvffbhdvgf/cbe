@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { authClient } from '@/lib/auth/client';
 
 type Engagement = { id: string; engagementType: string; jobTitle: string; startsOn: string; endsOn: string | null; status: string };
 type StaffProfile = {
@@ -37,6 +39,8 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
   const [endsOn,setEndsOn]=useState('');
   const [confirmDistinctPerson,setConfirmDistinctPerson]=useState(false);
   const [linkUserIds,setLinkUserIds]=useState<Record<string,string>>({});
+  const [invitationEmails,setInvitationEmails]=useState<Record<string,string>>({});
+  const [invitationLinks,setInvitationLinks]=useState<Record<string,string>>({});
   const [endDates,setEndDates]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState('');
   const [error,setError]=useState('');
@@ -95,6 +99,42 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
     finally { setBusy(''); }
   }
 
+  async function inviteStaffAccount(profile:StaffProfile, createAccount:boolean) {
+    const email=(invitationEmails[profile.id]??'').trim().toLowerCase();
+    if(!email) { setError('Enter the staff member email address first.'); return; }
+    setBusy('invite:'+profile.id); setError(''); setMessage('');
+    try {
+      if(createAccount) {
+        const temporaryPassword=crypto.randomUUID()+crypto.randomUUID();
+        const created=await authClient.admin.createUser({
+          email,password:temporaryPassword,name:personName(profile),role:'user',
+        });
+        if(created.error) throw new Error(created.error.message||'Could not provision the staff account.');
+      }
+      const verification=await authClient.emailOtp.sendVerificationOtp({email,type:'email-verification'});
+      if(verification.error) throw new Error(verification.error.message||'Could not send the verification code.');
+      const audit=await fetch('/api/organisations/'+organisationId+'/staff',{
+        method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({action:'record-invitation',staffProfileId:profile.id,email}),
+      });
+      const auditPayload=await audit.json();
+      if(!audit.ok) throw new Error(auditPayload.error||'The verification code was sent but its audit record could not be saved.');
+      setInvitationLinks(current=>({...current,[profile.id]:window.location.origin+'/auth/verify-email'}));
+      setMessage(createAccount
+        ? 'Staff account created and verification code sent. Share the setup page with the staff member; never share the temporary password.'
+        : 'Verification code sent to the existing account. Share the setup page with the staff member.');
+    } catch(cause) {
+      setError(cause instanceof Error?cause.message:'Could not create the staff account invitation.');
+    } finally { setBusy(''); }
+  }
+
+  async function copyStaffSetupLink(profileId:string) {
+    const link=invitationLinks[profileId];
+    if(!link) return;
+    try { await navigator.clipboard.writeText(link); setMessage('Staff setup link copied.'); }
+    catch { setError('Clipboard access was unavailable. Copy this link manually: '+link); }
+  }
+
   async function endEngagement(engagementId:string) {
     const date=endDates[engagementId];
     if(!date) { setError('Choose an engagement end date.'); return; }
@@ -145,6 +185,15 @@ export function StaffRegisterManager({ organisationId, initialSummary }: { organ
         const activeEngagement=profile.engagements.find(e=>e.status==='active'||e.status==='planned')??profile.engagements[profile.engagements.length-1];
         return <article key={profile.id} className="space-y-4 px-5 py-5">
           <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-[13px] font-semibold text-[#29465D]">{name}</p><p className="mt-1 text-[10px] text-[#718697]">{profile.staffReference} · {profile.staffCategory.replaceAll('_',' ')} · {profile.status}</p>{activeEngagement&&<p className="mt-1 text-[10px] text-[#8A9CAB]">{activeEngagement.jobTitle} · {activeEngagement.engagementType} · {activeEngagement.startsOn} to {activeEngagement.endsOn??'open-ended'} · {activeEngagement.status}</p>}</div>{profile.linkedEmail?<span className="rounded-full bg-[#EAF7F5] px-3 py-1.5 text-[10px] font-semibold text-[#087F86]">Linked · {profile.linkedEmail}</span>:profile.staffCategory==='teacher'?<span className="rounded-full bg-[#FFF7E8] px-3 py-1.5 text-[10px] font-semibold text-[#93641B]">Account not linked</span>:<span className="rounded-full bg-[#F2F5F7] px-3 py-1.5 text-[10px] font-semibold text-[#718697]">No account linked</span>}</div>
+          {!profile.userId&&<div className="space-y-3 rounded-xl bg-[#F8FBFC] p-3">
+            <p className="text-[10px] leading-5 text-[#718697]">Invite this staff member using their own email address. Sentinel creates the account with a discarded temporary password and sends the existing Neon Auth verification code. They choose their own password.</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+              <label className={label+' flex-1'}>Staff member email<input type="email" required value={invitationEmails[profile.id]??''} onChange={e=>setInvitationEmails(current=>({...current,[profile.id]:e.target.value}))} placeholder="name@school.org" className={field}/></label>
+              <button type="button" disabled={busy!==''||Boolean(invitationLinks[profile.id])} onClick={()=>void inviteStaffAccount(profile,true)} className="rounded-full bg-[#087F86] px-4 py-2.5 text-[10px] font-semibold text-white disabled:opacity-40">{busy==='invite:'+profile.id?'Sending…':'Create account & send code'}</button>
+              <button type="button" disabled={busy!==''||Boolean(invitationLinks[profile.id])} onClick={()=>void inviteStaffAccount(profile,false)} className="rounded-full border border-[#BFD8D8] px-4 py-2.5 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">Send code to existing account</button>
+            </div>
+            {invitationLinks[profile.id]&&<div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3"><p className="text-[10px] text-[#627B8E]">After verification, grant the Teacher role and link the account to this staff profile.</p><div className="flex items-center gap-3"><Link href={"/workspace/organisations/"+organisationId+"/members"} className="text-[10px] font-semibold text-[#087F86]">Open Members to grant role</Link><button type="button" onClick={()=>void copyStaffSetupLink(profile.id)} className="text-[10px] font-semibold text-[#087F86]">Copy setup link</button></div></div>}
+          </div>}
           {!profile.userId&&profile.staffCategory==='teacher'&&<div className="flex flex-col gap-2 rounded-xl bg-[#F8FBFC] p-3 sm:flex-row sm:items-end"><label className={label+' flex-1'}>Verified Teacher account<select value={linkUserIds[profile.id]??''} onChange={e=>setLinkUserIds(current=>({...current,[profile.id]:e.target.value}))} className={field}><option value="">Choose account</option>{summary.eligibleTeacherAccounts.map(account=><option key={account.userId} value={account.userId}>{account.name} · {account.email}</option>)}</select></label><button type="button" disabled={busy!==''||summary.eligibleTeacherAccounts.length===0} onClick={()=>void linkAccount(profile.id)} className="rounded-full border border-[#BFD8D8] px-4 py-2.5 text-[10px] font-semibold text-[#087F86] disabled:opacity-40">{busy==='link:'+profile.id?'Linking…':'Link account'}</button></div>}
           {profile.engagements.map(engagement=><div key={engagement.id} className="flex flex-wrap items-end justify-between gap-3 rounded-xl border border-[#E8EEF2] p-3"><div><p className="text-[10px] font-semibold text-[#526F83]">{engagement.jobTitle} · {engagement.engagementType} · {engagement.status}</p><p className="mt-1 text-[10px] text-[#8A9CAB]">{engagement.startsOn} to {engagement.endsOn??'open-ended'}</p></div>{engagement.status!=='ended'&&<div className="flex items-end gap-2"><label className={label}>Set end date<input type="date" min={nextDate(engagement.startsOn)} value={endDates[engagement.id]??''} onChange={e=>setEndDates(current=>({...current,[engagement.id]:e.target.value}))} className={field}/></label><button type="button" disabled={busy!==''} onClick={()=>void endEngagement(engagement.id)} className="rounded-full border border-[#E7D4D0] px-3 py-2.5 text-[10px] font-semibold text-[#A43D34] disabled:opacity-40">{busy==='end:'+engagement.id?'Saving…':'Set end date'}</button></div>}</div>)}
         </article>;
