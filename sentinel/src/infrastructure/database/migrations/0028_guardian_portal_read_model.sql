@@ -163,6 +163,7 @@ BEGIN
     AND (relationship.ends_at IS NULL OR relationship.ends_at > now());
 END;
 $function$;
-
+--> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.get_guardian_portal_summary() FROM PUBLIC;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.get_guardian_portal_summary() TO sentinel_learner_runtime;
