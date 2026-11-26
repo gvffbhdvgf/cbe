@@ -1,8 +1,10 @@
+import { connection } from 'next/server';
 import { auth } from '@/lib/auth/server';
 import { LearnerAuthenticationError, LearnerRlsUnavailableError } from '@/domain/learner/errors';
 import { getTransferRegistryQueue, TransferRegistryError } from '@/application/organisation/transfer-registry-service';
 
 export async function GET() {
+  await connection();
   const { data } = await auth.getSession();
   if (!data?.user) return Response.json({ error: 'Authentication required' }, { status: 401 });
   try { return Response.json(await getTransferRegistryQueue(data.user.id)); }
