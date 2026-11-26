@@ -30,7 +30,7 @@ async function LearnersContent({ params }: { params: Promise<{ organisationId: s
   let progressionRequests;
   let correctionRequests;
   try {
-    [summary, classOptions, progressionRequests] = await Promise.all([
+    [summary, classOptions, progressionRequests, correctionRequests] = await Promise.all([
       getLearnerManagementSummary(data.user.id, organisationId),
       listClasses(data.user.id, organisationId),
       listLearnerProgressionRequests(data.user.id, organisationId),
