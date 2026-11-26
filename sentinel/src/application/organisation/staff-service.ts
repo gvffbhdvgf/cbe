@@ -197,7 +197,7 @@ export async function endStaffEngagement(actorUserId: string, organisationId: st
 export async function recordStaffAccountInvitation(actorUserId: string, organisationId: string, staffProfileId: string, email: string) {
   await assertStaffManager(actorUserId, organisationId);
   if (![organisationId, staffProfileId].every(value => uuidPattern.test(value))
-    || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim())) {
+    || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
     throw new StaffProfileError('A valid staff profile and email address are required', 400);
   }
   const normalizedEmail = email.trim().toLowerCase();
