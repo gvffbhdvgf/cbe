@@ -9,7 +9,7 @@ export async function GET(_request: Request, context: { params: Promise<{ organi
   const { organisationId } = await context.params;
   if (!uuidPattern.test(organisationId)) return Response.json({ error: 'Invalid organisation ID' }, { status: 400 });
   try {
-    return Response.json(await getLearnerRecordCorrectionOverview(data.user.id, organisationId));
+    return Response.json(await getLearnerRecordCorrectionOverview(data.user.id, organisationId), { headers: { 'Cache-Control': 'no-store' } });
   } catch (error) {
     const mapped = mapLearnerRecordCorrectionApiError(error);
     return Response.json({ error: mapped.message }, { status: mapped.status });

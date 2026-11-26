@@ -26,21 +26,20 @@ function normaliseName(value: unknown, label: string, required: boolean): string
   return normalised;
 }
 
-function normaliseDateOfBirth(value: unknown, now: Date): string | null {
+function normaliseDateOfBirth(value: unknown): string | null {
   if (value === null) return null;
   if (typeof value !== 'string') throw new Error('Date of birth must be a valid YYYY-MM-DD date');
   const dateOfBirth = value.trim();
   if (!dateOfBirth) return null;
   const parsed = new Date(`${dateOfBirth}T00:00:00.000Z`);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== dateOfBirth) {
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(dateOfBirth) || dateOfBirth.startsWith('0000-')
+    || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== dateOfBirth) {
     throw new Error('Date of birth must be a valid YYYY-MM-DD date');
   }
-  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  if (parsed > today) throw new Error('Date of birth cannot be in the future');
   return dateOfBirth;
 }
 
-export function createLearnerRecordCorrection(input: unknown, now = new Date()): {
+export function createLearnerRecordCorrection(input: unknown): {
   changes: LearnerRecordCorrectionChanges;
   reason: string;
   evidenceReference: string | null;
@@ -58,7 +57,7 @@ export function createLearnerRecordCorrection(input: unknown, now = new Date()):
   if ('middleName' in value) changes.middleName = normaliseName(value.middleName, 'Middle name', false);
   if ('lastName' in value) changes.lastName = normaliseName(value.lastName, 'Last name', true)!;
   if ('preferredName' in value) changes.preferredName = normaliseName(value.preferredName, 'Preferred name', false);
-  if ('dateOfBirth' in value) changes.dateOfBirth = normaliseDateOfBirth(value.dateOfBirth, now);
+  if ('dateOfBirth' in value) changes.dateOfBirth = normaliseDateOfBirth(value.dateOfBirth);
 
   if (Object.keys(changes).length === 0) {
     throw new Error('At least one supported identity field must be supplied');

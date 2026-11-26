@@ -20,6 +20,7 @@ async function assertCorrectionManager(actorUserId: string, organisationId: stri
   try {
     await requireLearnerManager(actorUserId, organisationId);
   } catch (error) {
+    if (error instanceof LearnerAuthenticationError || error instanceof LearnerRlsUnavailableError) throw error;
     const message = error instanceof Error ? error.message : 'Learner correction authority is required';
     throw new LearnerRecordCorrectionError(message, message.toLowerCase().includes('not found') ? 404 : 403);
   }

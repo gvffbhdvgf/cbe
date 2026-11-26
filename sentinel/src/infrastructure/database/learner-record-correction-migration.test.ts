@@ -36,6 +36,7 @@ describe('governed learner record correction migration', () => {
     expect(sql).toContain('v_request.original_values');
     expect(sql).toContain("v_request.status <> 'pending'");
     expect(sql).toContain('FOR UPDATE');
+    expect(sql).toContain("v_date_of_birth > (pg_catalog.now() AT TIME ZONE COALESCE(v_time_zone, 'Africa/Nairobi'))::date");
     expect(sql).toContain('LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp');
     const reviewFunction = sql.slice(sql.indexOf('CREATE FUNCTION sentinel_private.review_learner_record_correction'));
     expect(reviewFunction.indexOf('SELECT learner.* INTO v_learner')).toBeLessThan(reviewFunction.indexOf('FOR UPDATE'));
