@@ -2,6 +2,10 @@
 
 ALTER TABLE public.classes ADD COLUMN capacity integer;
 --> statement-breakpoint
+ALTER TABLE public.learner_enrolments ADD COLUMN withdrawal_reason text;
+--> statement-breakpoint
+ALTER TABLE public.learner_enrolments ADD CONSTRAINT learner_enrolments_withdrawal_reason_check CHECK (withdrawal_reason IS NULL OR length(btrim(withdrawal_reason)) BETWEEN 10 AND 500);
+--> statement-breakpoint
 ALTER TABLE public.classes ADD CONSTRAINT classes_capacity_check CHECK (capacity IS NULL OR capacity BETWEEN 1 AND 500);
 --> statement-breakpoint
 CREATE INDEX learner_enrolments_class_capacity_idx
@@ -24,6 +28,7 @@ CREATE TABLE public.learner_class_placements (
   starts_at timestamptz NOT NULL,
   ends_at timestamptz,
   status varchar(16) NOT NULL DEFAULT 'active' CHECK (status IN ('active','ended')),
+  reason text CHECK (reason IS NULL OR length(btrim(reason)) BETWEEN 10 AND 500),
   created_by uuid NOT NULL REFERENCES neon_auth."user"(id) ON DELETE RESTRICT,
   created_at timestamptz NOT NULL DEFAULT now(),
   CONSTRAINT learner_class_placements_scope_check CHECK (tenant_organisation_id = organisation_id),
@@ -197,15 +202,15 @@ BEGIN
   PERFORM sentinel_private.assert_class_capacity_available(p_class_id,NULL);
   UPDATE public.learner_class_placements SET ends_at=v_now,status='ended'
   WHERE id=v_current.id;
-  INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_at,created_by)
+  INSERT INTO public.learner_class_placements(tenant_organisation_id,organisation_id,enrolment_id,learner_id,class_id,grade,academic_year,starts_at,reason,created_by)
   VALUES(v_enrolment.tenant_organisation_id,p_organisation_id,v_enrolment.id,v_enrolment.learner_id,p_class_id,
-    v_enrolment.grade,v_enrolment.academic_year,v_now,v_actor_id);
+    v_enrolment.grade,v_enrolment.academic_year,v_now,v_reason,v_actor_id);
   UPDATE public.learner_enrolments SET class_id=p_class_id,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
   INSERT INTO public.learner_progression_events(tenant_organisation_id,learner_id,event_type,from_grade,to_grade,effective_at,actor_user_id,reason_code)
   VALUES(v_enrolment.tenant_organisation_id,v_enrolment.learner_id,'class_assigned',v_enrolment.grade,v_enrolment.grade,(v_now AT TIME ZONE (SELECT time_zone FROM public.organisations WHERE id=p_organisation_id))::date,v_actor_id,'class_reassignment');
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'learner.class_reassigned','learner_enrolment',v_enrolment.id::text,
-    jsonb_build_object('fromClassId',v_enrolment.class_id,'toClassId',p_class_id,'effectiveAt',v_now,'reason',v_reason));
+    jsonb_build_object('fromClassId',v_enrolment.class_id,'toClassId',p_class_id,'effectiveAt',v_now,'reasonRecorded',true));
   RETURN v_enrolment.id;
 END;
 $$;
@@ -251,12 +256,12 @@ BEGIN
       UPDATE public.learner_class_placements SET ends_at=v_end_at,status='ended' WHERE id=v_placement.id;
     END IF;
   END IF;
-  UPDATE public.learner_enrolments SET status='withdrawn',ends_at=v_end_date,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
+  UPDATE public.learner_enrolments SET status='withdrawn',ends_at=v_end_date,withdrawal_reason=v_reason,updated_at=pg_catalog.now() WHERE id=v_enrolment.id;
   INSERT INTO public.learner_progression_events(tenant_organisation_id,learner_id,event_type,from_grade,effective_at,actor_user_id,reason_code)
   VALUES(v_enrolment.tenant_organisation_id,v_enrolment.learner_id,'withdrawn',v_enrolment.grade,p_withdrawal_date,v_actor_id,'institutional_withdrawal');
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'learner.withdrawn','learner_enrolment',v_enrolment.id::text,
-    jsonb_build_object('withdrawalDate',p_withdrawal_date,'reason',v_reason,'classId',v_enrolment.class_id));
+    jsonb_build_object('withdrawalDate',p_withdrawal_date,'reasonRecorded',true,'classId',v_enrolment.class_id));
   RETURN v_enrolment.id;
 END;
 $$;
