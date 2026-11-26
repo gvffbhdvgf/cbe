@@ -107,8 +107,8 @@ BEGIN
       AND membership.organisation_id = p_organisation_id
       AND membership.role = 'teacher'
       AND membership.status = 'active'
-      AND membership.starts_at <= v_starts_at
-      AND (membership.ends_at IS NULL OR membership.ends_at > v_starts_at)
+      AND membership.starts_at <= GREATEST(v_starts_at, pg_catalog.now())
+      AND (membership.ends_at IS NULL OR membership.ends_at > GREATEST(v_starts_at, pg_catalog.now()))
   ) THEN
     RAISE EXCEPTION 'An active, verified teacher membership is required' USING ERRCODE = '23514';
   END IF;
