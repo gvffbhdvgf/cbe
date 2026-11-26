@@ -6,4 +6,5 @@ export { curriculumDesignDocuments, curriculumEditions, curriculumGradeOfferings
 
 export { classes, guardianProfiles, guardianRelationships, learnerEnrolments, learnerProfiles, learnerProgressionEvents, learnerClassPlacements, learnerProgressionRequests, learnerTransferRequests, learnerTransferSourceLinks, learnerTransferDestinationLinks, people, teacherClassAssignments } from './learner';
 export { learnerRecordCorrectionRequests } from './learner-correction';
+export { teacherWeeklyWorkloadAllocations, teacherWorkloadPolicies } from './teacher-workload';
 export { assessmentAttempts, assessmentEventEligibleEnrolments, assessmentEvents, assessmentInstrumentVersions, assessmentProgrammes, assessmentResponses, assessmentResponseMarks, assessmentResultDecisions, assessmentResults, assessmentTaskOutcomeMappings, assessmentTasks } from './assessment';
