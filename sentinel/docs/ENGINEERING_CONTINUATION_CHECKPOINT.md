@@ -270,3 +270,18 @@ Verification:
 - Production database and production deployment remain unchanged.
 
 Next: implement controlled teacher-to-class/learning-area assignments, class-targeted assessment events and teacher-scoped participation without broadening organisation-wide assessment RLS.
+
+
+## 26 November 2026 — Teacher allocation and class-scoped assessment milestone
+
+- Added effective-dated `teacher_class_assignments` with tenant/class/grade/year/learning-area integrity, overlap prevention, active verified Teacher membership checks, audited creation and audited revocation.
+- Added institution workspace at `/workspace/organisations/[organisationId]/teaching` and management API routes. Class register links to the teaching assignment workspace. Assignments require an already provisioned, verified Teacher membership; no synthetic teacher account was created in the development branch.
+- Added optional class targeting to assessment events. Scheduling freezes only active enrolments in the selected class. Existing institution-wide events remain supported for authorised assessment officers.
+- Teacher event access is limited by active verified Teacher membership, active effective-dated assignment, target class, learning area and event date. Teacher RLS grants read access only to assigned event, roster, attempts, response tasks and captured responses; no marking, moderation, result approval or publication access.
+- Teacher assessment UI now lists only assigned events, shows the frozen learner-reference roster, and supports attempt creation, response capture and submission. Marking controls remain hidden and server/database permissions remain authoritative.
+- Migration `0022_teacher_class_assignments_and_scoped_assessment` applied to development branch `br-nameless-block-bhpsx0vq`; migration ledger hash `053d7836e1b6973156926db5d7cd6e5a4befaebf0fd99e58b562b9e5ebc00d49`.
+- Isolated Neon E2E validation passed: synthetic teacher assignment, class-targeted event, frozen roster, attempt creation, response capture and submission. Teacher organisation-wide assessment access was false; assigned event/class access was true; marks and results remained invisible. Synthetic users/data were confined to the isolated validation branch.
+- CI passed on commit `657bd3a538193a6a4f3ec99de57d6921ef78063f`: migration journal, lint, TypeScript, tests and production build.
+- Preview deployment `dpl_9hSFNbrgfLfLLQHPJ1QrAj5tPdhP` is building from that commit. Stable preview alias: `https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app`.
+- Remaining operational step: provision/verify a real Teacher membership in the institution, then create its class/learning-area assignment and run the browser smoke test with that teacher. Current institution has no eligible Teacher membership.
+- Preview/development only. No production deployment or production database was changed.
