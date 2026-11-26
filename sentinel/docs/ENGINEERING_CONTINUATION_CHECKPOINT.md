@@ -1,14 +1,14 @@
-## 26 November 2026 — Academic-year rollover and weekly teacher workload
+## 26 November 2026 — Rollover and workload combined validation checkpoint
 
-Latest source commit: [d4b1d60](https://github.com/gvffbhdvgf/cbe/commit/d4b1d6097642a85a3701866ca1169d58fc35de91). GitHub Actions [45825680671](https://github.com/gvffbhdvgf/cbe/actions/runs/45825680671) passed migration-journal validation, lint, TypeScript, tests and production build.
+Latest source commit: [cc533ba](https://github.com/gvffbhdvgf/cbe/commit/cc533bae697e484990e9eec659609e9dcb3a3a22). GitHub Actions [45825980890](https://github.com/gvffbhdvgf/cbe/actions/runs/45825980890) passed migration validation, lint, TypeScript, tests and production build.
 
-- Migration 0031 governed learner identity corrections is applied to shared Development; isolated lifecycle E2E passed.
-- Migration 0032 academic-year rollover and its workspace/API are implemented and CI-tested. Its schema was exercised on disposable rollover-validation branches but is not yet applied to shared Development.
-- Migration 0033 weekly teacher workload is implemented in source: effective-dated weekly-period allocations, institution/year policy versions, workload manager summary and configuration, effective-dated workload revision controls, and teacher self-service workload page/API.
-- Migration 0033 was applied on disposable branch `br-lively-fog-bhtep2ku`. Subsequent RLS hardening restricts policy reads to active, verified teacher members or authorised managers. Both workload tables use forced RLS and runtime SELECT only; direct runtime INSERT/UPDATE/DELETE are denied. Controlled functions have runtime EXECUTE, no PUBLIC EXECUTE, and unauthenticated invocation was rejected with SQLSTATE 42501. The updated allocation function and membership-scoped policy were checked on that branch.
-- Neon branch capacity is currently exhausted. Do not apply migrations 0032/0033 to shared Development until disposable validation capacity returns and full role-separated lifecycle E2E passes.
-- ADR-007 remains in progress: full role-separated E2E, shared Development application, Preview smoke test, and policy/workload validation with synthetic teacher assignments remain outstanding. No universal/statutory teaching-period threshold is assumed.
-- No Production changes or real learner/staff data changes.
+- Neon branch-capacity workaround: reuse existing disposable branch `sentinel-rollover-validation-v2` (`br-lively-fog-bhtep2ku`) rather than creating more branches or deleting validation history. It contains all 0032 rollover and 0033 workload tables together.
+- All four tables have forced RLS; runtime has SELECT only and no direct INSERT/UPDATE/DELETE. Six controlled rollover/workload functions grant runtime EXECUTE and no PUBLIC EXECUTE.
+- Calls to rollover creation, workload policy creation and workload allocation as the unauthenticated login role were rejected with SQLSTATE 42501.
+- Validation branch records were inspected only and not modified. Full manager/teacher/member role-separated lifecycle E2E remains outstanding.
+- Migration 0031 is applied to shared Development. Migrations 0032/0033 remain unapplied to shared Development pending the role-separated E2E and Preview smoke test. No Production changes.
+
+## Previous academic-year rollover and weekly workload implementation checkpoint
 
 ## Earlier engineering checkpoints
 
