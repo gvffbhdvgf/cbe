@@ -204,7 +204,7 @@ BEGIN
   VALUES (v_actor_id, v_batch.organisation_id, 'learner.academic_year_rollover_item_decided',
     'academic_year_rollover_item', p_item_id::text,
     jsonb_build_object('batchId',p_batch_id,'outcome',p_outcome,'targetGrade',v_target_grade,
-      'targetClassId',p_target_class_id,'reason',btrim(p_reason)));
+      'targetClassId',p_target_class_id,'reasonRecorded',true));
   RETURN p_item_id;
 END;
 $$;
