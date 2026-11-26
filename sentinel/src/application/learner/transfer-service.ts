@@ -1,9 +1,9 @@
-import { and, asc, eq, ne } from 'drizzle-orm';
+import { and, asc, eq, ne, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
 import { learnerEnrolments, learnerProfiles, learnerTransferRequests, learnerTransferSourceLinks, people } from '@/infrastructure/database/schema/learner';
 import { requireLearnerManager } from '@/application/learner/learner-service';
-import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
+import { withAuthenticatedLearnerDb, type LearnerTransaction } from '@/infrastructure/database/learner-rls-client';
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -81,7 +81,7 @@ export async function getTransferManagementSummary(actorUserId: string, organisa
 }
 
 async function callTransferFunction<T extends Record<string, unknown>>(
-  actorUserId: string, organisationId: string, query: (tx: Parameters<Parameters<typeof withAuthenticatedLearnerDb>[1]>[0]) => Promise<T>,
+  actorUserId: string, organisationId: string, query: (tx: LearnerTransaction) => Promise<T>,
 ) {
   await assertTransferManager(actorUserId, organisationId);
   if (!uuidPattern.test(organisationId)) throw new LearnerTransferError('A valid organisation identifier is required', 400);
@@ -111,15 +111,15 @@ export async function requestLearnerTransfer(actorUserId: string, sendingOrganis
 }
 
 export async function acceptLearnerTransfer(actorUserId: string, organisationId: string, transferId: string) {
-  return transferAction(actorUserId, organisationId, transferId, 'accept_learner_transfer', false);
+  return transferAction(actorUserId, organisationId, transferId, 'accept_learner_transfer');
 }
 export async function cancelLearnerTransfer(actorUserId: string, organisationId: string, transferId: string) {
-  return transferAction(actorUserId, organisationId, transferId, 'cancel_learner_transfer', false);
+  return transferAction(actorUserId, organisationId, transferId, 'cancel_learner_transfer');
 }
 export async function releaseLearnerTransfer(actorUserId: string, organisationId: string, transferId: string) {
-  return transferAction(actorUserId, organisationId, transferId, 'release_learner_transfer', false);
+  return transferAction(actorUserId, organisationId, transferId, 'release_learner_transfer');
 }
-async function transferAction(actorUserId: string, organisationId: string, transferId: string, fn: string, unused: boolean) {
+async function transferAction(actorUserId: string, organisationId: string, transferId: string, fn: string) {
   if (!uuidPattern.test(transferId)) throw new LearnerTransferError('A valid transfer identifier is required', 400);
   return callTransferFunction(actorUserId, organisationId, async tx => {
     await tx.execute(sql`SELECT sentinel_private.${sql.raw(fn)}(${organisationId}::uuid, ${transferId}::uuid)`);
