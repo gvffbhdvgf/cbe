@@ -9,7 +9,7 @@ import { getAssessmentAttemptMarkingSheet } from '@/application/assessment/asses
 import { AssessmentMarkingControls, type MarkingTask } from './marking-controls';
 import { AssessmentResponseCaptureControls } from './response-capture-controls';
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type MarkingSheetRow = MarkingTask & { event_id: string; event_title: string; event_status: string; attempt_id: string; enrolment_id: string; attempt_status: string; task_code: string; response_type: string; display_order: number; response_payload: unknown; captured_at: Date | string | null; result_id: string | null; lifecycle_status: string | null; latest_decision_type: string | null; latest_decision_at: Date | string | null };
 
