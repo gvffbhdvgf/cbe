@@ -255,7 +255,7 @@ LANGUAGE sql
 STABLE
 SECURITY DEFINER
 SET search_path = pg_catalog, pg_temp
-AS $
+AS $\
   SELECT roster.enrolment_id, roster.learner_id, learner.learner_reference, roster.class_id,
     attempt.id, attempt.status
   FROM public.assessment_event_eligible_enrolments roster
