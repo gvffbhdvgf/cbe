@@ -102,7 +102,8 @@ CREATE FUNCTION sentinel_private.create_staff_profile(
   p_job_title text,
   p_engagement_type text,
   p_starts_on date,
-  p_ends_on date
+  p_ends_on date,
+  p_confirm_distinct_person boolean
 ) RETURNS uuid
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
@@ -138,6 +139,7 @@ BEGIN
   END IF;
 
   IF v_person_id IS NULL THEN
+    IF p_confirm_distinct_person IS NOT TRUE THEN RAISE EXCEPTION 'Confirm that this is a distinct person after checking the organisation register' USING ERRCODE = '22023'; END IF;
     IF p_first_name IS NULL OR length(btrim(p_first_name)) NOT BETWEEN 1 AND 120
       OR p_last_name IS NULL OR length(btrim(p_last_name)) NOT BETWEEN 1 AND 120
       OR (p_middle_name IS NOT NULL AND length(btrim(p_middle_name)) > 120)
@@ -168,7 +170,7 @@ BEGIN
 
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'staff.profile_created','staff_profile',v_profile_id::text,
-    jsonb_build_object('staffReference',v_staff_reference,'staffCategory',p_staff_category,'engagementType',p_engagement_type,'startsOn',p_starts_on,'endsOn',p_ends_on));
+    jsonb_build_object('staffReference',v_staff_reference,'staffCategory',p_staff_category,'engagementType',p_engagement_type,'startsOn',p_starts_on,'endsOn',p_ends_on,'duplicateCheckConfirmed',p_confirm_distinct_person));
   RETURN v_profile_id;
 END;
 $$;
@@ -249,11 +251,7 @@ BEGIN
   IF p_ends_on IS NULL OR p_ends_on <= v_engagement.starts_on THEN
     RAISE EXCEPTION 'Engagement end date must be after its start date' USING ERRCODE = '22023';
   END IF;
-  v_status := CASE
-    WHEN p_ends_on <= v_today THEN 'ended'
-    WHEN v_engagement.starts_on > v_today THEN 'planned'
-    ELSE 'active'
-  END;
+  v_status := CASE WHEN p_ends_on <= v_today THEN 'ended' ELSE v_engagement.status END;
   UPDATE public.staff_engagements SET ends_on = p_ends_on, status = v_status, updated_at = now() WHERE id = p_engagement_id;
   INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
   VALUES(v_actor_id,p_organisation_id,'staff.engagement_end_dated','staff_engagement',p_engagement_id::text,
@@ -262,7 +260,7 @@ BEGIN
 END;
 $$;
 --> statement-breakpoint
-REVOKE ALL ON FUNCTION sentinel_private.create_staff_profile(uuid,uuid,text,text,text,text,text,text,text,text,date,date) FROM PUBLIC;
+REVOKE ALL ON FUNCTION sentinel_private.create_staff_profile(uuid,uuid,text,text,text,text,text,text,text,text,date,date,boolean) FROM PUBLIC;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.link_staff_account(uuid,uuid,uuid) FROM PUBLIC;
 --> statement-breakpoint
