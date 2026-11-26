@@ -53,7 +53,7 @@ BEGIN
   IF NOT sentinel_private.can_access_assessment_data(p_organisation_id) THEN
     RAISE EXCEPTION 'Assessment authoring authority is required' USING ERRCODE = '42501';
   END IF;
-  IF length(trim(p_title)) NOT BETWEEN 3 AND 180 OR p_starts_at IS NULL OR p_ends_at <= p_starts_at
+  IF length(trim(p_title)) NOT BETWEEN 3 AND 180 OR p_starts_at IS NULL OR p_ends_at IS NULL OR p_ends_at <= p_starts_at
     OR p_academic_year NOT BETWEEN 2000 AND 2100 THEN
     RAISE EXCEPTION 'Assessment event details are invalid' USING ERRCODE = '22023';
   END IF;
@@ -108,10 +108,16 @@ CREATE FUNCTION sentinel_private.create_assessment_event_local(
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
 AS $$
 DECLARE
+  v_actor_id uuid;
   v_time_zone text;
   v_starts_at timestamptz;
   v_ends_at timestamptz;
 BEGIN
+  v_actor_id := sentinel_private.current_user_id();
+  IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501'; END IF;
+  IF NOT sentinel_private.can_access_assessment_data(p_organisation_id) THEN
+    RAISE EXCEPTION 'Assessment authoring authority is required' USING ERRCODE = '42501';
+  END IF;
   IF p_starts_at_local IS NULL OR p_ends_at_local IS NULL THEN
     RAISE EXCEPTION 'Local assessment start and end times are required' USING ERRCODE = '22023';
   END IF;
