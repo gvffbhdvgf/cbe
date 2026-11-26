@@ -15,6 +15,11 @@ describe('curriculum mapping and timezone migration contract', () => {
     const sql = await readFile(migrationPath, 'utf8');
     expect(sql).toContain("ADD COLUMN time_zone varchar(64) NOT NULL DEFAULT 'Africa/Nairobi'");
     expect(sql).toContain('pg_catalog.pg_timezone_names');
+    expect(sql).toContain('GRANT SELECT ON TABLE');
+    expect(sql).toContain('public.curriculum_grade_offerings');
+    expect(sql).toContain('list_assessment_instrument_outcome_options');
+    expect(sql).toContain('list_assessment_instrument_outcome_mappings');
+    expect(sql).not.toContain('GRANT SELECT ON TABLE public.curriculum_source_nodes');
     expect(sql).toContain('assessment_events_time_zone_validation');
     expect(sql).toContain('time_zone,');
     expect(sql).toContain("'timeZone', v_time_zone");
