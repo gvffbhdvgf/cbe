@@ -26,21 +26,20 @@ export async function placeLearnerInClass(
 
 export async function reassignLearnerToClass(
   actorUserId: string, organisationId: string, enrolmentId: string,
-  input: ClassPlacementInput & { reason: string },
+  input: { classId: string; reason: string },
 ) {
   await requireLearnerManager(actorUserId, organisationId);
   if (!uuidPattern.test(enrolmentId)) throw new Error('A valid enrolment ID is required');
-  const placement = createClassPlacement(input);
+  if (!uuidPattern.test(input.classId)) throw new Error('A valid target class ID is required');
   const reason = input.reason.trim();
   if (reason.length < 10 || reason.length > 500) throw new Error('A reassignment reason of 10 to 500 characters is required');
   return withAuthenticatedLearnerDb(actorUserId, async (tx) => {
     const result = await tx.execute(sql`SELECT sentinel_private.reassign_learner_to_class(
-      ${organisationId}::uuid, ${enrolmentId}::uuid, ${placement.classId}::uuid,
-      ${placement.effectiveAt}::date, ${reason}::text
+      ${organisationId}::uuid, ${enrolmentId}::uuid, ${input.classId}::uuid, ${reason}::text
     ) AS enrolment_id`);
     const reassignedId = result.rows[0]?.enrolment_id;
     if (reassignedId !== enrolmentId) throw new Error('The database did not confirm the class reassignment');
-    return { enrolmentId: reassignedId, classId: placement.classId, effectiveAt: placement.effectiveAt };
+    return { enrolmentId: reassignedId, classId: input.classId };
   });
 }
 
