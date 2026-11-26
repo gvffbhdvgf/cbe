@@ -61,6 +61,6 @@ describe('learner lifecycle transition migration', () => {
     const sql = await readFile(migrationPath, 'utf8');
     expect(sql).toContain('GRANT SELECT ON TABLE public.learner_class_placements TO sentinel_learner_runtime');
     expect(sql).toContain('GRANT SELECT ON TABLE public.learner_progression_requests TO sentinel_learner_runtime');
-    expect(sql).not.toMatch(/GRANT\\s+(INSERT|UPDATE|DELETE|ALL)\\s+ON\\s+TABLE\\s+public\\.(learner_class_placements|learner_progression_requests)/i);
+    expect(sql).not.toMatch(/GRANT\s+(INSERT|UPDATE|DELETE|ALL)\s+ON\s+TABLE\s+public\\.(learner_class_placements|learner_progression_requests)/i);
   });
 });
