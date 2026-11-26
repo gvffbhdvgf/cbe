@@ -1,9 +1,6 @@
-import { and, asc, desc, eq } from 'drizzle-orm';
-import { sql } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
-import { authUsers, auditEvents } from '@/infrastructure/database/schema/security';
 import { learnerRecordCorrectionRequests } from '@/infrastructure/database/schema/learner-correction';
-import { learnerProfiles, people } from '@/infrastructure/database/schema/learner';
 import { requireLearnerManager } from './learner-service';
 import { withAuthenticatedLearnerDb } from '@/infrastructure/database/learner-rls-client';
 
