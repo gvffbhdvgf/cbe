@@ -1,6 +1,6 @@
 export { organisations } from './organisation';
 export { staffProfiles, staffEngagements } from './staff';
-export { auditEvents, organisationMemberships, platformAdministrators } from './security';
+export { auditEvents, organisationMemberships, organisationTransferEligibility, platformAdministrators } from './security';
 
 export { curriculumDesignDocuments, curriculumEditions, curriculumGradeOfferings, curriculumLearningAreas, curriculumPathways, curriculumSourceNodes, curriculumSources } from './curriculum';
 
