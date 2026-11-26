@@ -40,6 +40,7 @@ END;
 $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.create_assessment_programme(uuid,text,text,text) FROM PUBLIC;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_programme(uuid,text,text,text) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
@@ -131,6 +132,7 @@ END;
 $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.create_assessment_instrument_version(uuid,uuid,integer,text,text,jsonb) FROM PUBLIC;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_instrument_version(uuid,uuid,integer,text,text,jsonb) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
@@ -176,6 +178,7 @@ END;
 $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.approve_assessment_instrument_version(uuid) FROM PUBLIC;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.approve_assessment_instrument_version(uuid) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
@@ -242,6 +245,7 @@ END;
 $$;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.create_assessment_event(uuid,uuid,uuid,text,timestamptz,timestamptz,integer,boolean) FROM PUBLIC;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.create_assessment_event(uuid,uuid,uuid,text,timestamptz,timestamptz,integer,boolean) TO sentinel_learner_runtime;
 --> statement-breakpoint
 
@@ -269,4 +273,5 @@ AS $
 $;
 --> statement-breakpoint
 REVOKE ALL ON FUNCTION sentinel_private.list_assessment_eligible_enrolments(uuid) FROM PUBLIC;
+--> statement-breakpoint
 GRANT EXECUTE ON FUNCTION sentinel_private.list_assessment_eligible_enrolments(uuid) TO sentinel_learner_runtime;
