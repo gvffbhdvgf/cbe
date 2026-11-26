@@ -50,7 +50,8 @@ export async function requestLearnerProgression(
     || !Number.isInteger(input.toAcademicYear) || input.toAcademicYear < 2000 || input.toAcademicYear > 2100) {
     throw new LearnerProgressionError('A valid target grade and academic year are required', 400);
   }
-  if (!datePattern.test(input.effectiveAt) || Number.isNaN(new Date(input.effectiveAt+'T00:00:00.000Z').getTime())) {
+  const parsedEffectiveAt = new Date(input.effectiveAt+'T00:00:00.000Z');
+  if (!datePattern.test(input.effectiveAt) || Number.isNaN(parsedEffectiveAt.getTime()) || parsedEffectiveAt.toISOString().slice(0,10)!==input.effectiveAt) {
     throw new LearnerProgressionError('A valid progression effective date is required', 400);
   }
   const reason = input.reason.trim();
