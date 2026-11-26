@@ -1,3 +1,16 @@
+## 26 November 2026 — Academic-year rollover and weekly workload checkpoint
+
+Latest source commit at checkpoint: `a9a04edc17a2ae1fbb43de9ab57c6017b792331a`. GitHub Actions [45823562738](https://github.com/gvffbhdvgf/cbe/actions/runs/45823562738) passed migration-journal validation, lint, TypeScript, tests and production build.
+
+- Governed learner identity correction migration 0031 is applied to shared Sentinel Development; isolated lifecycle E2E passed on a disposable Neon branch.
+- Academic-year rollover migration 0032 and workspace/API are committed and CI-tested. The rollover schema was exercised on disposable Neon validation branches; it is not yet applied to the shared development branch.
+- Weekly workload migration 0033, Drizzle schema, assignment-period capture, workload-policy API and manager workload summary/configuration UI are committed. Migration 0033 was applied to disposable branch `br-lively-fog-bhtep2ku`.
+- Disposable-branch database checks confirmed forced RLS on both workload tables, runtime SELECT only (no INSERT/UPDATE/DELETE), runtime EXECUTE on both controlled functions, no PUBLIC EXECUTE, and rejection of unauthenticated function execution (SQLSTATE 42501).
+- Neon branch capacity is currently exhausted. Do not apply migrations 0032/0033 to shared Development until disposable validation capacity is available and full E2E checks are completed. No Production changes.
+- ADR-007 remains in progress: effective-dated workload revision controls and teacher self-view are still outstanding. No universal/statutory teaching-period threshold is assumed; institution thresholds must be configured.
+
+## Earlier engineering checkpoints
+
 # Sentinel — Engineering Continuation Checkpoint
 
 ## 26 November 2026 — Assessment governance and correction milestones
