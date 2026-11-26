@@ -1,5 +1,7 @@
 # Sentinel — Project Handoff & Current Status
 
+> **Current implementation checkpoint — 26 November 2026:** The source branch is `sentinel/bootstrap`; the development database is Neon branch `br-nameless-block-bhpsx0vq`. Migrations 0021–0025 are applied there, including curriculum mapping/timezone, teacher class-scoped assessment, learner lifecycle transitions, adapted pathway grade coverage, and canonical staff profiles/engagements. The staff register is implemented at `/workspace/organisations/[organisationId]/staff`. The latest verified GitHub Actions run is [45788927242](https://github.com/gvffbhdvgf/cbe/actions/runs/45788927242): migration journal, lint, TypeScript, 27 test files / 149 tests and production build all passed. Preview deployment `dpl_8MDi7yRFjsfmMQQLFKqNEx3mWxWh` is building from commit `331383213867e96dc4f43784dc789d8ca40add13`; stable alias: https://sentinel-git-sentinel-bootstrap-pep-popsiis-projects.vercel.app. Production remains untouched. Remaining work includes privacy-preserving learner transfers, governed learner-record corrections, guardian verification, role-separated browser E2E testing, complete KICD outcome ingestion/review and legal/privacy/DPIA gates. Older status notes below are historical where they conflict with this current checkpoint.
+
 Last checkpoint: 26 November 2026. Working branch: `sentinel/bootstrap`.
 
 ## Start here
