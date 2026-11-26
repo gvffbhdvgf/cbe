@@ -59,6 +59,76 @@ FROM public.learner_enrolments enrolment
 INNER JOIN public.organisations organisation ON organisation.id = enrolment.organisation_id
 WHERE enrolment.class_id IS NOT NULL;
 --> statement-breakpoint
+CREATE OR REPLACE FUNCTION sentinel_private.schedule_assessment_event(p_event_id uuid)
+RETURNS integer
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, pg_temp
+AS $$
+DECLARE v_actor_id uuid; v_event public.assessment_events%ROWTYPE; v_eligible_count integer; v_eligibility_date date;
+BEGIN
+  v_actor_id := sentinel_private.current_user_id();
+  IF v_actor_id IS NULL THEN RAISE EXCEPTION 'Authentication required' USING ERRCODE = '42501'; END IF;
+  SELECT event_record.* INTO v_event FROM public.assessment_events event_record
+  WHERE event_record.id = p_event_id AND sentinel_private.can_access_assessment_data(event_record.organisation_id) FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Assessment event not found or access denied' USING ERRCODE = 'P0002'; END IF;
+  IF v_event.status <> 'draft' THEN RAISE EXCEPTION 'Only draft assessment events can be scheduled' USING ERRCODE = '23514'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.assessment_instrument_versions instrument
+    WHERE instrument.id=v_event.instrument_version_id AND instrument.tenant_organisation_id=v_event.tenant_organisation_id
+      AND instrument.organisation_id=v_event.organisation_id AND instrument.grade=v_event.grade
+      AND instrument.learning_area_id=v_event.learning_area_id AND instrument.status='approved') THEN
+    RAISE EXCEPTION 'Assessment event requires an approved instrument version' USING ERRCODE = '23514';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM public.assessment_programmes programme
+    WHERE programme.id=v_event.programme_id AND programme.tenant_organisation_id=v_event.tenant_organisation_id
+      AND programme.organisation_id=v_event.organisation_id AND programme.status='active') THEN
+    RAISE EXCEPTION 'Assessment event requires an active assessment programme' USING ERRCODE = '23514';
+  END IF;
+  IF v_event.class_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM public.classes class_record
+    WHERE class_record.id=v_event.class_id AND class_record.organisation_id=v_event.organisation_id
+      AND class_record.status='active' AND class_record.grade=v_event.grade
+      AND class_record.academic_year=v_event.academic_year) THEN
+    RAISE EXCEPTION 'Target class is no longer active or does not match the event' USING ERRCODE = '23514';
+  END IF;
+  v_eligibility_date := (v_event.starts_at AT TIME ZONE v_event.time_zone)::date;
+  INSERT INTO public.assessment_event_eligible_enrolments (
+    tenant_organisation_id,organisation_id,event_id,enrolment_id,learner_id,class_id,
+    instrument_version_id,grade,learning_area_id,academic_year,eligibility_date,snapshot_by
+  )
+  SELECT v_event.tenant_organisation_id,v_event.organisation_id,v_event.id,enrolment.id,enrolment.learner_id,
+    COALESCE(v_event.class_id,enrolment.class_id),v_event.instrument_version_id,v_event.grade,v_event.learning_area_id,
+    v_event.academic_year,v_eligibility_date,v_actor_id
+  FROM public.learner_enrolments enrolment
+  INNER JOIN public.learner_profiles learner ON learner.id=enrolment.learner_id
+    AND learner.tenant_organisation_id=enrolment.tenant_organisation_id
+  WHERE enrolment.tenant_organisation_id=v_event.tenant_organisation_id
+    AND enrolment.organisation_id=v_event.organisation_id
+    AND enrolment.grade=v_event.grade AND enrolment.academic_year=v_event.academic_year
+    AND enrolment.status='active' AND learner.status='active'
+    AND enrolment.starts_at<=v_eligibility_date
+    AND (enrolment.ends_at IS NULL OR enrolment.ends_at>v_eligibility_date)
+    AND (
+      v_event.class_id IS NULL
+      OR EXISTS (
+        SELECT 1 FROM public.learner_class_placements placement
+        WHERE placement.tenant_organisation_id=enrolment.tenant_organisation_id
+          AND placement.organisation_id=enrolment.organisation_id
+          AND placement.enrolment_id=enrolment.id
+          AND placement.class_id=v_event.class_id
+          AND placement.starts_at<=v_event.starts_at
+          AND (placement.ends_at IS NULL OR placement.ends_at>v_event.starts_at)
+      )
+    );
+  GET DIAGNOSTICS v_eligible_count = ROW_COUNT;
+  IF v_eligible_count=0 THEN RAISE EXCEPTION 'Cannot schedule an assessment event with no eligible learner enrolments' USING ERRCODE = '23514'; END IF;
+  UPDATE public.assessment_events SET status='scheduled',updated_at=pg_catalog.now() WHERE id=v_event.id;
+  INSERT INTO public.audit_events(actor_user_id,organisation_id,action,resource_type,resource_id,metadata)
+  VALUES(v_actor_id,v_event.organisation_id,'assessment.event_scheduled','assessment_event',v_event.id::text,
+    jsonb_build_object('eligibleLearnerCount',v_eligible_count,'eligibilityDate',v_eligibility_date,
+      'timeZone',v_event.time_zone,'classId',v_event.class_id,'instrumentVersionId',v_event.instrument_version_id,
+      'grade',v_event.grade,'academicYear',v_event.academic_year));
+  RETURN v_eligible_count;
+END;
+$$;
+--> statement-breakpoint
 ALTER TABLE public.learner_class_placements ENABLE ROW LEVEL SECURITY;
 --> statement-breakpoint
 ALTER TABLE public.learner_class_placements FORCE ROW LEVEL SECURITY;
