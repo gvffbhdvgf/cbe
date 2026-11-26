@@ -31,6 +31,8 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
   const [periodDuration,setPeriodDuration]=useState('');
   const [policyEffectiveFrom,setPolicyEffectiveFrom]=useState(new Date().toISOString().slice(0,10));
   const [policyReason,setPolicyReason]=useState('');
+  const [editingAssignmentId,setEditingAssignmentId]=useState('');
+  const [revisionDrafts,setRevisionDrafts]=useState<Record<string,{weeklyPeriods:string;effectiveFrom:string;reason:string}>>({});
 
   async function create(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy('create'); setError(''); setMessage('');
@@ -51,6 +53,18 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
       const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Unable to save workload policy');
       setMessage('Workload policy version recorded. Previous policy versions remain in history.');router.refresh();
     } catch(cause){setError(cause instanceof Error?cause.message:'Unable to save workload policy');}
+    finally{setBusy('');}
+  }
+
+  async function reviseWorkload(assignment:Assignment) {
+    const draft=revisionDrafts[assignment.id];
+    if(!draft)return;
+    setBusy(assignment.id);setError('');setMessage('');
+    try {
+      const response=await fetch('/api/organisations/'+organisationId+'/teaching-assignments/'+assignment.id,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({weeklyPeriods:Number(draft.weeklyPeriods),effectiveFrom:draft.effectiveFrom,reason:draft.reason})});
+      const payload=await response.json();if(!response.ok)throw new Error(payload.error||'Unable to revise weekly workload');
+      setEditingAssignmentId('');setMessage('A new effective-dated workload allocation was recorded. Previous allocation history is retained.');router.refresh();
+    } catch(cause){setError(cause instanceof Error?cause.message:'Unable to revise weekly workload');}
     finally{setBusy('');}
   }
 
@@ -105,7 +119,7 @@ export function TeachingAssignmentManager({ organisationId, teachers, classes, l
     </section>
     <section className="overflow-hidden rounded-[20px] border border-[#E1EAF0] bg-white">
       <div className="border-b border-[#E8EEF2] px-5 py-4"><h2 className="text-[14px] font-semibold text-[#18364E]">Teaching assignment register</h2><p className="mt-1 text-[11px] text-[#8498A7]">Historical assignments remain visible after revocation.</p></div>
-      {assignments.length===0?<p className="px-5 py-9 text-[12px] text-[#8498A7]">No teacher-to-class assignments have been recorded.</p>:<div className="divide-y divide-[#E8EEF2]">{assignments.map(a=><div key={a.id} className="flex flex-wrap items-center justify-between gap-4 px-5 py-4"><div><p className="text-[12px] font-semibold text-[#29465D]">{a.teacher_name}{a.teacher_staff_reference?' · '+a.teacher_staff_reference:''} · {a.learning_area}</p><p className="mt-1 text-[11px] text-[#718697]">{a.class_code} · {a.class_name} · Grade {a.grade} · {a.academic_year}</p><p className="mt-1 text-[10px] text-[#8A9CAB]">{a.starts_on} to {a.ends_on??'open-ended'} · {a.status} · {a.weekly_periods===null?'Weekly periods not configured':a.weekly_periods+' periods/week'}</p></div>{a.status==='active'&&<button type="button" disabled={busy!==''} onClick={()=>void revoke(a.id)} className="rounded-full border border-[#E7D4D0] px-3 py-2 text-[10px] font-semibold text-[#A43D34] disabled:opacity-40">{busy===a.id?'Revoking…':'Revoke assignment'}</button>}</div>)}</div>}
+      {assignments.length===0?<p className="px-5 py-9 text-[12px] text-[#8498A7]">No teacher-to-class assignments have been recorded.</p>:<div className="divide-y divide-[#E8EEF2]">{assignments.map(a=><div key={a.id} className="px-5 py-4"><div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[12px] font-semibold text-[#29465D]">{a.teacher_name}{a.teacher_staff_reference?' · '+a.teacher_staff_reference:''} · {a.learning_area}</p><p className="mt-1 text-[11px] text-[#718697]">{a.class_code} · {a.class_name} · Grade {a.grade} · {a.academic_year}</p><p className="mt-1 text-[10px] text-[#8A9CAB]">{a.starts_on} to {a.ends_on??'open-ended'} · {a.status} · {a.weekly_periods===null?'Weekly periods not configured':a.weekly_periods+' periods/week'}</p></div>{a.status==='active'&&<div className="flex flex-wrap gap-2"><button type="button" disabled={busy!==''} onClick={()=>{setEditingAssignmentId(editingAssignmentId===a.id?'':a.id);setRevisionDrafts(old=>({...old,[a.id]:old[a.id]??{weeklyPeriods:String(a.weekly_periods??''),effectiveFrom:asOfDate,reason:''}}));}} className="rounded-full border border-[#DCE7EC] px-3 py-2 text-[10px] font-semibold text-[#29465D] disabled:opacity-40">Change weekly periods</button><button type="button" disabled={busy!==''} onClick={()=>void revoke(a.id)} className="rounded-full border border-[#E7D4D0] px-3 py-2 text-[10px] font-semibold text-[#A43D34] disabled:opacity-40">{busy===a.id?'Revoking…':'Revoke assignment'}</button></div>}</div>{editingAssignmentId===a.id&&<div className="mt-3 grid gap-2 rounded-xl bg-[#F8FBFC] p-3 sm:grid-cols-3"><label className={label}>New periods/week<input type="number" min="1" max="60" value={revisionDrafts[a.id]?.weeklyPeriods??''} onChange={e=>setRevisionDrafts(old=>({...old,[a.id]:{...old[a.id],weeklyPeriods:e.target.value}}))} className={field}/></label><label className={label}>Effective from<input type="date" min={asOfDate} value={revisionDrafts[a.id]?.effectiveFrom??asOfDate} onChange={e=>setRevisionDrafts(old=>({...old,[a.id]:{...old[a.id],effectiveFrom:e.target.value}}))} className={field}/></label><label className={label}>Reason<input minLength="10" maxLength="500" value={revisionDrafts[a.id]?.reason??''} onChange={e=>setRevisionDrafts(old=>({...old,[a.id]:{...old[a.id],reason:e.target.value}}))} className={field}/></label><div className="sm:col-span-3"><button type="button" disabled={busy!==''||!revisionDrafts[a.id]?.weeklyPeriods||Number(revisionDrafts[a.id]?.weeklyPeriods)<1||(revisionDrafts[a.id]?.reason.trim().length??0)<10} onClick={()=>void reviseWorkload(a)} className="rounded-lg bg-[#102B45] px-4 py-2 text-[10px] font-semibold text-white disabled:opacity-40">Save effective-dated change</button></div></div>}</div>)}</div>}
     </section>
   </div>;
 }
