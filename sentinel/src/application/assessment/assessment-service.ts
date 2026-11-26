@@ -296,6 +296,34 @@ export async function getAssessmentInstrumentOutcomeMappings(actorUserId: string
   });
 }
 
+
+export async function getAssessmentInstrumentOutcomeOptions(actorUserId: string, organisationId: string, instrumentVersionId: string) {
+  return runAssessmentOperation(actorUserId, organisationId, async (tx) => {
+    const result = await tx.execute(sql`
+      SELECT node.id, node.node_code, node.title, document.document_code,
+        offering.grade, area.name AS learning_area
+      FROM public.assessment_instrument_versions AS instrument
+      JOIN public.curriculum_grade_offerings AS offering
+        ON offering.grade = instrument.grade
+       AND offering.learning_area_id = instrument.learning_area_id
+      JOIN public.curriculum_design_documents AS document
+        ON document.grade_offering_id = offering.id
+       AND document.review_status = 'approved'
+       AND document.rights_status = 'confirmed'
+      JOIN public.curriculum_source_nodes AS node
+        ON node.document_id = document.id
+       AND node.node_type = 'specific_outcome'
+       AND node.extraction_status = 'approved'
+      JOIN public.curriculum_learning_areas AS area
+        ON area.id = offering.learning_area_id
+      WHERE instrument.id = ${instrumentVersionId}::uuid
+        AND instrument.organisation_id = ${organisationId}::uuid
+      ORDER BY document.document_code, node.node_code
+    `);
+    return result.rows;
+  });
+}
+
 export async function createAssessmentTaskOutcomeMapping(
   actorUserId: string, organisationId: string, taskId: string, curriculumSourceNodeId: string,
 ) {
