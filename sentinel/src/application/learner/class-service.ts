@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import { db } from '@/infrastructure/database/client';
 import { organisations } from '@/infrastructure/database/schema/organisation';
 import { auditEvents } from '@/infrastructure/database/schema/security';
@@ -16,6 +16,8 @@ export async function listClasses(actorUserId: string, organisationId: string) {
     grade: classes.grade,
     academicYear: classes.academicYear,
     status: classes.status,
+    capacity: classes.capacity,
+    currentLearnerCount: sql<number>`(SELECT count(*)::int FROM public.learner_enrolments enrolment WHERE enrolment.class_id = ${classes.id} AND enrolment.organisation_id = ${classes.organisationId} AND enrolment.status = 'active')`,
     createdAt: classes.createdAt,
   }).from(classes)
     .where(eq(classes.tenantOrganisationId, organisationId))
@@ -36,6 +38,7 @@ export async function createClass(actorUserId: string, organisationId: string, i
       grade: definition.grade,
       classCode: definition.classCode,
       displayName: definition.displayName,
+      capacity: definition.capacity,
       status: 'active',
       createdBy: actorUserId,
     });
@@ -50,6 +53,7 @@ export async function createClass(actorUserId: string, organisationId: string, i
         displayName: definition.displayName,
         grade: definition.grade,
         academicYear: definition.academicYear,
+        capacity: definition.capacity,
       },
     });
   });
