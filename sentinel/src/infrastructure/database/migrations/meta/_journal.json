@@ -169,6 +169,13 @@
       "when": 1795681200000,
       "tag": "0023_learner_lifecycle_transitions",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": 7,
+      "when": 1795683000000,
+      "tag": "0024_curriculum_pathway_grade_levels",
+      "breakpoints": true
     }
   ]
 }
