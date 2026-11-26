@@ -34,6 +34,7 @@ export async function POST(request: Request, context: { params: Promise<{ organi
       academicYear: body.academicYear,
       classCode: body.classCode,
       displayName: body.displayName,
+      capacity: 'capacity' in body && typeof body.capacity === 'number' ? body.capacity : null,
     });
     return Response.json({ class: classRecord }, { status: 201 });
   } catch (error) {
