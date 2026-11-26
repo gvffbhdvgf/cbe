@@ -11,7 +11,7 @@ import { AssessmentResultDecisionControls } from './result-decision-controls';
 import { AssessmentAttemptVoidControl } from './void-attempt-control';
 import { EligibleLearnerControls } from './eligible-learner-controls';
 
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type EligibleLearner = { enrolment_id: string; learner_reference: string; attempt_id: string | null; attempt_status: string | null };
 type EventAttemptResult = { attempt_id: string; enrolment_id: string; attempt_status: string; submitted_at: Date | string | null; created_at: Date | string; result_id: string | null; result_version: number | null; total_awarded_score: string | number | null; maximum_score: string | number | null; percentage: string | number | null; lifecycle_status: string | null; latest_decision_type: string | null; latest_decision_at: Date | string | null };
