@@ -3,6 +3,7 @@ export type ClassCreationInput = {
   academicYear: number;
   classCode: string;
   displayName: string;
+  capacity?: number | null;
 };
 
 export function createClassDefinition(input: ClassCreationInput) {
@@ -18,8 +19,11 @@ export function createClassDefinition(input: ClassCreationInput) {
   if (!/^[A-Z0-9][A-Z0-9_-]{0,39}$/.test(classCode)) {
     throw new Error('Class code must use 1–40 letters, numbers, hyphens or underscores');
   }
+  if (input.capacity !== undefined && input.capacity !== null && (!Number.isInteger(input.capacity) || input.capacity < 1 || input.capacity > 500)) {
+    throw new Error('Class capacity must be an integer from 1 to 500, or left empty for unlimited');
+  }
   if (!displayName) throw new Error('Class name is required');
   if (displayName.length > 120) throw new Error('Class name must be 120 characters or fewer');
 
-  return { grade: input.grade, academicYear: input.academicYear, classCode, displayName };
+  return { grade: input.grade, academicYear: input.academicYear, classCode, displayName, capacity: input.capacity ?? null };
 }
